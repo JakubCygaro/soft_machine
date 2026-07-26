@@ -60,6 +60,10 @@ target_compile_options(cppfeatures
 
 add_executable(soft_machine
     ${CMAKE_SOURCE_DIR}/src/main.cc
+    ${CMAKE_SOURCE_DIR}/src/machine/Component.cpp
+    ${CMAKE_SOURCE_DIR}/src/machine/Connection.cpp
+    ${CMAKE_SOURCE_DIR}/src/machine/MachineContext.cpp
+    ${CMAKE_SOURCE_DIR}/src/machine/MachineGraph.cpp
 )
 target_link_libraries(soft_machine
     PRIVATE cppfeatures
