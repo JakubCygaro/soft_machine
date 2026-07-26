@@ -9,58 +9,11 @@
 #include <string>
 #include <unordered_map>
 
-struct Message {
-    std::any payload { };
-    std::string sender { };
-    std::string receiver { };
-};
-
-class MachineContext {
-    std::deque<Message>* msgq;
-
-public:
-    MachineContext(std::deque<Message>* msgq);
-    void send_message(Message&& m);
-};
-
+namespace machine {
 class Component;
 class Connection;
 
-class Trigger {
-public:
-    virtual void check_trigger() = 0;
-};
-
-class Component {
-private:
-    std::unordered_map<std::string, std::weak_ptr<Connection>> named_connections { };
-
-protected:
-    const std::string name { };
-
-public:
-    std::deque<Message> msgq { };
-
-    explicit Component(std::string name);
-    virtual ~Component();
-    virtual void add_connection(std::weak_ptr<Connection> conn, std::string name);
-    const std::string& get_name() const;
-    virtual void poll(MachineContext ctx) = 0;
-};
-
-class Connection {
-private:
-    Component *start { }, *end { };
-
-public:
-    std::deque<Message> msgq { };
-
-    explicit Connection(Component* start, Component* end);
-    virtual ~Connection();
-    const Component* get_start() const;
-    const Component* get_end() const;
-    virtual void poll(MachineContext ctx) = 0;
-};
+using Message = std::any;
 
 class MachineGraph {
     std::list<std::shared_ptr<Component>> components { };
@@ -75,11 +28,20 @@ class MachineGraph {
 
 public:
     template <std::derived_from<Connection> T>
-    inline T* create_connection(std::string name, std::shared_ptr<T> conn)
+    inline T* create_connection(
+        std::string name,
+        std::string from,
+        std::string to,
+        std::shared_ptr<T> conn)
     {
         if (named_connections.contains(name)) {
             throw std::runtime_error("Connection already exists");
         }
+        if (!named_components.contains(from))
+            throw std::runtime_error("from component does not exist");
+        if (!named_components.contains(to))
+            throw std::runtime_error("from component does not exist");
+
         std::shared_ptr<Connection> conn2 = conn;
         named_connections[name] = conn2.get();
         connections.push_back(conn);
@@ -101,5 +63,15 @@ public:
     }
 
     void poll_all();
+
+    class MachineContext {
+        std::deque<Message>* msgq;
+
+    public:
+        MachineContext(std::deque<Message>* msgq);
+        void send_message(Message&& m);
+    };
 };
+}
+
 #endif

@@ -1,11 +1,13 @@
 #include "machine/MachineGraph.hpp"
-MachineContext::MachineContext(
+namespace machine {
+MachineGraph::MachineContext::MachineContext(
     std::deque<Message>* msgq)
     : msgq { msgq }
 
 {
 }
-void MachineContext::send_message(Message&& m)
+void MachineGraph::MachineContext::send_message(Message&& m)
 {
     msgq->push_back(std::move(m));
+}
 }

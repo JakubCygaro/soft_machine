@@ -1,4 +1,5 @@
-#include "machine/MachineGraph.hpp"
+#include "machine/Connection.hpp"
+namespace machine {
 Connection::Connection(Component* start, Component* end)
     : start { start }
     , end { end }
@@ -13,3 +14,4 @@ const Component* Connection::get_end() const
     return this->end;
 }
 Connection::~Connection() { };
+}
