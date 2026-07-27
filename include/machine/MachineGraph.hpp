@@ -1,21 +1,101 @@
 #ifndef MACHINE_GRAPH_HPP
 #define MACHINE_GRAPH_HPP
 #include "machine/Actor.hpp"
+#include "machine/Task.hpp"
 #include <any>
+#include <atomic>
 #include <concepts>
+#include <coroutine>
 #include <deque>
+#include <functional>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <print>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
+#include <utility>
 
 namespace machine {
 class Component;
 class Connection;
+class Awaitable;
+
+template <std::movable T>
+class OneShot {
+    using data_t = std::shared_ptr<
+        std::atomic<
+            std::optional<T>>>;
+    OneShot() = delete;
+
+public:
+    class Read;
+    class Write;
+    inline static std::pair<Read, Write> create()
+    {
+        auto v = std::make_shared<std::atomic<std::optional<T>>>;
+        return { Read(v), Write(v) };
+    }
+    class Read {
+        data_t val;
+        inline explicit Read(data_t val);
+        friend std::pair<Read, Write> create();
+        Read(const Read&) = delete;
+        Read& operator=(const Read&) = delete;
+
+    public:
+        inline Read(Read&& other)
+            : val { other.val }
+        {
+            other.val = nullptr;
+        }
+        inline Read& operator=(Read&& other)
+        {
+            this->val = other.val;
+            other.val = nullptr;
+            return *this;
+        }
+
+    public:
+        inline T recv() const
+        {
+            val->wait(std::nullopt);
+            return *val->load();
+        }
+    };
+    class Write {
+        data_t val;
+        inline explicit Write(data_t val);
+        friend std::pair<Read, Write> create();
+        Write(const Write&) = delete;
+        Write& operator=(const Write&) = delete;
+
+    public:
+        inline Write(Write&& other)
+            : val { other.val }
+        {
+            other.val = nullptr;
+        }
+        inline Write& operator=(Write&& other)
+        {
+            this->val = other.val;
+            other.val = nullptr;
+            return *this;
+        }
+        inline void send(T&& v)
+        {
+            auto inside = val->load();
+            if (inside.has_value()) {
+                throw std::runtime_error("Already written");
+            }
+            val->store(std::move(v));
+        }
+    };
+};
 
 using Message = std::any;
 
@@ -36,7 +116,12 @@ private:
     std::deque<Component*> compq { };
     std::deque<Connection*> connq { };
 
-    std::deque<Message> msgq { };
+    struct MessageRequest {
+        std::string recipent;
+        Message payload;
+        OneShot<bool>::Write notify;
+    };
+    std::deque<MessageRequest> msgq { };
 
     struct Process {
         actor::Actor actor;
@@ -46,18 +131,75 @@ private:
 
 public:
     class MachineContext {
-        std::deque<Message>* msgq;
+    public:
+        using send_msg_fn_t = std::function<
+            OneShot<bool>::Read(std::string, std::string, Message&&)>;
+
+    private:
+        std::string name_of_this { };
+        send_msg_fn_t send_msg_fn;
 
     public:
-        MachineContext(std::deque<Message>* msgq);
-        void send_message(Message&& m);
+        struct Pause;
+        Pause pause();
+        struct Pause {
+        private:
+            inline explicit Pause() { }
+            friend Pause MachineContext::pause();
+
+        public:
+            inline bool await_ready() const { return false; }
+            inline void await_suspend(std::coroutine_handle<> h) const
+            {
+                (void)h;
+            }
+            inline void await_resume() const { }
+        };
+        struct Send;
+        Send send(std::string to, Message&& m);
+        struct Send {
+        private:
+            std::string recipent { };
+            Message msg { };
+            OneShot<bool>::Read notify;
+            inline explicit Send(
+                std::string r,
+                Message&& m,
+                OneShot<bool>::Read&& notify)
+                : recipent { r }
+                , msg { std::move(m) }
+                , notify { std::move(notify) }
+
+            {
+            }
+            Send(const Send&) = delete;
+            Send operator=(const Send&) = delete;
+            friend Send MachineContext::send(std::string, Message&&);
+            inline bool await_ready() const { return false; }
+            inline void await_suspend(std::coroutine_handle<> h) const
+            {
+                std::thread([this, h]() {
+                    notify.recv();
+                    h.resume();
+                }).detach();
+            }
+            inline void await_resume() const { }
+        };
+
+    public:
+        MachineContext(
+            std::string name_of_this,
+            send_msg_fn_t send_msg);
     };
 
 private:
+    OneShot<bool>::Read send_message_req(std::string to, Message&& msg);
     template <Pollable<MachineContext> T>
-    inline void register_actor(T* pollable)
+    inline void register_actor(std::string with_name, T* pollable)
     {
-        MachineContext mctx(&this->msgq);
+        using namespace std::placeholders;
+        MachineContext mctx(with_name,
+            std::bind(&MachineGraph::send_message_req, this, _1, _2));
         std::println("poll");
         std::flush(std::cout);
         auto act = pollable->poll(mctx);
@@ -92,7 +234,7 @@ public:
         }
         named_connections[name] = conn.get();
         connections.push_back(conn);
-        register_actor(conn.get());
+        register_actor(name, conn.get());
         return conn.get();
     }
     template <std::derived_from<Component> T, typename... Args>
@@ -108,14 +250,16 @@ public:
         if (named_components.contains(name)) {
             throw std::runtime_error("Component already exists");
         }
-        // std::shared_ptr<Component> comp2 = comp;
         named_components[name] = comp.get();
         components.push_back(comp);
-        register_actor(comp.get());
+        register_actor(name, comp.get());
         return comp.get();
     }
 
     void poll_all();
+
+private:
+    void deliver_messages();
 };
 }
 

@@ -4,6 +4,8 @@
 #include "machine/MachineGraph.hpp"
 #include <string>
 namespace machine {
+
+
 class Component {
 protected:
     const std::string name { };
