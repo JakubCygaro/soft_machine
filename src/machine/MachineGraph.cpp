@@ -6,7 +6,11 @@ void MachineGraph::deliver_messages()
     for (auto i = msgq.size(); i > 0; i--) {
         auto p = std::move(msgq.front());
         msgq.pop_front();
+        if(named_connections.contains(p.recipent)){
+            auto* from = named_connections[p.sender];
+            auto* to = named_connections[p.sender];
 
+        }
     }
 }
 void MachineGraph::poll_all()
@@ -25,11 +29,13 @@ void MachineGraph::poll_all()
     }
 }
 OneShot<bool>::Read MachineGraph::send_message_req(
+    std::string from,
     std::string to,
     Message&& msg)
 {
     auto [r, w] = OneShot<bool>::create();
     msgq.push_back(MessageRequest {
+        .sender = from,
         .recipent = to,
         .payload = std::move(msg),
         .notify = std::move(w) });

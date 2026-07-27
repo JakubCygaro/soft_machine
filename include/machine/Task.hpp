@@ -60,11 +60,6 @@ public:
     {
         return true;
     }
-    inline bool await_suspend(handle_t h)
-    {
-        (void)h;
-        return false;
-    }
     inline return_t await_resume()
     {
         return resume();
@@ -99,6 +94,13 @@ public:
         }
         std::optional<return_t> current_value;
     };
+    inline bool await_suspend(handle_t h)
+    {
+        //TODO:
+        m_couroutine.promise().return_value(123);
+        h.resume();
+        return false;
+    }
 };
 }
 #endif

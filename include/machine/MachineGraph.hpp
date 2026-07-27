@@ -117,6 +117,7 @@ private:
     std::deque<Connection*> connq { };
 
     struct MessageRequest {
+        std::string sender;
         std::string recipent;
         Message payload;
         OneShot<bool>::Write notify;
@@ -175,6 +176,8 @@ public:
             Send(const Send&) = delete;
             Send operator=(const Send&) = delete;
             friend Send MachineContext::send(std::string, Message&&);
+
+        public:
             inline bool await_ready() const { return false; }
             inline void await_suspend(std::coroutine_handle<> h) const
             {
@@ -193,13 +196,16 @@ public:
     };
 
 private:
-    OneShot<bool>::Read send_message_req(std::string to, Message&& msg);
+    OneShot<bool>::Read send_message_req(
+        std::string from,
+        std::string to,
+        Message&& msg);
     template <Pollable<MachineContext> T>
     inline void register_actor(std::string with_name, T* pollable)
     {
         using namespace std::placeholders;
         MachineContext mctx(with_name,
-            std::bind(&MachineGraph::send_message_req, this, _1, _2));
+            std::bind(&MachineGraph::send_message_req, this, _1, _2, _3));
         std::println("poll");
         std::flush(std::cout);
         auto act = pollable->poll(mctx);
