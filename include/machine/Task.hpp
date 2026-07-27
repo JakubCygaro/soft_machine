@@ -96,7 +96,8 @@ public:
     };
     inline bool await_suspend(handle_t h)
     {
-        //TODO:
+        //TODO: you can set the return value for await_return
+        // in await_suspend and then just resume the handle
         m_couroutine.promise().return_value(123);
         h.resume();
         return false;
