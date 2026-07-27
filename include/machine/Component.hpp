@@ -9,12 +9,10 @@ protected:
     const std::string name { };
 
 public:
-    std::deque<Message> msgq { };
-
-    explicit Component(std::string name);
+    Component(std::string name);
     virtual ~Component();
     const std::string& get_name() const;
-    virtual actor::Actor<void> poll(MachineGraph::MachineContext ctx) = 0;
+    virtual actor::Actor poll(MachineGraph::MachineContext ctx) = 0;
 };
 
 }

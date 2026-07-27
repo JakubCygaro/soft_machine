@@ -8,11 +8,12 @@ private:
     Component *start { }, *end { };
 
 public:
-    explicit Connection(Component* start, Component* end);
+    Connection(Component* start, Component* end);
+    Connection() = delete;
     virtual ~Connection();
     const Component* get_start() const;
     const Component* get_end() const;
-    virtual actor::Actor<void> poll(MachineGraph::MachineContext ctx) = 0;
+    virtual actor::Actor poll(MachineGraph::MachineContext ctx) = 0;
 };
 
 }
