@@ -1,6 +1,8 @@
 #ifndef MACHINE_GRAPH_HPP
 #define MACHINE_GRAPH_HPP
 #include "machine/Actor.hpp"
+#include "machine/Component.hpp"
+#include "machine/Connection.hpp"
 #include "machine/MachineContext.hpp"
 #include "machine/Message.hpp"
 #include "machine/Scheduler.hpp"
@@ -14,16 +16,7 @@
 #include <utility>
 
 namespace machine {
-class Component;
-class Connection;
-class Awaitable;
-
 class MachineContext;
-
-class Pollable {
-public:
-    virtual actor::Actor poll(MachineContext) = 0;
-};
 
 class MachineGraph : public shed::Scheduler {
 private:
@@ -75,7 +68,7 @@ public:
         Args&&... ctor_args)
     {
         if (m_named_conns.contains(name)) {
-            throw std::runtime_error("Connection already exists");
+            throw std::runtime_error("connection already exists");
         }
         if (!m_named_comps.contains(from))
             throw std::runtime_error("from component does not exist");
@@ -86,10 +79,20 @@ public:
         auto* to_ptr = m_named_comps[to];
         std::shared_ptr<T> conn = nullptr;
         if constexpr (sizeof...(ctor_args) > 0) {
-            conn = std::make_shared<T>(from_ptr, to_ptr, from, to, std::forward<Args>(ctor_args)...);
+            conn = std::make_shared<T>(from_ptr,
+                to_ptr,
+                from,
+                to,
+                std::forward<Args>(ctor_args)...);
         } else {
             conn = std::make_shared<T>(from_ptr, to_ptr, from, to);
         }
+        auto [d1, c1] = conn->on_connecting_to_start();
+        c1(
+            from_ptr->on_incoming_connection(name, conn.get(), d1));
+        auto [d2, c2] = conn->on_connecting_to_end();
+        c2(
+            to_ptr->on_outcoming_connection(name, conn.get(), d2));
         m_named_conns[name] = conn.get();
         m_conns.push_back(conn);
         register_actor(name, conn.get());
@@ -106,7 +109,7 @@ public:
         }
         const auto name = comp->get_name();
         if (m_named_comps.contains(name)) {
-            throw std::runtime_error("Component already exists");
+            throw std::runtime_error("component already exists");
         }
         m_named_comps[name] = comp.get();
         m_comps.push_back(comp);
