@@ -86,9 +86,9 @@ public:
         auto* to_ptr = m_named_comps[to];
         std::shared_ptr<T> conn = nullptr;
         if constexpr (sizeof...(ctor_args) > 0) {
-            conn = std::make_shared<T>(from_ptr, to_ptr, std::forward<Args>(ctor_args)...);
+            conn = std::make_shared<T>(from_ptr, to_ptr, from, to, std::forward<Args>(ctor_args)...);
         } else {
-            conn = std::make_shared<T>(from_ptr, to_ptr);
+            conn = std::make_shared<T>(from_ptr, to_ptr, from, to);
         }
         m_named_conns[name] = conn.get();
         m_conns.push_back(conn);

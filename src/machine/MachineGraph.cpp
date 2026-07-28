@@ -1,5 +1,4 @@
 #include "machine/MachineGraph.hpp"
-#include <print>
 namespace machine {
 using ahandle_t = machine::actor::Actor::handle_t;
 void MachineGraph::deliver_messages()
@@ -7,8 +6,8 @@ void MachineGraph::deliver_messages()
     for (auto i = m_msgq.size(); i > 0; i--) {
         auto ms = std::move(m_msgq.front());
         m_msgq.pop_front();
-        if (m_recipents.contains(ms.recipent)){
-            m_recipents[ms.recipent](std::move(ms.payload));
+        if (m_recipents.contains(ms.recipent)) {
+            m_recipents[ms.recipent](ms.sender, std::move(ms.payload));
             m_recipents.erase(ms.recipent);
             ms.callback();
         } else {
@@ -20,7 +19,6 @@ void MachineGraph::poll_all()
 {
     static bool once;
     if (!once) {
-        std::println("initializing actors");
         for (auto& proc : m_procs) {
             proc.actor.resume();
         }

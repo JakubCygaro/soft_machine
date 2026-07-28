@@ -3,7 +3,6 @@
 #include "machine/Connection.hpp"
 #include "machine/MachineGraph.hpp"
 #include <any>
-#include <print>
 #include <iostream>
 #include <print>
 #include <string>
@@ -15,9 +14,13 @@ struct Packet {
 };
 
 class Passthrough : public machine::Connection {
+private:
 public:
-    Passthrough(machine::Component* a, machine::Component* b)
-        : machine::Connection(a, b)
+    Passthrough(machine::Component* a,
+        machine::Component* b,
+        std::string in,
+        std::string out)
+        : machine::Connection(a, b, in, out)
     {
     }
     virtual ~Passthrough() { }
@@ -25,8 +28,8 @@ public:
     poll(machine::Mctx ctx) override
     {
         while (true) {
-            auto m = co_await ctx.recv();
-            co_await ctx.send("recv", std::move(m));
+            auto [_, m] = co_await ctx.recv();
+            co_await ctx.send(out, std::move(m));
         }
     }
 };
@@ -46,9 +49,16 @@ public:
         std::flush(std::cout);
         co_await ctx.send("s->r",
             std::string("Siema eniu"));
-        std::println("{} came back from pause ", this->name);
+        std::println("{} came back from pause, now will wait for response",
+            this->name);
         std::flush(std::cout);
-        while(true) co_await ctx.pause();
+        auto [_, resp] = co_await ctx.recv();
+        std::println("{} got response {}",
+            this->name,
+            std::any_cast<std::string>(resp));
+        std::flush(std::cout);
+        while (true)
+            co_await ctx.pause();
     }
 };
 class Receiver : public machine::Component {
@@ -62,29 +72,32 @@ public:
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
-        auto m = co_await ctx.recv();
+        auto [_, m] = co_await ctx.recv();
         auto s = std::any_cast<std::string>(m);
         std::println("{} got message {} ", this->name, s);
+        std::println("{} sending response", this->name);
+        co_await ctx.send("r->s", std::string("Eniu siema"));
         std::flush(std::cout);
-        while(true) co_await ctx.pause();
+        while (true)
+            co_await ctx.pause();
     }
 };
 int main(void)
 {
     auto m = machine::MachineGraph();
-    m.create_component<Sender>("send");
-    m.create_component<Receiver>("recv");
+    auto s = m.create_component<Sender>("send");
+    auto r = m.create_component<Receiver>("recv");
     m.create_connection<Passthrough>(
         "s->r",
-        "send",
-        "recv");
+        s->get_name(),
+        r->get_name());
+    m.create_connection<Passthrough>(
+        "r->s",
+        r->get_name(),
+        s->get_name());
     m.poll_all();
     m.poll_all();
     m.poll_all();
     m.poll_all();
     m.poll_all();
-    // while(true){
-    //     std::string l_;
-    //     std::getline(std::cin, l_);
-    // }
 }

@@ -4,6 +4,7 @@
 #include "machine/Message.hpp"
 #include "machine/Scheduler.hpp"
 #include <string>
+#include <utility>
 namespace machine {
 
 class MachineContext {
@@ -113,6 +114,7 @@ public:
     private:
         shd* m_s { };
         std::string m_reciever { };
+        std::string m_sender;
         message_t m_msg;
         inline Recv(
             shd* s,
@@ -145,15 +147,19 @@ public:
         inline bool await_ready() { return false; }
         inline void await_suspend(actor::Actor::handle_t h)
         {
-            const auto on_recv = [h, this](message_t&& msg) {
-                this->m_msg = msg;
+            const auto on_recv = [h, this](std::string snd, message_t&& msg) {
+                this->m_msg = std::move(msg);
+                this->m_sender = snd;
                 m_s->pause(h);
             };
             m_s->recv(
                 m_reciever,
                 on_recv);
         }
-        inline message_t await_resume() { return m_msg; }
+        inline std::tuple<std::string, message_t> await_resume()
+        {
+            return std::make_tuple(m_sender, m_msg);
+        }
     };
     Recv recv();
 };

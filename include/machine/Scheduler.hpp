@@ -15,7 +15,8 @@ public:
         std::string recipent,
         message_t,
         send_callback_t) = 0;
-    using recv_callback_t = std::function<void(message_t&&)>;
+    // the sender of the message and the message
+    using recv_callback_t = std::function<void(std::string, message_t&&)>;
     virtual void recv(
         std::string who,
         recv_callback_t) = 0;
