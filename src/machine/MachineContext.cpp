@@ -1,32 +1,23 @@
-#include "machine/MachineGraph.hpp"
+#include "machine/MachineContext.hpp"
+#include "machine/Scheduler.hpp"
+#include <utility>
 namespace machine {
-MachineGraph::MachineContext::MachineContext(
-    std::string name_of_this,
-    send_msg_fn_t send_msg)
-    : name_of_this { name_of_this }
-    , send_msg_fn { send_msg }
-
+MachineContext::MachineContext(std::string name_of_this, shed::Scheduler* s)
+    : m_name_of_this { name_of_this }
+    , m_sched { s }
 {
 }
-// void MachineGraph::MachineContext::send_message(Message&& m)
-// {
-//     msgq->push_back(std::move(m));
-// }
-MachineGraph::MachineContext::Pause MachineGraph::MachineContext::pause()
+MachineContext::Pause MachineContext::pause() const
 {
-    return MachineGraph::MachineContext::Pause { };
+    return Pause(this->m_sched);
 }
 
-MachineGraph::MachineContext::Send
-MachineGraph::MachineContext::send(
-    std::string to,
-    Message&& m)
+MachineContext::Send MachineContext::send(std::string recipent, message_t&& msg)
 {
-    auto r = this->send_msg_fn(name_of_this, to, std::move(m));
-    return MachineGraph::MachineContext::Send {
-        to,
-        std::move(m),
-        std::move(r),
-    };
+    return Send(this->m_sched, this->m_name_of_this, recipent, std::move(msg));
+}
+MachineContext::Recv MachineContext::recv()
+{
+    return Recv(this->m_sched, this->m_name_of_this);
 }
 }

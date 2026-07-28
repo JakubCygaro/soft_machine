@@ -1,7 +1,7 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
-#include <algorithm>
 #include <coroutine>
+#include <utility>
 namespace machine::actor {
 struct Actor {
 public:
