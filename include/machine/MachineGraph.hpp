@@ -39,18 +39,50 @@ private:
         std::string name;
         actor::Actor actor;
         Pollable* pollable;
+        inline Process(
+            std::string name,
+            actor::Actor&& actor,
+            Pollable* pollable)
+            : name { name }
+            , actor { std::move(actor) }
+            , pollable { pollable }
+        {
+        }
+        inline Process(const Process&) = delete;
+        inline Process& operator=(const Process&) = delete;
+        inline Process(Process&& o)
+            : name { o.name }
+            , actor { std::move(o.actor) }
+            , pollable { o.pollable }
+        {
+            o.pollable = nullptr;
+        }
+        inline Process& operator=(Process&& o)
+        {
+            name = o.name;
+            actor = std::move(o.actor);
+            pollable = o.pollable;
+            o.pollable = nullptr;
+            return *this;
+        }
     };
 
     std::deque<Process> m_procs { };
     std::deque<actor::Actor::handle_t> m_scheduled { };
 
-public:
+private:
     MachineGraph();
+
+public:
+    inline static MachineGraph* create()
+    {
+        return new MachineGraph();
+    }
     MachineGraph(const MachineGraph&) = delete;
     MachineGraph& operator=(const MachineGraph&) = delete;
     MachineGraph(MachineGraph&&);
     MachineGraph& operator=(MachineGraph&&);
-    ~MachineGraph();
+    virtual ~MachineGraph();
 
 private:
     template <std::derived_from<Pollable> T>
@@ -60,10 +92,10 @@ private:
         MachineContext mctx = MachineContext(with_name, this);
         auto act = pollable->poll(mctx);
         this->m_procs.push_back(
-            Process {
-                .name = with_name,
-                .actor = std::move(act),
-                .pollable = pollable });
+            Process(
+                with_name,
+                std::move(act),
+                pollable));
     }
 
 public:
