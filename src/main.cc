@@ -1,3 +1,5 @@
+#include "components/GameGraphElements.hpp"
+#include "game/Scene.hpp"
 #include "machine/Actor.hpp"
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
@@ -5,6 +7,7 @@
 #include <any>
 #include <iostream>
 #include <print>
+#include <raylib.h>
 #include <string>
 
 struct Packet {
@@ -13,15 +16,19 @@ struct Packet {
     std::any payload;
 };
 
-class Passthrough : public machine::Connection {
+class Passthrough : public components::OConnection {
 private:
 public:
     Passthrough(machine::Component* a,
         machine::Component* b,
         std::string in,
         std::string out)
-        : machine::Connection(a, b, in, out)
+        : components::OConnection(a, b, in, out)
     {
+    }
+    virtual void draw() override
+    {
+        ::DrawLineEx(m_start_pos, m_end_pos, 5.f, ::BLACK);
     }
     virtual ~Passthrough() { }
     virtual machine::actor::Actor
@@ -34,14 +41,31 @@ public:
     }
 };
 
-class Sender : public machine::Component {
+class Sender : public components::OComponent {
 public:
     Sender(std::string name)
-        : machine::Component(name)
+        : components::OComponent(name)
     {
+        m_bounds = {
+            .x = 10,
+            .y = 10,
+            .width = 10,
+            .height = 10,
+        };
     }
     Sender() = delete;
     virtual ~Sender() { }
+    virtual void draw() override
+    {
+        ::DrawRectangleRec(m_bounds, ::RED);
+        ::DrawTextEx(
+            ::GetFontDefault(),
+            name.c_str(),
+            get_pos(),
+            10,
+            5,
+            ::BLACK);
+    }
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
@@ -61,14 +85,31 @@ public:
             co_await ctx.pause();
     }
 };
-class Receiver : public machine::Component {
+class Receiver : public components::OComponent {
 public:
     Receiver(std::string name)
-        : machine::Component(name)
+        : components::OComponent(name)
     {
+        m_bounds = {
+            .x = -10,
+            .y = -10,
+            .width = 10,
+            .height = 10,
+        };
     }
     Receiver() = delete;
     virtual ~Receiver() { }
+    virtual void draw() override
+    {
+        ::DrawRectangleRec(m_bounds, ::RED);
+        ::DrawTextEx(
+            ::GetFontDefault(),
+            name.c_str(),
+            get_pos(),
+            10,
+            5,
+            ::GREEN);
+    }
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
@@ -95,9 +136,19 @@ int main(void)
         "r->s",
         r->get_name(),
         s->get_name());
+    auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });
+    ::InitWindow(800, 600, "Soft Machine");
+    ::SetTargetFPS(60);
+    while (!::WindowShouldClose()) {
+        scene.update();
+        ::BeginDrawing();
+        scene.draw();
+        ::EndDrawing();
+    }
+    ::CloseWindow();
     m.poll_all();
-    m.poll_all();
-    m.poll_all();
-    m.poll_all();
-    m.poll_all();
+    // m.poll_all();
+    // m.poll_all();
+    // m.poll_all();
+    // m.poll_all();
 }

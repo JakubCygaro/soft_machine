@@ -8,9 +8,51 @@ namespace components {
 class OComponent : public machine::Component, public game::Object {
 protected:
     ::Rectangle m_bounds { };
+
+public:
+    inline OComponent(std::string name)
+        : machine::Component(name)
+    {
+    }
+    inline ::Vector2 get_pos() const
+    {
+        return ::Vector2 { .x = m_bounds.x, .y = m_bounds.y };
+    }
+    virtual inline void set_pos(::Vector2 p)
+    {
+        this->m_bounds.x = p.x;
+        this->m_bounds.y = p.y;
+    }
+    inline ::Vector2 get_size() const
+    {
+        return ::Vector2 { .x = m_bounds.width, .y = m_bounds.height };
+    }
+    inline ::Rectangle get_bounds() const
+    {
+        return m_bounds;
+    }
+    inline ::Vector2 get_center() const
+    {
+        return { m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height / 2 };
+    }
 };
 class OConnection : public machine::Connection, public game::Object {
 protected:
     ::Vector2 m_start_pos { }, m_end_pos { };
+
+public:
+    inline OConnection(machine::Component* start,
+        machine::Component* end,
+        std::string in,
+        std::string out)
+        : machine::Connection(start, end, in, out)
+    {
+        if (auto s = dynamic_cast<OComponent*>(start)) {
+            m_start_pos = s->get_center();
+        }
+        if (auto e = dynamic_cast<OComponent*>(end)) {
+            m_end_pos = e->get_center();
+        }
+    }
 };
 }

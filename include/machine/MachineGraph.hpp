@@ -45,6 +45,13 @@ private:
     std::deque<actor::Actor::handle_t> m_scheduled { };
 
 public:
+    MachineGraph();
+    MachineGraph(const MachineGraph&) = delete;
+    MachineGraph& operator=(const MachineGraph&) = delete;
+    MachineGraph(MachineGraph&&);
+    MachineGraph& operator=(MachineGraph&&);
+    ~MachineGraph();
+
 private:
     template <std::derived_from<Pollable> T>
     inline void register_actor(std::string with_name, T* pollable)
@@ -117,12 +124,35 @@ public:
         return comp.get();
     }
 
-    void poll_all();
-
 private:
     void deliver_messages();
     bool is_connector(const std::string&) const;
     bool is_component(const std::string&) const;
+
+public:
+    void poll_all();
+
+    using comp_ref = const std::list<std::shared_ptr<Component>>&;
+    using conn_ref = const std::list<std::shared_ptr<Connection>>&;
+
+    comp_ref get_components() const;
+    conn_ref get_connections() const;
+    inline auto get_components_begin() -> auto
+    {
+        return this->m_comps.begin();
+    }
+    inline auto get_components_end() -> auto
+    {
+        return this->m_comps.end();
+    }
+    inline auto get_connections_begin() -> auto
+    {
+        return this->m_conns.begin();
+    }
+    inline auto get_connections_end() -> auto
+    {
+        return this->m_conns.end();
+    }
 
     // As Scheduler
 public:

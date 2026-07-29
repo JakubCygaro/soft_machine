@@ -64,6 +64,7 @@ add_executable(soft_machine
     ${CMAKE_SOURCE_DIR}/src/machine/Connection.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/MachineContext.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/MachineGraph.cpp
+    ${CMAKE_SOURCE_DIR}/src/game/scene.cc
 )
 target_link_libraries(soft_machine
     PRIVATE cppfeatures

@@ -10,7 +10,6 @@
 #include <utility>
 namespace machine {
 
-
 class MachineContext {
     friend class MachineGraph;
     using shd = shed::Scheduler;

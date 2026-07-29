@@ -3,6 +3,33 @@
 namespace machine {
 using ahandle_t = machine::actor::Actor::handle_t;
 
+MachineGraph::MachineGraph() { }
+MachineGraph::MachineGraph(MachineGraph&& o)
+    : m_comps { std::move(o.m_comps) }
+    , m_named_comps { std::move(o.m_named_comps) }
+    , m_conns { std::move(o.m_conns) }
+    , m_named_conns { std::move(o.m_named_conns) }
+    , m_msgq { std::move(o.m_msgq) }
+    , m_waiting { std::move(o.m_waiting) }
+    , m_procs { std::move(o.m_procs) }
+    , m_scheduled { std::move(o.m_scheduled) }
+{
+}
+MachineGraph& MachineGraph::operator=(MachineGraph&& o)
+{
+    m_comps = std::move(o.m_comps);
+    m_named_comps = std::move(o.m_named_comps);
+    m_conns = std::move(o.m_conns);
+    m_named_conns = std::move(o.m_named_conns);
+    m_msgq = std::move(o.m_msgq);
+    m_waiting = std::move(o.m_waiting);
+    m_procs = std::move(o.m_procs);
+    m_scheduled = std::move(o.m_scheduled);
+    return *this;
+}
+MachineGraph::~MachineGraph()
+{
+}
 bool MachineGraph::is_connector(const std::string& n) const
 {
     return m_named_conns.contains(n);
@@ -31,16 +58,16 @@ void MachineGraph::deliver_messages()
                 std::runtime_error("attempted to message another connector directly"));
             continue;
         }
-        Connection* conn{};
-        Component* comp{};
-        if(is_connector(ms.recipent)){
+        Connection* conn { };
+        Component* comp { };
+        if (is_connector(ms.recipent)) {
             conn = m_named_conns[ms.recipent];
             comp = m_named_comps[ms.sender];
         } else {
             conn = m_named_conns[ms.sender];
             comp = m_named_comps[ms.recipent];
         }
-        if(conn->get_end() != comp && conn->get_start() != comp){
+        if (conn->get_end() != comp && conn->get_start() != comp) {
             ms.sender_callback(
                 std::runtime_error("reciever is not connected to this element"));
             continue;
@@ -68,6 +95,14 @@ void MachineGraph::poll_all()
         scheduled.pop_front();
         h.resume();
     }
+}
+MachineGraph::comp_ref MachineGraph::get_components() const
+{
+    return this->m_comps;
+}
+MachineGraph::conn_ref MachineGraph::get_connections() const
+{
+    return this->m_conns;
 }
 void MachineGraph::pause(ahandle_t h)
 {
