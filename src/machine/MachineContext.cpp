@@ -1,6 +1,5 @@
 #include "machine/MachineContext.hpp"
 #include "machine/Scheduler.hpp"
-#include <any>
 #include <utility>
 namespace machine {
 MachineContext::MachineContext(std::string name_of_this, shed::Scheduler* s)

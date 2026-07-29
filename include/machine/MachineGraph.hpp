@@ -29,11 +29,11 @@ private:
         std::string sender;
         std::string recipent;
         message_t payload;
-        send_callback_t callback;
+        shed::send_callback_t sender_callback;
     };
     std::deque<MessageSent> m_msgq { };
 
-    std::unordered_map<std::string, recv_callback_t> m_recipents { };
+    std::unordered_map<std::string, shed::recv_callback_t> m_waiting { };
 
     struct Process {
         std::string name;
@@ -121,6 +121,8 @@ public:
 
 private:
     void deliver_messages();
+    bool is_connector(const std::string&) const;
+    bool is_component(const std::string&) const;
 
     // As Scheduler
 public:
@@ -129,10 +131,10 @@ public:
         std::string sender,
         std::string recipent,
         message_t,
-        send_callback_t) override;
+        shed::send_callback_t) override;
     virtual void recv(
         std::string who,
-        recv_callback_t) override;
+        shed::recv_callback_t) override;
 };
 }
 

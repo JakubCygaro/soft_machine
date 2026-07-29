@@ -1,18 +1,53 @@
 #include "machine/MachineGraph.hpp"
+#include <optional>
 namespace machine {
 using ahandle_t = machine::actor::Actor::handle_t;
+
+bool MachineGraph::is_connector(const std::string& n) const
+{
+    return m_named_conns.contains(n);
+}
+bool MachineGraph::is_component(const std::string& n) const
+{
+    return m_named_comps.contains(n);
+}
 void MachineGraph::deliver_messages()
 {
     for (auto i = m_msgq.size(); i > 0; i--) {
         auto ms = std::move(m_msgq.front());
         m_msgq.pop_front();
-        if (m_recipents.contains(ms.recipent)) {
-            m_recipents[ms.recipent](ms.sender, std::move(ms.payload));
-            m_recipents.erase(ms.recipent);
-            ms.callback();
-        } else {
+        if (!m_waiting.contains(ms.recipent)) {
             m_msgq.push_back(std::move(ms));
+            continue;
         }
+        // cannot send from comp to comp
+        if (is_component(ms.recipent) && is_component(ms.sender)) {
+            ms.sender_callback(
+                std::runtime_error("attempted to message another component directly"));
+            continue;
+        }
+        if (is_connector(ms.recipent) && is_connector(ms.sender)) {
+            ms.sender_callback(
+                std::runtime_error("attempted to message another connector directly"));
+            continue;
+        }
+        Connection* conn{};
+        Component* comp{};
+        if(is_connector(ms.recipent)){
+            conn = m_named_conns[ms.recipent];
+            comp = m_named_comps[ms.sender];
+        } else {
+            conn = m_named_conns[ms.sender];
+            comp = m_named_comps[ms.recipent];
+        }
+        if(conn->get_end() != comp && conn->get_start() != comp){
+            ms.sender_callback(
+                std::runtime_error("reciever is not connected to this element"));
+            continue;
+        }
+        m_waiting[ms.recipent](ms.sender, std::move(ms.payload));
+        m_waiting.erase(ms.recipent);
+        ms.sender_callback(std::nullopt);
     }
 }
 void MachineGraph::poll_all()
@@ -42,38 +77,19 @@ void MachineGraph::send(
     std::string sender,
     std::string recipent,
     message_t msg,
-    send_callback_t c)
+    shed::send_callback_t c)
 {
     m_msgq.push_back(
         MessageSent {
             .sender = sender,
             .recipent = recipent,
             .payload = std::move(msg),
-            .callback = c });
+            .sender_callback = c });
 }
 void MachineGraph::recv(
     std::string who,
-    recv_callback_t c)
+    shed::recv_callback_t c)
 {
-    m_recipents[who] = c;
+    m_waiting[who] = c;
 }
-// OneShot<bool>::Read MachineGraph::send_message_req(
-//     std::string from,
-//     std::string to,
-//     Message&& msg)
-// {
-//     auto [r, w] = OneShot<bool>::create();
-//     m_msgq.push_back(MessageRequest {
-//         .sender = from,
-//         .recipent = to,
-//         .payload = std::move(msg),
-//         .notify = std::move(w) });
-//     return std::move(r);
-// }
-// OneShot<Message>::Read MachineGraph::recv_message_req(std::string who)
-// {
-//     auto [r, w] = OneShot<Message>::create();
-//     m_msg_recipents.emplace(who, std::move(w));
-//     return std::move(r);
-// }
 }
