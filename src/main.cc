@@ -19,6 +19,8 @@ struct Packet {
 
 class Passthrough : public components::OConnection {
 private:
+    ::Color m_color { ::BLACK };
+
 public:
     Passthrough(machine::Component* a,
         machine::Component* b,
@@ -29,24 +31,28 @@ public:
     }
     virtual void draw() override
     {
-        ::DrawLineBezier(m_start_pos, m_end_pos, 5.f, ::BLACK);
+        ::DrawLineBezier(m_start_pos, m_end_pos, 5.f, m_color);
     }
     virtual ~Passthrough() { }
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
-        std::println("passt entered");
         while (true) {
+            m_color = ::BLACK;
             auto [s, m] = co_await ctx.recv();
             if (s == in)
                 co_await ctx.send(out, std::move(m));
             else if (s == out)
                 co_await ctx.send(in, std::move(m));
+            m_color = ::RED;
+            co_await ctx.pause();
         }
     }
 };
 
 class Sender : public components::OComponent {
+    ::Color m_color { ::LIME };
+
 public:
     Sender(std::string name)
         : components::OComponent(name)
@@ -62,7 +68,7 @@ public:
     virtual ~Sender() { }
     virtual void draw() override
     {
-        ::DrawRectangleRec(m_bounds, ::RED);
+        ::DrawRectangleRec(m_bounds, m_color);
         ::DrawTextEx(
             ::GetFontDefault(),
             name.c_str(),
@@ -74,12 +80,13 @@ public:
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
-        std::println("{} entered", this->name);
         std::flush(std::cout);
+        m_color = ::GREEN;
         co_await ctx.send("passt",
             std::string("Siema eniu"));
         std::println("{} came back from pause, now will wait for response",
             this->name);
+        m_color = ::LIME;
         std::flush(std::cout);
         auto [_, resp] = co_await ctx.recv();
         std::println("{} got response {}",
@@ -91,6 +98,8 @@ public:
     }
 };
 class Receiver : public components::OComponent {
+    ::Color m_color { ::ORANGE };
+
 public:
     Receiver(std::string name)
         : components::OComponent(name)
@@ -106,24 +115,26 @@ public:
     virtual ~Receiver() { }
     virtual void draw() override
     {
-        ::DrawRectangleRec(m_bounds, ::RED);
+        ::DrawRectangleRec(m_bounds, m_color);
         ::DrawTextEx(
             ::GetFontDefault(),
             name.c_str(),
             get_pos(),
             10,
             5,
-            ::GREEN);
+            ::BLACK);
     }
     virtual machine::actor::Actor
     poll(machine::Mctx ctx) override
     {
         std::println("{} entered", this->name);
         auto [_, m] = co_await ctx.recv();
+        m_color = ::RED;
         auto s = std::any_cast<std::string>(m);
         std::println("{} got message {} ", this->name, s);
         std::println("{} sending response", this->name);
         co_await ctx.send("passt", std::string("Eniu siema"));
+        m_color = ::ORANGE;
         std::flush(std::cout);
         while (true)
             co_await ctx.pause();
