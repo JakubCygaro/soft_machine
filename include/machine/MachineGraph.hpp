@@ -24,6 +24,7 @@ private:
     std::unordered_map<std::string, Component*> m_named_comps { };
     std::list<std::shared_ptr<Connection>> m_conns { };
     std::unordered_map<std::string, Connection*> m_named_conns { };
+    std::unordered_map<Component*, std::vector<Connection*>> m_incidents { };
 
     struct MessageSent {
         std::string sender;
@@ -133,6 +134,16 @@ public:
         c2(
             to_ptr->on_outcoming_connection(name, conn.get(), d2));
         m_named_conns[name] = conn.get();
+        if (!m_incidents.contains(from_ptr)) {
+            m_incidents[from_ptr] = { conn.get() };
+        } else {
+            m_incidents[from_ptr].push_back(conn.get());
+        }
+        if (!m_incidents.contains(to_ptr)) {
+            m_incidents[to_ptr] = { conn.get() };
+        } else {
+            m_incidents[to_ptr].push_back(conn.get());
+        }
         m_conns.push_back(conn);
         register_actor(name, conn.get());
         return conn.get();
@@ -163,6 +174,10 @@ private:
 
 public:
     void poll_all();
+    std::optional<const std::vector<Connection*>*>
+    get_incident_to(const std::string&) const;
+    std::optional<std::vector<const Component*>>
+    get_adjecent_to(const std::string&) const;
 
     using comp_ref = const std::list<std::shared_ptr<Component>>&;
     using conn_ref = const std::list<std::shared_ptr<Connection>>&;

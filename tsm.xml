@@ -1,0 +1,37 @@
+<graph>
+    <memory name="MEM">
+        <memset>
+            1 2 3 4 5
+        </memset>
+    </memory>
+    <passthrough name="CPU-MEM" from="MEM" to="CPU"/>
+    <cpu name="CPU">
+        <code>
+            <on name="TRIG-CPU"/>
+            <load from="CPU-MEM" into="R0" at="1"/>
+            <add dest="R0" src="2"/>
+            <send from="R0" on="CPU-OTHER"/>
+            <restart/>
+        </code>
+    </cpu>
+    <passthrough name="TRIG-CPU" from="TRIG"/>
+    <passthrough name="CPU-OTHER">
+        <start name="CPU"/>
+        <end name="OTHER"/>
+    </passthrough>
+    <custom>
+        <state>
+            (def text "Hello, world!")
+        </state>
+        <logic>
+            (send
+                :to "SOME-NODE"
+                :msg text)
+            (let (
+                sender-msg (recv))
+            (
+                (display (second sender-msg))
+            ))
+        </logic>
+    </custom>
+</graph>

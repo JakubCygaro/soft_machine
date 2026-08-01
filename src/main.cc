@@ -1,10 +1,10 @@
 #include "components/GameGraphElements.hpp"
-#include "game/Scene.hpp"
 #include "machine/Actor.hpp"
-#include "machine/Component.hpp"
-#include "machine/Connection.hpp"
 #include "machine/MachineGraph.hpp"
+#include "game/Scene.hpp"
+#include "game/Xml.hpp"
 #include <any>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <print>
@@ -15,39 +15,6 @@ struct Packet {
     std::string sender;
     std::string recipent;
     std::any payload;
-};
-
-class Passthrough : public components::OConnection {
-private:
-    ::Color m_color { ::BLACK };
-
-public:
-    Passthrough(machine::Component* a,
-        machine::Component* b,
-        std::string in,
-        std::string out)
-        : components::OConnection(a, b, in, out)
-    {
-    }
-    virtual void draw() override
-    {
-        ::DrawLineBezier(m_start_pos, m_end_pos, 5.f, m_color);
-    }
-    virtual ~Passthrough() { }
-    virtual machine::actor::Actor
-    poll(machine::Mctx ctx) override
-    {
-        while (true) {
-            m_color = ::BLACK;
-            auto [s, m] = co_await ctx.recv();
-            if (s == in)
-                co_await ctx.send(out, std::move(m));
-            else if (s == out)
-                co_await ctx.send(in, std::move(m));
-            m_color = ::RED;
-            co_await ctx.pause();
-        }
-    }
 };
 
 class Sender : public components::OComponent {
@@ -144,12 +111,15 @@ int main(void)
 {
     auto m = std::unique_ptr<machine::MachineGraph>(
         machine::MachineGraph::create());
-    auto s = m->create_component<Sender>("send");
-    auto r = m->create_component<Receiver>("recv");
-    m->create_connection<Passthrough>(
-        "passt",
-        s->get_name(),
-        r->get_name());
+    // auto s = m->create_component<Sender>("send");
+    // auto r = m->create_component<Receiver>("recv");
+    // m->create_connection<components::Passthrough>(
+    //     "passt",
+    //     s->get_name(),
+    //     r->get_name());
+    std::string xml;
+    std::ifstream("./tsm.xml") >> xml;
+    game::populate_machine_from_xml(*m, xml);
     auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });
     ::InitWindow(800, 600, "Soft Machine");
     ::SetTargetFPS(60);

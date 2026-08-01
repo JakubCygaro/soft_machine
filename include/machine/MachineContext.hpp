@@ -2,7 +2,7 @@
 #define MACHINE_CONTEXT_HPP
 #include "machine/Actor.hpp"
 #include "machine/Message.hpp"
-#include "machine/Result.hpp"
+#include "common/Result.hpp"
 #include "machine/Scheduler.hpp"
 #include <any>
 #include <stdexcept>

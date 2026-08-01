@@ -9,6 +9,7 @@ MachineGraph::MachineGraph(MachineGraph&& o)
     , m_named_comps { std::move(o.m_named_comps) }
     , m_conns { std::move(o.m_conns) }
     , m_named_conns { std::move(o.m_named_conns) }
+    , m_incidents { std::move(o.m_incidents) }
     , m_msgq { std::move(o.m_msgq) }
     , m_waiting { std::move(o.m_waiting) }
     , m_procs { std::move(o.m_procs) }
@@ -25,6 +26,7 @@ MachineGraph& MachineGraph::operator=(MachineGraph&& o)
     m_waiting = std::move(o.m_waiting);
     m_procs = std::move(o.m_procs);
     m_scheduled = std::move(o.m_scheduled);
+    m_incidents = std::move(o.m_incidents);
     return *this;
 }
 MachineGraph::~MachineGraph()
@@ -103,6 +105,35 @@ MachineGraph::comp_ref MachineGraph::get_components() const
 MachineGraph::conn_ref MachineGraph::get_connections() const
 {
     return this->m_conns;
+}
+std::optional<const std::vector<Connection*>*>
+MachineGraph::get_incident_to(const std::string& name) const
+{
+    if (!this->m_named_comps.contains(name)) {
+        return std::nullopt;
+    }
+    const auto ptr = this->m_named_comps.at(name);
+    if (!this->m_incidents.contains(ptr)) {
+        return std::nullopt;
+    }
+    const auto in = &this->m_incidents.at(ptr);
+    return std::make_optional(in);
+}
+std::optional<std::vector<const Component*>>
+MachineGraph::get_adjecent_to(const std::string& name) const
+{
+    auto incident = get_incident_to(name);
+    if (!incident.has_value()) return std::nullopt;
+    const auto n = m_named_comps.at(name);
+    std::vector<const Component*> ret{};
+    for(const auto i : **incident){
+        if(i->get_end() != n){
+            ret.push_back(i->get_end());
+        } else {
+            ret.push_back(i->get_start());
+        }
+    }
+    return std::make_optional(ret);
 }
 void MachineGraph::pause(ahandle_t h)
 {
