@@ -9,6 +9,8 @@
 #include <memory>
 #include <print>
 #include <raylib.h>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 
 struct Packet {
@@ -118,8 +120,16 @@ int main(void)
     //     s->get_name(),
     //     r->get_name());
     std::string xml;
-    std::ifstream("./tsm.xml") >> xml;
-    game::populate_machine_from_xml(*m, xml);
+    std::ifstream ifs("./test.xml");
+    std::stringstream buf;
+    buf << ifs.rdbuf();
+    xml = buf.str();
+    // std::cout << buf.str() << std::endl;
+    auto res = game::populate_machine_from_xml(*m, xml);
+    if(result::iserr(res)){
+        std::cout << std::get<std::runtime_error>(res).what() << std::endl;
+        return 1;
+    }
     auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });
     ::InitWindow(800, 600, "Soft Machine");
     ::SetTargetFPS(60);

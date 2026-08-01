@@ -1,0 +1,6 @@
+<graph>
+    <memory name="MEM">
+        <position x="0" y="0"/>
+        <memset>1 2 3 4</memset>
+    </memory>
+</graph>

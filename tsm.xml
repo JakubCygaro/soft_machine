@@ -4,7 +4,6 @@
             1 2 3 4 5
         </memset>
     </memory>
-    <passthrough name="CPU-MEM" from="MEM" to="CPU"/>
     <cpu name="CPU">
         <code>
             <on name="TRIG-CPU"/>
@@ -14,11 +13,7 @@
             <restart/>
         </code>
     </cpu>
-    <passthrough name="TRIG-CPU" from="TRIG"/>
-    <passthrough name="CPU-OTHER">
-        <start name="CPU"/>
-        <end name="OTHER"/>
-    </passthrough>
+    <passthrough name="CPU-MEM" from="MEM" to="CPU"/>
     <custom>
         <state>
             (def text "Hello, world!")

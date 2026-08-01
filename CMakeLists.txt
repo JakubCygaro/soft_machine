@@ -68,6 +68,8 @@ add_executable(soft_machine
     ${CMAKE_SOURCE_DIR}/src/machine/MachineGraph.cpp
     ${CMAKE_SOURCE_DIR}/src/game/scene.cc
     ${CMAKE_SOURCE_DIR}/src/game/xml.cc
+    ${CMAKE_SOURCE_DIR}/src/components/Passthrough.cc
+    ${CMAKE_SOURCE_DIR}/src/components/Memory.cc
 )
 target_link_libraries(soft_machine
     PRIVATE cppfeatures

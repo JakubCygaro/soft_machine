@@ -64,6 +64,7 @@ public:
 
 protected:
     mem_t m_mem;
+    std::string m_mem_str;
 
 public:
     inline Memory(
@@ -72,13 +73,21 @@ public:
         : components::OComponent(name)
         , m_mem(std::move(mem))
     {
+        auto [dims, txt] = calculate_dims_from_mem(m_mem);
+        m_bounds.width = std::max(20.0f, dims.x);
+        m_bounds.height = std::max(20.0f, dims.y);
+        m_mem_str = txt;
     }
     inline virtual ~Memory() { };
 
     virtual void draw() override;
+    virtual void update() override;
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
     virtual auto mem() -> mem_t&;
     virtual auto mem() const -> const mem_t&;
+
+private:
+    static std::pair<::Vector2, std::string> calculate_dims_from_mem(const mem_t&);
 };
 }
