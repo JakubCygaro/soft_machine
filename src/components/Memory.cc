@@ -101,11 +101,18 @@ machine::actor::Actor Memory::poll(machine::Mctx ctx)
 {
     while (true) {
         auto [s, m] = co_await ctx.recv();
-        if (auto mr = std::any_cast<mem::MemoryRequest>(&m)) {
+        if (auto mr = std::any_cast<mem::MemoryRead>(&m)) {
             if (mr->at >= this->m_mem.size()) {
                 co_await ctx.send(s, mem::MemoryFail(mr->at));
             } else {
                 co_await ctx.send(s, mem::MemoryResponse(m_mem[mr->at]));
+            }
+        } else if (auto mw = std::any_cast<mem::MemoryWrite>(&m)) {
+            if (mw->at >= this->m_mem.size()) {
+                co_await ctx.send(s, mem::MemoryFail(mw->at));
+            } else {
+                co_await ctx.pause();
+                this->m_mem[mw->at] = mw->val;
             }
         }
     }

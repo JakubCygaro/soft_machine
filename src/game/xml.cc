@@ -1,11 +1,13 @@
 #include "game/Xml.hpp"
 #include "common/String.hpp"
+#include "components/Cpu.hpp"
 #include "components/Memory.hpp"
 #include "components/Passthrough.hpp"
 #include <algorithm>
 #include <charconv>
 #include <cstddef>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <raylib.h>
 #include <string>
@@ -78,6 +80,44 @@ struct build<components::Passthrough> {
             f,
             t);
         return Result<err_t, components::Passthrough*>::ok(p);
+    }
+};
+
+template <>
+struct build<components::CPU> {
+    Result<err_t, components::CPU::code_t>
+    parse_code(pugi::xml_node& n) const noexcept
+    {
+        components::CPU::code_t ret { };
+        for (auto ch : n.children()) {
+            auto res = components::CPU::instruction_from_xml(ch);
+            if (res.iserr())
+                return { res.unwrap_err() };
+            ret.push_back(
+                std::unique_ptr<components::CPU::Instruction>(res.unwrap()));
+        }
+        return Result<err_t, components::CPU::code_t>::ok(ret);
+    }
+    Result<err_t, components::CPU*>
+    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    {
+        auto name_a = n.attribute("name");
+        if (!name_a)
+            return { err_t("No 'name' defined for connector") };
+        auto name = name_a.as_string();
+        if (!name)
+            return { err_t("Empty 'name' field") };
+        auto code_n = n.child("code");
+        if (!code_n)
+            return { err_t("code node not defined on cpu component") };
+        auto code = parse_code(code_n);
+        if (code.iserr())
+            return { code.unwrap_err() };
+        auto c = code.unwrap();
+        auto p = mg.create_component<components::CPU>(
+            name,
+            std::move(c));
+        return { p };
     }
 };
 
@@ -168,7 +208,13 @@ ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
             return { res.unwrap_err() };
         as_comp = res.unwrap();
     }
-    if(as_comp){
+    if (std::strcmp("cpu", name) == 0) {
+        auto res = build<components::CPU>()(mg, n);
+        if (res.iserr())
+            return { res.unwrap_err() };
+        as_comp = res.unwrap();
+    }
+    if (as_comp) {
         if (auto pos = get_position_node(n)) {
             as_comp->set_pos(*pos);
         }
@@ -195,5 +241,19 @@ populate_machine_from_xml(machine::MachineGraph& mg, const std::string& xml)
         }
     }
     return { unit() };
+}
+Result<std::runtime_error, std::string>
+attribute_as_string(
+    const pugi::xml_node& wait,
+    const std::string& attribute)
+{
+    using err_t = std::runtime_error;
+    auto on_a = wait.attribute(attribute);
+    if (!on_a)
+        return { err_t(std::format("'{}' attribute missing", attribute)) };
+    auto on = on_a.as_string();
+    if (!on)
+        return { err_t("'{}' attribute is not a string") };
+    return { std::string(on) };
 }
 }

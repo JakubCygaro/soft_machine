@@ -10,9 +10,27 @@
 
 namespace components {
 namespace mem {
-    struct MemoryRequest : public components::msg::Msg {
-        inline MemoryRequest() = delete;
-        inline MemoryRequest(size_t at)
+    struct MemoryWrite : public components::msg::Msg {
+        inline MemoryWrite() = delete;
+        inline MemoryWrite(size_t at, int val)
+            : at { at }
+            , val { val }
+        {
+        }
+        size_t at;
+        int val;
+        inline virtual std::string type_name() const override
+        {
+            return "Memory write request message";
+        }
+        inline virtual std::string to_display_string() const override
+        {
+            return std::format("MemWrite {{ at: {} val {} }}", at, val);
+        }
+    };
+    struct MemoryRead : public components::msg::Msg {
+        inline MemoryRead() = delete;
+        inline MemoryRead(size_t at)
             : at { at }
         {
         }
@@ -81,18 +99,6 @@ public:
         : components::OComponent(name)
         , m_mem(std::move(mem))
     {
-        // using namespace game::resources;
-        // auto [dims, txt] = setup_mem(m_mem);
-        // constexpr const auto def = game::resources::get_default_node_size();
-        // m_mem_sz = dims;
-        // m_name_sz = ::MeasureTextEx(
-        //     get_node_font(),
-        //     name.c_str(),
-        //     default_node_font_size(),
-        //     default_font_spacing());
-        // m_bounds.width = std::max(def.x + 40.0f + m_name_sz.x, dims.x);
-        // m_bounds.height = std::max(def.y + 40.0f + m_name_sz.y, dims.y);
-        // m_mem_str = txt;
         setup(*this);
     }
     Memory(const Memory&) = delete;
