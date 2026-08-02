@@ -61,7 +61,7 @@ public:
         shd* m_s { };
         std::string m_sender { }, m_reciever { };
         message_t m_msg;
-        result_t<std::runtime_error, Unit> m_ret { Unit { } };
+        Result<std::runtime_error, Unit> m_ret { Unit { } };
         inline Send(
             shd* s,
             std::string snd,
@@ -103,7 +103,7 @@ public:
         {
             const auto on_send = [h, this](auto err) {
                 if (err)
-                    m_ret = *err;
+                    m_ret = decltype(m_ret)::err(std::move(*err));
                 m_s->pause(h);
             };
             m_s->send(
@@ -113,7 +113,7 @@ public:
                 on_send);
             m_msg = nullptr;
         }
-        inline result_t<std::runtime_error, Unit> await_resume() { return m_ret; }
+        inline Result<std::runtime_error, Unit> await_resume() { return m_ret; }
     };
     Send send(std::string recipent, message_t&& msg);
     struct Recv {

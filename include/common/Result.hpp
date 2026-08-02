@@ -11,26 +11,42 @@ inline static Unit unit()
 }
 
 template <std::movable Err, std::movable Ok>
-using result_t = std::variant<Err, Ok>;
+struct Result : public std::variant<Err, Ok> {
+    using ok_t = Ok;
+    using err_t = Err;
+    inline static Result ok(Ok&& ok)
+    {
+        return Result(ok);
+    }
+    inline static Result ok(Ok& ok)
+    {
+        return Result(ok);
+    }
+    inline static Result err(Err&& err)
+    {
+        return Result(err);
+    }
+    inline static Result err(Err& err)
+    {
+        return Result(err);
+    }
+    inline bool isok() const noexcept
+    {
+        return std::holds_alternative<Ok>(*this);
+    }
+    inline bool iserr() const noexcept
+    {
+        return std::holds_alternative<Err>(*this);
+    }
+    inline Ok unwrap()
+    {
+        return std::get<Ok>(*this);
+    }
+    inline Err unwrap_err()
+    {
+        return std::get<Err>(*this);
+    }
+};
 
 template <std::movable Err>
-using unit_result_t = std::variant<Err, Unit>;
-
-namespace result {
-    template <std::movable Err, std::movable Ok>
-    inline static bool isok(const result_t<Err, Ok>& r) noexcept {
-        return std::holds_alternative<Ok>(r);
-    }
-    template <std::movable Err, std::movable Ok>
-    inline static bool iserr(const result_t<Err, Ok>& r) noexcept {
-        return std::holds_alternative<Err>(r);
-    }
-    template <std::movable Err, std::movable Ok>
-    inline static Ok unwrap(result_t<Err, Ok>&& r) {
-        return std::get<Ok>(r);
-    }
-    template <std::movable Err, std::movable Ok>
-    inline static Err unwrap_err(result_t<Err, Ok>&& r) {
-        return std::get<Err>(r);
-    }
-}
+using unit_result_t = Result<Err, Unit>;

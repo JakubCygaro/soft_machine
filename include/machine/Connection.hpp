@@ -15,6 +15,27 @@ public:
         std::string out);
     Connection() = delete;
     virtual ~Connection();
+    Connection(const Connection&) = delete;
+    Connection& operator=(const Connection&) = delete;
+    inline Connection(Connection&& o)
+        : start { o.start }
+        , end { o.end }
+        , in { std::move(o.in) }
+        , out { std::move(o.out) }
+    {
+        o.start = nullptr;
+        o.end = nullptr;
+    }
+    inline Connection& operator=(Connection&& o)
+    {
+        start = o.start;
+        end = o.end;
+        in = o.in;
+        out = o.out;
+        o.start = nullptr;
+        o.end = nullptr;
+        return *this;
+    }
     const Component* get_start() const;
     const Component* get_end() const;
 

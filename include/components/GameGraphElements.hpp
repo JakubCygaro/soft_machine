@@ -14,6 +14,21 @@ public:
         : machine::Component(name)
     {
     }
+    inline OComponent(const OComponent&) = delete;
+    inline OComponent& operator=(const OComponent&) = delete;
+    inline OComponent(OComponent&& o)
+        : machine::Component(std::move(o))
+        , m_bounds { o.m_bounds }
+    {
+    }
+    inline OComponent& operator=(OComponent&& o)
+    {
+        machine::Component::operator=(std::move(o));
+        m_bounds = o.m_bounds;
+        return *this;
+    }
+
+    inline virtual ~OComponent() { }
     inline ::Vector2 get_pos() const
     {
         return ::Vector2 { .x = m_bounds.x, .y = m_bounds.y };
@@ -54,5 +69,22 @@ public:
             m_end_pos = e->get_center();
         }
     }
+    inline OConnection(const OConnection&) = delete;
+    inline OConnection& operator=(const OConnection&) = delete;
+    inline OConnection(OConnection&& o)
+        : machine::Connection(std::move(o))
+        , m_start_pos { o.m_start_pos }
+        , m_end_pos { o.m_end_pos }
+    {
+    }
+    inline OConnection& operator=(OConnection&& o)
+    {
+        machine::Connection::operator=(std::move(o));
+        m_start_pos = o.m_start_pos;
+        m_end_pos = o.m_end_pos;
+        return *this;
+    }
+
+    inline virtual ~OConnection() { }
 };
 }

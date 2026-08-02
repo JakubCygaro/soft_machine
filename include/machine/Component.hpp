@@ -6,11 +6,22 @@
 namespace machine {
 
 class Component : public Pollable {
-protected:
-    const std::string name { };
+private:
+    std::string name { };
 
 public:
     Component(std::string name);
+    Component(const Component&) = delete;
+    Component& operator=(const Component&) = delete;
+    inline Component(Component&& o)
+        : name { std::move(o.name) }
+    {
+    }
+    inline Component& operator=(Component&& o)
+    {
+        this->name = o.name;
+        return *this;
+    }
     virtual ~Component();
     const std::string& get_name() const;
     virtual std::any on_incoming_connection(
