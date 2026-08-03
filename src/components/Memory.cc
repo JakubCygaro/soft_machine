@@ -1,5 +1,6 @@
 #include "components/Memory.hpp"
 #include "game/resources/Resources.hpp"
+#include <algorithm>
 #include <any>
 #include <cmath>
 #include <raylib.h>
@@ -33,13 +34,13 @@ void Memory::draw()
             .height = m_mem_sz.y,
         },
         MEM_CELL_COLOR);
-    ::DrawTextEx(
-        get_node_font(),
-        m_mem_str.c_str(),
-        mem_pos,
-        default_node_font_size(),
-        default_font_spacing(),
-        DATA_COLOR);
+    // ::DrawTextEx(
+    //     get_node_font(),
+    //     m_mem_strs.c_str(),
+    //     mem_pos,
+    //     default_node_font_size(),
+    //     default_font_spacing(),
+    //     DATA_COLOR);
     ::DrawTextEx(
         get_node_font(),
         get_name().c_str(),
@@ -51,51 +52,56 @@ void Memory::draw()
 void Memory::update()
 {
 }
-std::pair<::Vector2, std::string>
+std::pair<::Vector2, std::vector<std::string>>
 Memory::setup_mem(const mem_t& mem)
 {
-    std::string out { };
-    auto side = static_cast<size_t>(
-        std::sqrt(
-            static_cast<float>(
-                mem.size())));
-    std::string line { };
-    auto b = mem.begin();
-    for (size_t i = 0; i < side; i++ && b != mem.end()) {
-        for (size_t j = 0; j < side; j++ && b != mem.end()) {
-            line.append(std::to_string(*b++));
-            line.append(",");
-        }
-        out.append(line);
-        out.append("\n");
-        line.clear();
-    }
-    out.pop_back();
-    out.pop_back();
-    if (!line.empty()) {
-        out.append(line);
-        out.pop_back();
-    }
-    auto m = ::MeasureTextEx(
-        get_node_font(),
-        out.c_str(),
-        default_node_font_size(),
-        default_font_spacing());
-    return std::make_pair(m, out);
+    std::vector<std::string> out { };
+    ::Vector2 sz = { };
+    const auto measure_sz = [&](const auto& s) {
+        auto m = ::MeasureTextEx(
+            get_node_font(),
+            s.c_str(),
+            default_node_font_size(),
+            default_font_spacing());
+        sz.x = std::max(m.x, sz.x);
+        sz.y = std::max(m.y, sz.y);
+    };
+    std::for_each(mem.begin(), mem.end(), [&](auto integer) {
+        out.push_back(std::to_string(integer));
+        measure_sz(out.back());
+    });
+    return std::make_pair(sz, out);
 }
 void Memory::setup(Memory& self)
 {
-    auto [dims, txt] = setup_mem(self.m_mem);
+    auto [cell, ints] = setup_mem(self.m_mem);
     constexpr const auto def = game::resources::get_default_node_size();
-    self.m_mem_sz = dims;
+    self.m_mem_sz = cell;
+    self.m_cell_sz = cell;
     self.m_name_sz = ::MeasureTextEx(
         get_node_font(),
         self.get_name().c_str(),
         default_node_font_size(),
         default_font_spacing());
-    self.m_bounds.width = std::max(def.x + 40.0f + self.m_name_sz.x, dims.x);
-    self.m_bounds.height = std::max(def.y + 40.0f + self.m_name_sz.y, dims.y);
-    self.m_mem_str = txt;
+    switch (self.m_lay) {
+    case Memory::Layout::Square: {
+        const auto side = static_cast<size_t>(
+            std::sqrt(
+                static_cast<float>(
+                    ints.size())));
+        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x * side;
+        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y * side;
+    } break;
+    case Memory::Layout::Vertical: {
+        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x * ints.size();
+        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y;
+    } break;
+    case Memory::Layout::Horizontal: {
+        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x;
+        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y * ints.size();
+    } break;
+    }
+    self.m_mem_strs = ints;
 }
 machine::actor::Actor Memory::poll(machine::Mctx ctx)
 {

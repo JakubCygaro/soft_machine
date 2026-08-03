@@ -41,7 +41,7 @@ struct Result : public std::variant<Err, Ok> {
     }
     inline Ok unwrap()
     {
-        return std::get<Ok>(*this);
+        return std::get<Ok>(std::move(*this));
     }
     inline Err unwrap_err()
     {

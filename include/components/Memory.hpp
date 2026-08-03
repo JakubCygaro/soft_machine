@@ -82,15 +82,22 @@ public:
     const Color BODY_COLOR = ::BLUE;
     const Color DATA_COLOR = ::BLACK;
     const Color MEM_CELL_COLOR = ::WHITE;
+    enum class Layout {
+        Square,
+        Vertical,
+        Horizontal,
+    };
 
 public:
     using mem_t = std::vector<int>;
 
 protected:
     mem_t m_mem;
-    std::string m_mem_str;
+    std::vector<std::string> m_mem_strs;
     ::Vector2 m_mem_sz;
     ::Vector2 m_name_sz;
+    Layout m_lay { Layout::Square };
+    ::Vector2 m_cell_sz;
 
 public:
     inline Memory(
@@ -106,18 +113,22 @@ public:
     inline Memory(Memory&& o)
         : components::OComponent(std::move(o))
         , m_mem { std::move(o.m_mem) }
-        , m_mem_str { std::move(o.m_mem_str) }
+        , m_mem_strs { std::move(o.m_mem_strs) }
         , m_mem_sz { o.m_mem_sz }
         , m_name_sz { o.m_name_sz }
+        , m_lay { o.m_lay }
+        , m_cell_sz { o.m_cell_sz }
     {
     }
     inline Memory& operator=(Memory&& o)
     {
         components::OComponent::operator=(std::move(o));
         m_mem = std::move(o.m_mem);
-        m_mem_str = std::move(o.m_mem_str);
+        m_mem_strs = std::move(o.m_mem_strs);
         m_mem_sz = o.m_mem_sz;
         m_name_sz = o.m_name_sz;
+        m_lay = o.m_lay;
+        m_cell_sz = o.m_cell_sz;
         return *this;
     }
     inline virtual ~Memory() { };
@@ -128,9 +139,16 @@ public:
 
     virtual auto mem() -> mem_t&;
     virtual auto mem() const -> const mem_t&;
+    inline virtual auto set_layout(Layout l) -> void
+    {
+        m_lay = l;
+        setup(*this);
+    }
+    inline virtual auto get_layout() const -> Layout { return m_lay; }
 
 private:
-    static std::pair<::Vector2, std::string> setup_mem(const mem_t&);
+    static std::pair<::Vector2, std::vector<std::string>>
+    setup_mem(const mem_t&);
     static void setup(Memory&);
 };
 }

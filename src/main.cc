@@ -124,7 +124,7 @@ int main(void)
     game::resources::init_resources();
     auto res = game::populate_machine_from_xml(*m, xml);
     if (res.iserr()) {
-        std::cout << res.unwrap_err().what() << std::endl;
+        std::cout << std::move(res).unwrap_err().what() << std::endl;
         return 1;
     }
     auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });

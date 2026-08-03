@@ -7,11 +7,13 @@
 #include <charconv>
 #include <cstddef>
 #include <cstring>
+#include <format>
 #include <memory>
 #include <optional>
 #include <raylib.h>
 #include <string>
 #include <system_error>
+#include <type_traits>
 
 namespace {
 using err_t = std::runtime_error;
@@ -85,18 +87,17 @@ struct build<components::Passthrough> {
 
 template <>
 struct build<components::CPU> {
-    Result<err_t, components::CPU::code_t>
+    Result<err_t, std::vector<components::CPU::Instruction*>>
     parse_code(pugi::xml_node& n) const noexcept
     {
-        components::CPU::code_t ret { };
+        std::vector<components::CPU::Instruction*> ret { };
         for (auto ch : n.children()) {
             auto res = components::CPU::instruction_from_xml(ch);
             if (res.iserr())
                 return { res.unwrap_err() };
-            ret.push_back(
-                std::unique_ptr<components::CPU::Instruction>(res.unwrap()));
+            ret.push_back(res.unwrap());
         }
-        return Result<err_t, components::CPU::code_t>::ok(ret);
+        return { ret };
     }
     Result<err_t, components::CPU*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
@@ -114,9 +115,14 @@ struct build<components::CPU> {
         if (code.iserr())
             return { code.unwrap_err() };
         auto c = code.unwrap();
-        auto p = mg.create_component<components::CPU>(
-            name,
-            std::move(c));
+        components::CPU::code_t inst { };
+        std::for_each(c.begin(), c.end(), [&](auto i) {
+            // because why the fuck not?
+            using ptr_t = typename components::CPU::code_t::value_type::pointer;
+            inst.push_back(
+                std::unique_ptr<std::remove_pointer_t<ptr_t>>(i));
+        });
+        auto p = mg.create_component<components::CPU>(name, std::move(inst));
         return { p };
     }
 };
@@ -186,10 +192,29 @@ struct build<components::Memory> {
         auto mem = parse_mem(mem_n.text());
         if (mem.iserr())
             return { mem.unwrap_err() };
+        auto layout = game::attribute_as_string(n, "layout");
+        if (layout.iserr())
+            return { layout.unwrap_err() };
+        using components::Memory;
+        Memory::Layout l;
+        if (layout.unwrap() == "square") {
+            l = Memory::Layout::Square;
+        } else if (layout.unwrap() == "vertical") {
+            l = Memory::Layout::Vertical;
+        } else if (layout.unwrap() == "horizontal") {
+            l = Memory::Layout::Vertical;
+        } else {
+            return { std::runtime_error(
+                std::format("unknown memory layout attribute value '{}'",
+                    layout.unwrap())) };
+        }
+
         auto p = mg.create_component<components::Memory>(
             name,
             std::move(
                 std::get<components::Memory::mem_t>(mem)));
+        p->set_layout(l);
+
         return { p };
     }
 };
