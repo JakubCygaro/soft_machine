@@ -3,8 +3,20 @@
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
 #include <raylib.h>
+#include <raymath.h>
 
 namespace components {
+enum class AttachPt {
+    TL,
+    TC,
+    TR,
+    L,
+    C,
+    R,
+    BL,
+    BC,
+    BR
+};
 class OComponent : public machine::Component, public game::Object {
 protected:
     ::Rectangle m_bounds { };
@@ -49,6 +61,44 @@ public:
     inline ::Vector2 get_center() const
     {
         return { m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height / 2 };
+    }
+    inline virtual ::Vector2 get_att_point(AttachPt att) const
+    {
+        ::Vector2 p = get_center();
+        switch (att) {
+        case AttachPt::TL: {
+            p = get_pos();
+        } break;
+        case AttachPt::TC: {
+            p = get_pos();
+            p.x += get_size().x / 2;
+        } break;
+        case AttachPt::TR: {
+            p = get_pos();
+            p.x += get_size().x;
+        } break;
+        case AttachPt::R: {
+            p = get_pos();
+            p.x += get_size().x;
+            p.y += get_size().y / 2;
+        } break;
+        case AttachPt::BL: {
+            p = get_pos();
+            p.y += get_size().y;
+        } break;
+        case AttachPt::BC: {
+            p = get_pos();
+            p.x += get_size().x / 2;
+            p.y += get_size().y;
+        } break;
+        case AttachPt::BR: {
+            p = get_pos();
+            p.x += get_size().x;
+            p.y += get_size().y;
+        } break;
+        default:
+        };
+        return p;
     }
 };
 class OConnection : public machine::Connection, public game::Object {
