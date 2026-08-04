@@ -34,13 +34,44 @@ void Memory::draw()
             .height = m_mem_sz.y,
         },
         MEM_CELL_COLOR);
-    // ::DrawTextEx(
-    //     get_node_font(),
-    //     m_mem_strs.c_str(),
-    //     mem_pos,
-    //     default_node_font_size(),
-    //     default_font_spacing(),
-    //     DATA_COLOR);
+
+    switch (m_lay) {
+    case Layout::Square: {
+        auto side = static_cast<size_t>(
+            std::sqrt(
+                static_cast<float>(
+                    m_mem_strs.size())));
+        auto cell_start = ::Vector2Subtract(
+            center,
+            ::Vector2Scale(
+                m_cell_sz,
+                side / 2.0f));
+        auto s = m_mem_strs.begin();
+        for (auto i = 0UL; i < side; i++) {
+            for (auto j = 0UL; j < side; j++) {
+                if(s >= m_mem_strs.end()) break;
+                auto pos = ::Vector2 {
+                    .x = cell_start.x + (j * m_cell_sz.x),
+                    .y = cell_start.y + (i * m_cell_sz.y),
+                };
+                ::DrawTextEx(
+                    get_node_font(),
+                    (*s++).c_str(),
+                    pos,
+                    default_node_font_size(),
+                    default_font_spacing(),
+                    DATA_COLOR);
+            }
+            if(s >= m_mem_strs.end()) break;
+        }
+    } break;
+    case Layout::Horizontal: {
+
+    } break;
+    case Layout::Vertical: {
+
+    } break;
+    }
     ::DrawTextEx(
         get_node_font(),
         get_name().c_str(),
@@ -63,8 +94,8 @@ Memory::setup_mem(const mem_t& mem)
             s.c_str(),
             default_node_font_size(),
             default_font_spacing());
-        sz.x = std::max(m.x, sz.x);
-        sz.y = std::max(m.y, sz.y);
+        sz.x = std::max(m.x * 2.2f, sz.x);
+        sz.y = std::max(m.y * 2.2f, sz.y);
     };
     std::for_each(mem.begin(), mem.end(), [&](auto integer) {
         out.push_back(std::to_string(integer));

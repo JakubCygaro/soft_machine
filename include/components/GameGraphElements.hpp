@@ -97,6 +97,7 @@ public:
             p.y += get_size().y;
         } break;
         default:
+            break;
         };
         return p;
     }
