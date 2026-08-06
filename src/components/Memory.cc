@@ -32,19 +32,46 @@ void Memory::draw()
         0.2,
         10,
         BODY_COLOR);
-    // const auto mem_pos = ::Vector2Subtract(
-    //     center,
-    //     ::Vector2Scale(
-    //         m_mem_sz,
-    //         0.5));
-    // ::DrawRectangleRec(
-    //     ::Rectangle {
-    //         .x = mem_pos.x,
-    //         .y = mem_pos.y,
-    //         .width = m_mem_sz.x,
-    //         .height = m_mem_sz.y,
-    //     },
-    //     MEM_CELL_COLOR);
+
+    const auto draw_cell_at = [this](
+                                  const ::Vector2& pos,
+                                  const std::string& integer,
+                                  const ::Vector2& cell_dims) {
+        auto cell_center = ::Vector2Add(
+            pos,
+            ::Vector2Scale(
+                m_cell_sz,
+                0.5));
+
+        auto int_pos = ::Vector2Subtract(
+            cell_center,
+            ::Vector2Scale(
+                cell_dims,
+                0.5));
+        ::DrawRectangleRec(
+            {
+                .x = pos.x,
+                .y = pos.y,
+                .width = m_cell_sz.x,
+                .height = m_cell_sz.y,
+            },
+            MEM_CELL_COLOR);
+        ::DrawRectangleLinesEx(
+            {
+                .x = pos.x,
+                .y = pos.y,
+                .width = m_cell_sz.x,
+                .height = m_cell_sz.y,
+            },
+            1.0, DATA_COLOR);
+        ::DrawTextEx(
+            get_node_font(),
+            integer.c_str(),
+            int_pos,
+            default_node_font_size(),
+            default_font_spacing(),
+            DATA_COLOR);
+    };
 
     switch (m_lay) {
     case Layout::Square: {
@@ -115,10 +142,32 @@ void Memory::draw()
         }
     } break;
     case Layout::Horizontal: {
-
+        auto column = 0;
+        ::Vector2 cell_start = {
+            .x = center.x - m_mem_strs.size() * m_cell_sz.x / 2.0f, // + MARGIN / 2.0f,
+            .y = center.y - m_cell_sz.y / 2.0f // + MARGIN / 2.0f
+        };
+        for (const auto& [i, dim] : m_mem_strs) {
+            auto pos = ::Vector2 {
+                .x = cell_start.x + (column++ * m_cell_sz.x),
+                .y = cell_start.y,
+            };
+            draw_cell_at(pos, i, dim);
+        }
     } break;
     case Layout::Vertical: {
-
+        auto row = 0;
+        ::Vector2 cell_start = {
+            .x = center.x - m_cell_sz.x / 2.0f, // + MARGIN / 2.0f
+            .y = center.y - m_mem_strs.size() * m_cell_sz.y / 2.0f, // + MARGIN / 2.0f,
+        };
+        for (const auto& [i, dim] : m_mem_strs) {
+            auto pos = ::Vector2 {
+                .x = cell_start.x,
+                .y = cell_start.y + (row++ * m_cell_sz.y),
+            };
+            draw_cell_at(pos, i, dim);
+        }
     } break;
     }
     ::DrawTextEx(
@@ -166,16 +215,16 @@ void Memory::setup(Memory& self)
     switch (self.m_lay) {
     case Memory::Layout::Square: {
         const auto side = calc_square_side(ints.size());
-        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x * side;
-        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y * side;
+        self.m_bounds.width = def.x + MARGIN + self.m_name_sz.x + cell.x * side;
+        self.m_bounds.height = def.y + MARGIN + self.m_name_sz.y + cell.y * side;
     } break;
     case Memory::Layout::Vertical: {
-        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x * ints.size();
-        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y;
+        self.m_bounds.width = def.x + MARGIN + self.m_name_sz.x + cell.x;
+        self.m_bounds.height = def.y + MARGIN + self.m_name_sz.y + cell.y * ints.size();
     } break;
     case Memory::Layout::Horizontal: {
-        self.m_bounds.width = def.x + 40.0f + self.m_name_sz.x + cell.x;
-        self.m_bounds.height = def.y + 40.0f + self.m_name_sz.y + cell.y * ints.size();
+        self.m_bounds.width = def.x + MARGIN + self.m_name_sz.x + cell.x * ints.size();
+        self.m_bounds.height = def.y + MARGIN + self.m_name_sz.y + cell.y;
     } break;
     }
     self.m_mem_strs = ints;

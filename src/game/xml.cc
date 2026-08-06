@@ -135,9 +135,10 @@ struct build<components::Memory> {
         const auto parse_int =
             [](std::string& slice) -> Result<std::runtime_error, int> {
             int out;
+            auto trimmed = common::trim(slice);
             auto res = std::from_chars(
-                slice.data(),
-                slice.data() + slice.size(),
+                trimmed.data(),
+                trimmed.data() + trimmed.size(),
                 out,
                 10);
             if (res.ec == std::errc::invalid_argument) {
@@ -151,29 +152,39 @@ struct build<components::Memory> {
             return { std::runtime_error("empty memset node") };
         components::Memory::mem_t ret { };
         auto str = common::trim(std::string(s));
+        str.erase(std::remove_if(
+                      str.begin(),
+                      str.end(),
+                      [](auto c) {
+                          return std::isspace(c) && c != ' ';
+                      }),
+            str.end());
         size_t pos = str.find(' ');
         size_t init_pos = 0;
 
         while (pos != std::string::npos) {
-            auto i = str.substr(init_pos, pos - init_pos);
-            auto res = parse_int(i);
-            if (res.iserr())
-                return { res.unwrap_err() };
-            ret.push_back(std::get<int>(res));
+            auto i = common::trim(str.substr(init_pos, pos - init_pos));
+            if(!i.empty()) {
+                auto res = parse_int(i);
+                if (res.iserr())
+                    return { res.unwrap_err() };
+                ret.push_back(std::get<int>(res));
+            }
             init_pos = pos + 1;
             pos = str.find(' ', init_pos);
         }
-        auto i = str.substr(
+        auto i = common::trim(str.substr(
             init_pos,
             std::min(
                 pos,
                 str.size())
-                - init_pos + 1);
-
-        auto res = parse_int(i);
-        if (res.iserr())
-            return { res.unwrap_err() };
-        ret.push_back(std::get<int>(res));
+                - init_pos + 1));
+        if(!i.empty()){
+            auto res = parse_int(i);
+            if (res.iserr())
+                return { res.unwrap_err() };
+            ret.push_back(std::get<int>(res));
+        }
 
         return { ret };
     }
@@ -197,16 +208,17 @@ struct build<components::Memory> {
             return { layout.unwrap_err() };
         using components::Memory;
         Memory::Layout l;
-        if (layout.unwrap() == "square") {
+        auto lay = layout.unwrap();
+        if (lay == "square") {
             l = Memory::Layout::Square;
-        } else if (layout.unwrap() == "vertical") {
+        } else if (lay == "vertical") {
             l = Memory::Layout::Vertical;
-        } else if (layout.unwrap() == "horizontal") {
-            l = Memory::Layout::Vertical;
+        } else if (lay == "horizontal") {
+            l = Memory::Layout::Horizontal;
         } else {
             return { std::runtime_error(
                 std::format("unknown memory layout attribute value '{}'",
-                    layout.unwrap())) };
+                    lay)) };
         }
 
         auto p = mg.create_component<components::Memory>(

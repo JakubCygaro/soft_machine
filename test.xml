@@ -1,7 +1,16 @@
 <graph>
-    <memory name="MEM" layout="square">
-        <position x="0" y="0"/>
+    <memory name="MEM" layout="vertical">
+        <position x="-400" y="0"/>
         <memset>1 2 3 5 100</memset>
+    </memory>
+    <memory name="MEM2" layout="square">
+        <position x="0" y="-100"/>
+        <memset>1 2 3 5 100</memset>
+    </memory>
+    <memory name="MEM3" layout="horizontal">
+        <position x="0" y="200"/>
+        <memset>1 2
+            3 5 100</memset>
     </memory>
     <!-- <cpu name="CPU"> -->
     <!--     <position x="50" y="0"/> -->

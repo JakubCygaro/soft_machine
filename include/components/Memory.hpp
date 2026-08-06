@@ -83,6 +83,7 @@ public:
     const Color DATA_COLOR = ::BLACK;
     const Color MEM_CELL_COLOR = ::WHITE;
     const Color EMPTY_CELL = ::GRAY;
+    inline const static float MARGIN = 40.0f;
     enum class Layout {
         Square,
         Vertical,
