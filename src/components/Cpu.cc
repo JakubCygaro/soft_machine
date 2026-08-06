@@ -21,6 +21,24 @@ namespace {
             str[1] - '0'
         };
     }
+    using src_dst_t = std::pair<int, int>;
+    Result<std::runtime_error, src_dst_t>
+    get_src_dst(const pugi::xml_node& node)
+    {
+        auto src = game::attribute_as_string(node, "src");
+        if (src.iserr())
+            return { src.unwrap_err() };
+        auto src_reg = parse_reg_string(src.unwrap());
+        if (src_reg.iserr())
+            return { src_reg.unwrap_err() };
+        auto dst = game::attribute_as_string(node, "dst");
+        if (dst.iserr())
+            return { dst.unwrap_err() };
+        auto dst_reg = parse_reg_string(dst.unwrap());
+        if (dst_reg.iserr())
+            return { dst_reg.unwrap_err() };
+        return { std::make_pair(src_reg.unwrap(), dst_reg.unwrap()) };
+    }
 
     Result<std::runtime_error, CPU::InstWait*>
     wait_from_xml(pugi::xml_node& wait)
@@ -37,6 +55,42 @@ namespace {
         auto i = new CPU::InstWait;
         i->on = on.unwrap();
         i->into = reg.unwrap();
+        return { i };
+    }
+    Result<std::runtime_error, CPU::InstLoad*>
+    load_from_xml(pugi::xml_node& load)
+    {
+        auto from = game::attribute_as_string(load, "from");
+        if (from.iserr())
+            return { from.unwrap_err() };
+        auto at = game::attribute_as_string(load, "at");
+        if (at.iserr())
+            return { at.unwrap_err() };
+        auto into = game::attribute_as_string(load, "into");
+        if (into.iserr())
+            return { into.unwrap_err() };
+        auto at_idx = parse_reg_string(at.unwrap());
+        if (at_idx.iserr())
+            return { at_idx.unwrap_err() };
+        auto into_reg = parse_reg_string(at.unwrap());
+        if (at_idx.iserr())
+            return { at_idx.unwrap_err() };
+        auto i = new CPU::InstLoad;
+        i->from = from.unwrap();
+        i->at = at_idx.unwrap();
+        i->into = into_reg.unwrap();
+        return { i };
+    }
+    Result<std::runtime_error, CPU::InstAdd*>
+    add_from_xml(pugi::xml_node& add)
+    {
+        auto params = get_src_dst(add);
+        if (params.iserr())
+            return { params.unwrap_err() };
+        auto [s, d] = params.unwrap();
+        auto i = new CPU::InstAdd;
+        i->src = s;
+        i->dst = d;
         return { i };
     }
 }
@@ -61,6 +115,10 @@ CPU::instruction_from_xml(pugi::xml_node& inode)
 
     if (!std::strcmp(name, "wait")) {
         ret = map(wait_from_xml(inode));
+    } else if (!std::strcmp(name, "load")) {
+        ret = map(load_from_xml(inode));
+    } else if (!std::strcmp(name, "add")) {
+        ret = map(add_from_xml(inode));
     }
 
     return ret;

@@ -110,7 +110,7 @@ struct build<components::CPU> {
             return { err_t("Empty 'name' field") };
         auto code_n = n.child("code");
         if (!code_n)
-            return { err_t("code node not defined on cpu component") };
+            return { err_t("'code' node not defined on cpu component") };
         auto code = parse_code(code_n);
         if (code.iserr())
             return { code.unwrap_err() };
