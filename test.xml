@@ -1,7 +1,7 @@
 <graph>
     <memory name="MEM" layout="square">
         <position x="0" y="0"/>
-        <memset>1 2 3 4</memset>
+        <memset>1 2 3 5 100</memset>
     </memory>
     <!-- <cpu name="CPU"> -->
     <!--     <position x="50" y="0"/> -->

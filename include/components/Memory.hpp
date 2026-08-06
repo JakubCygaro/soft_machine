@@ -82,6 +82,7 @@ public:
     const Color BODY_COLOR = ::BLUE;
     const Color DATA_COLOR = ::BLACK;
     const Color MEM_CELL_COLOR = ::WHITE;
+    const Color EMPTY_CELL = ::GRAY;
     enum class Layout {
         Square,
         Vertical,
@@ -92,8 +93,9 @@ public:
     using mem_t = std::vector<int>;
 
 protected:
+    using cell_str_dim = std::pair<std::string, ::Vector2>;
     mem_t m_mem;
-    std::vector<std::string> m_mem_strs;
+    std::vector<cell_str_dim> m_mem_strs;
     ::Vector2 m_mem_sz;
     ::Vector2 m_name_sz;
     Layout m_lay { Layout::Square };
@@ -147,7 +149,7 @@ public:
     inline virtual auto get_layout() const -> Layout { return m_lay; }
 
 private:
-    static std::pair<::Vector2, std::vector<std::string>>
+    static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
     setup_mem(const mem_t&);
     static void setup(Memory&);
 };
