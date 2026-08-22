@@ -6,9 +6,9 @@
     </memory>
     <cpu name="CPU">
         <code>
-            <on name="TRIG-CPU"/>
+            <wait on="TRIG-CPU" into="R0"/>
             <load from="CPU-MEM" into="R0" at="1"/>
-            <add dest="R0" src="2"/>
+            <add dest="R0" src="R2"/>
             <send from="R0" on="CPU-OTHER"/>
             <restart/>
         </code>

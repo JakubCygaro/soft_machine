@@ -3,6 +3,7 @@
 #include "components/Cpu.hpp"
 #include "components/Memory.hpp"
 #include "components/Passthrough.hpp"
+#include "game/XmlMarshalling.hpp"
 #include <algorithm>
 #include <charconv>
 #include <cstddef>
@@ -26,14 +27,17 @@ get_position_node(pugi::xml_node& n)
     if (!p_n) {
         return std::nullopt;
     }
-    auto ret = ::Vector2 { };
-    if (auto x = p_n.attribute("x")) {
-        ret.x = x.as_int();
+    if (auto v = game::xml::unmarshall_attributes<::Vector2>(p_n); v.isok()){
+        return { v.unwrap() };
     }
-    if (auto y = p_n.attribute("y")) {
-        ret.y = y.as_int();
-    }
-    return ret;
+    // auto ret = ::Vector2 { };
+    // if (auto x = p_n.attribute("x")) {
+    //     ret.x = x.as_int();
+    // }
+    // if (auto y = p_n.attribute("y")) {
+    //     ret.y = y.as_int();
+    // }
+    return std::nullopt;
 }
 
 using name_from_to_t = std::tuple<std::string, std::string, std::string>;

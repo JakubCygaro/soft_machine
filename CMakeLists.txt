@@ -53,9 +53,9 @@ if (NOT raylib_FOUND)
     FetchContent_MakeAvailable(raylib)
 endif()
 
-target_compile_features(cppfeatures INTERFACE cxx_std_23)
+target_compile_features(cppfeatures INTERFACE cxx_std_26)
 target_compile_options(cppfeatures
-    INTERFACE -Wall -Wextra
+    INTERFACE -Wall -Wextra -freflection
 )
 
 find_package(pugixml)

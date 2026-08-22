@@ -11,7 +11,7 @@ inline static Unit unit()
     return u;
 }
 
-template <std::movable Err, std::movable Ok>
+template <std::movable Err, typename Ok>
 struct Result : public std::variant<Err, Ok> {
     using ok_t = Ok;
     using err_t = Err;

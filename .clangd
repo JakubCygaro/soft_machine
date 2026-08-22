@@ -1,0 +1,8 @@
+CompileFlags:
+  Remove: [-freflection]
+
+---
+If:
+  PathMatch: [.*XmlMarshalling\.hpp]
+CompileFlags:
+  Add: [-DCLANGD_SKIP]

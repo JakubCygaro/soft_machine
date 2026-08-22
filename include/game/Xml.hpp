@@ -12,3 +12,4 @@ attribute_as_string(
     const std::string&);
 
 }
+
