@@ -35,49 +35,58 @@ public:
         inline virtual ~Instruction() { }
     };
     struct InstWait : public Instruction {
-        std::string on;
-        int into;
+        struct wait_attr {
+            std::string on;
+            Register into;
+        };
+        game::xml::Attribute<wait_attr> attrs;
         inline virtual std::string to_string()
         {
-            return std::format("WAIT ON {} INTO R{}", on, into);
+            return std::format("WAIT ON {} INTO R{}", attrs->on, attrs->into.idx);
         }
         inline virtual ~InstWait() { }
     };
     struct InstLoad : public Instruction {
-        std::string from;
-        int at;
-        int into;
+        struct load_attr {
+            std::string from;
+            int at;
+            Register into;
+        };
+        game::xml::Attribute<load_attr> attrs;
         inline virtual std::string to_string()
         {
-            return std::format("LOAD FROM {} AT {} INTO R{}", from, at, into);
+            return std::format("LOAD FROM {} AT {} INTO R{}",
+                attrs->from, attrs->at, attrs->into.idx);
         }
         inline virtual ~InstLoad() { }
     };
     struct InstSend : public Instruction {
-        int from;
-        std::string to;
+        struct send_attr {
+            Register from;
+            std::string to;
+        };
+        game::xml::Attribute<send_attr> attrs;
         inline virtual std::string to_string()
         {
-            return std::format("SEND FROM R{} TO {}", from, to);
+            return std::format("SEND FROM R{} TO {}",
+                attrs->from.idx, attrs->to);
         }
         inline virtual ~InstSend() { }
     };
+    struct arth_attr {
+        Register src, dst;
+    };
     struct InstAdd : public Instruction {
-        int src, dst;
+        game::xml::Attribute<arth_attr> attr;
         inline virtual std::string to_string()
         {
-            return std::format("ADD R{} INTO R{}", src, dst);
+            return std::format("ADD R{} INTO R{}",
+                    attr->src.idx, attr->dst.idx);
         }
         inline virtual ~InstAdd() { }
     };
-    struct InstAttr {
-        Register src, dst;
-    };
     struct InstSub : public Instruction {
-        struct attrs {
-            Register src, dst;
-        };
-        game::xml::Attribute<attrs> attr;
+        game::xml::Attribute<arth_attr> attr;
         inline virtual std::string to_string()
         {
             return std::format("SUB R{} INTO R{}",

@@ -16,6 +16,10 @@ template <typename T, typename From>
 concept ParsableFromXml = requires(T t, From from) {
     { T::parse_xml(from) } -> std::same_as<Result<std::runtime_error, T>>;
 };
+template <typename T>
+concept UnmarshallSelf = requires(T& t, const pugi::xml_node& n) {
+    { t.unmarshall_self(n) } -> std::same_as<Result<std::runtime_error, Unit>>;
+};
 template <typename Optional>
 struct strip_optional {
     using type = Optional;
@@ -99,19 +103,30 @@ template <std::default_initializable T>
 Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
 #ifndef CLANGD_SKIP
 {
+    T ret { };
     constexpr auto ctx = std::meta::access_context::current();
     constexpr auto info = ^^T;
     if constexpr (ParsableFromXml<T, pugi::xml_text>) {
         auto str = n.text();
-        return T::parse_xml(str);
+        if (auto unm = T::parse_xml(str); unm.isok()) {
+            ret = unm.unwrap();
+            if constexpr (UnmarshallSelf<T>) {
+                if (auto res = ret.unmarshall_self(n); res.iserr()) {
+                    return { ret.unwrap_err() };
+                }
+            }
+            return { ret };
+        } else {
+            return { unm.unwrap_err() };
+        }
     }
-    T ret { };
     template for (constexpr auto member : std::define_static_array(
                       std::meta::nonstatic_data_members_of(info, ctx)))
     {
         constexpr auto is_optional = std::is_assignable_v<
             typename[:type_of(member):], std::nullopt_t>;
-        constexpr auto member_type = std::meta::type_of(member);
+        constexpr auto member_type = std::meta::type_of(
+            std::meta::dealias(member));
         using stripped_member_type =
             typename strip_optional<typename[:type_of(member):]>::type;
         constexpr std::string_view member_ident = std::meta::identifier_of(member);

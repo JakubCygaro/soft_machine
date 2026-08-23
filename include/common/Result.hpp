@@ -39,6 +39,10 @@ struct Result : public std::variant<Err, Ok> {
     {
         return std::holds_alternative<Err>(*this);
     }
+    inline Ok operator*()
+    {
+        return this->unwrap();
+    }
     inline Ok unwrap()
     {
         return std::get<Ok>(std::move(*this));
