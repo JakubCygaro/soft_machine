@@ -73,12 +73,15 @@ public:
     struct InstAttr {
         Register src, dst;
     };
-    struct InstSub : public Instruction,
-                     public game::xml::WithAttribute<InstAttr> {
+    struct InstSub : public Instruction {
+        struct attrs {
+            Register src, dst;
+        };
+        game::xml::Attribute<attrs> attr;
         inline virtual std::string to_string()
         {
             return std::format("SUB R{} INTO R{}",
-                with_attribute.src.idx, with_attribute.dst.idx);
+                attr->src.idx, attr->dst.idx);
         }
         inline virtual ~InstSub() { }
     };
