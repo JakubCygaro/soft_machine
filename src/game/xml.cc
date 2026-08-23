@@ -27,7 +27,7 @@ get_position_node(pugi::xml_node& n)
     if (!p_n) {
         return std::nullopt;
     }
-    if (auto v = game::xml::unmarshall_attributes<::Vector2>(p_n); v.isok()){
+    if (auto v = game::xml::unmarshall_attributes<::Vector2>(p_n); v.isok()) {
         return { v.unwrap() };
     }
     // auto ret = ::Vector2 { };
@@ -133,86 +133,163 @@ struct build<components::CPU> {
 
 template <>
 struct build<components::Memory> {
-    Result<std::runtime_error, components::Memory::mem_t>
-    parse_mem(pugi::xml_text txt) const noexcept
-    {
-        const auto parse_int =
-            [](std::string& slice) -> Result<std::runtime_error, int> {
-            int out;
-            auto trimmed = common::trim(slice);
-            auto res = std::from_chars(
-                trimmed.data(),
-                trimmed.data() + trimmed.size(),
-                out,
-                10);
-            if (res.ec == std::errc::invalid_argument) {
-                return { std::runtime_error(
-                    std::format("failed to parse '{}' as integer", slice)) };
-            }
-            return { out };
-        };
-        auto s = txt.as_string();
-        if (!s)
-            return { std::runtime_error("empty memset node") };
-        components::Memory::mem_t ret { };
-        auto str = common::trim(std::string(s));
-        str.erase(std::remove_if(
-                      str.begin(),
-                      str.end(),
-                      [](auto c) {
-                          return std::isspace(c) && c != ' ';
-                      }),
-            str.end());
-        size_t pos = str.find(' ');
-        size_t init_pos = 0;
+    struct mem_node {
+        components::Memory::mem_t mem;
+        static Result<std::runtime_error, mem_node>
+        parse_xml(pugi::xml_text txt) noexcept
+        {
+            const auto parse_int =
+                [](std::string& slice) -> Result<std::runtime_error, int> {
+                int out;
+                auto trimmed = common::trim(slice);
+                auto res = std::from_chars(
+                    trimmed.data(),
+                    trimmed.data() + trimmed.size(),
+                    out,
+                    10);
+                if (res.ec == std::errc::invalid_argument) {
+                    return { std::runtime_error(
+                        std::format("failed to parse '{}' as integer", slice)) };
+                }
+                return { out };
+            };
+            auto s = txt.as_string();
+            if (!s)
+                return { std::runtime_error("empty memset node") };
+            components::Memory::mem_t ret { };
+            auto str = common::trim(std::string(s));
+            str.erase(std::remove_if(
+                          str.begin(),
+                          str.end(),
+                          [](auto c) {
+                              return std::isspace(c) && c != ' ';
+                          }),
+                str.end());
+            size_t pos = str.find(' ');
+            size_t init_pos = 0;
 
-        while (pos != std::string::npos) {
-            auto i = common::trim(str.substr(init_pos, pos - init_pos));
-            if(!i.empty()) {
+            while (pos != std::string::npos) {
+                auto i = common::trim(str.substr(init_pos, pos - init_pos));
+                if (!i.empty()) {
+                    auto res = parse_int(i);
+                    if (res.iserr())
+                        return { res.unwrap_err() };
+                    ret.push_back(std::get<int>(res));
+                }
+                init_pos = pos + 1;
+                pos = str.find(' ', init_pos);
+            }
+            auto i = common::trim(str.substr(
+                init_pos,
+                std::min(
+                    pos,
+                    str.size())
+                    - init_pos + 1));
+            if (!i.empty()) {
                 auto res = parse_int(i);
                 if (res.iserr())
                     return { res.unwrap_err() };
                 ret.push_back(std::get<int>(res));
             }
-            init_pos = pos + 1;
-            pos = str.find(' ', init_pos);
+            mem_node m { };
+            m.mem = std::move(ret);
+            return { m };
         }
-        auto i = common::trim(str.substr(
-            init_pos,
-            std::min(
-                pos,
-                str.size())
-                - init_pos + 1));
-        if(!i.empty()){
-            auto res = parse_int(i);
-            if (res.iserr())
-                return { res.unwrap_err() };
-            ret.push_back(std::get<int>(res));
-        }
-
-        return { ret };
-    }
+    };
+    // Result<std::runtime_error, components::Memory::mem_t>
+    // parse_mem(pugi::xml_text txt) const noexcept
+    // {
+    //     const auto parse_int =
+    //         [](std::string& slice) -> Result<std::runtime_error, int> {
+    //         int out;
+    //         auto trimmed = common::trim(slice);
+    //         auto res = std::from_chars(
+    //             trimmed.data(),
+    //             trimmed.data() + trimmed.size(),
+    //             out,
+    //             10);
+    //         if (res.ec == std::errc::invalid_argument) {
+    //             return { std::runtime_error(
+    //                 std::format("failed to parse '{}' as integer", slice)) };
+    //         }
+    //         return { out };
+    //     };
+    //     auto s = txt.as_string();
+    //     if (!s)
+    //         return { std::runtime_error("empty memset node") };
+    //     components::Memory::mem_t ret { };
+    //     auto str = common::trim(std::string(s));
+    //     str.erase(std::remove_if(
+    //                   str.begin(),
+    //                   str.end(),
+    //                   [](auto c) {
+    //                       return std::isspace(c) && c != ' ';
+    //                   }),
+    //         str.end());
+    //     size_t pos = str.find(' ');
+    //     size_t init_pos = 0;
+    //
+    //     while (pos != std::string::npos) {
+    //         auto i = common::trim(str.substr(init_pos, pos - init_pos));
+    //         if (!i.empty()) {
+    //             auto res = parse_int(i);
+    //             if (res.iserr())
+    //                 return { res.unwrap_err() };
+    //             ret.push_back(std::get<int>(res));
+    //         }
+    //         init_pos = pos + 1;
+    //         pos = str.find(' ', init_pos);
+    //     }
+    //     auto i = common::trim(str.substr(
+    //         init_pos,
+    //         std::min(
+    //             pos,
+    //             str.size())
+    //             - init_pos + 1));
+    //     if (!i.empty()) {
+    //         auto res = parse_int(i);
+    //         if (res.iserr())
+    //             return { res.unwrap_err() };
+    //         ret.push_back(std::get<int>(res));
+    //     }
+    //
+    //     return { ret };
+    // }
     Result<err_t, components::Memory*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
     {
-        auto name_a = n.attribute("name");
-        if (!name_a)
-            return { err_t("No 'name' defined for connector") };
-        auto name = name_a.as_string();
-        if (!name)
-            return { err_t("Empty 'name' field") };
-        auto mem_n = n.child("memset");
-        if (!mem_n)
-            return { err_t("memset not defined on memory component") };
-        auto mem = parse_mem(mem_n.text());
-        if (mem.iserr())
-            return { mem.unwrap_err() };
-        auto layout = game::attribute_as_string(n, "layout");
-        if (layout.iserr())
-            return { layout.unwrap_err() };
+        struct mem_attr {
+            std::string name, layout;
+        };
+        // auto name_a = n.attribute("name");
+        // if (!name_a)
+        //     return { err_t("No 'name' defined for connector") };
+        // auto name = name_a.as_string();
+        // if (!name)
+        //     return { err_t("Empty 'name' field") };
+        // auto mem_n = n.child("memset");
+        // if (!mem_n)
+        //     return { err_t("memset not defined on memory component") };
+        mem_node mem_n;
+        if (auto unm = game::xml::unmarshall_node<mem_node>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            mem_n = unm.unwrap();
+        }
+        mem_attr mem_a;
+        if (auto unm = game::xml::unmarshall_attributes<mem_attr>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            mem_a = unm.unwrap();
+        }
+        // if (mem.iserr())
+        //     return { mem.unwrap_err() };
+        // auto layout = game::attribute_as_string(n, "layout");
+        // if (layout.iserr())
+        //     return { layout.unwrap_err() };
         using components::Memory;
         Memory::Layout l;
-        auto lay = layout.unwrap();
+        auto lay = mem_a.layout;
         if (lay == "square") {
             l = Memory::Layout::Square;
         } else if (lay == "vertical") {
@@ -226,9 +303,8 @@ struct build<components::Memory> {
         }
 
         auto p = mg.create_component<components::Memory>(
-            name,
-            std::move(
-                std::get<components::Memory::mem_t>(mem)));
+            mem_a.name,
+            std::move(mem_n.mem));
         p->set_layout(l);
 
         return { p };

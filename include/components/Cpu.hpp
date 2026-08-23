@@ -2,6 +2,7 @@
 #include "common/Result.hpp"
 #include "components/GameGraphElements.hpp"
 #include "game/Xml.hpp"
+#include "game/XmlMarshalling.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <cstring>
@@ -14,7 +15,7 @@ class CPU : public components::OComponent {
 public:
     struct Register {
         int idx { };
-        inline static Result<std::runtime_error, Register> parse(const char* str)
+        inline static Result<std::runtime_error, Register> parse_xml(const char* str)
         {
             if (std::strlen(str) != 2
                 || (str[0] != 'R' && str[0] != 'r')
@@ -68,6 +69,18 @@ public:
             return std::format("ADD R{} INTO R{}", src, dst);
         }
         inline virtual ~InstAdd() { }
+    };
+    struct InstAttr {
+        Register src, dst;
+    };
+    struct InstSub : public Instruction,
+                     public game::xml::WithAttribute<InstAttr> {
+        inline virtual std::string to_string()
+        {
+            return std::format("SUB R{} INTO R{}",
+                with_attribute.src.idx, with_attribute.dst.idx);
+        }
+        inline virtual ~InstSub() { }
     };
     static Result<std::runtime_error, Instruction*>
     instruction_from_xml(pugi::xml_node&);

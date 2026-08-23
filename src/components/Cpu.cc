@@ -65,6 +65,17 @@ namespace {
         i->dst = d.idx;
         return { i };
     }
+    Result<std::runtime_error, CPU::InstSub*>
+    sub_from_xml(pugi::xml_node& sub)
+    {
+        if (auto unm = game::xml::unmarshall_node<CPU::InstSub>(sub); unm.isok()) {
+            auto i = new CPU::InstSub;
+            *i = unm.unwrap();
+            return { i };
+        } else {
+            return { unm.unwrap_err() };
+        }
+    }
 }
 
 Result<std::runtime_error, CPU::Instruction*>
@@ -91,6 +102,8 @@ CPU::instruction_from_xml(pugi::xml_node& inode)
         ret = map(load_from_xml(inode));
     } else if (!std::strcmp(name, "add")) {
         ret = map(add_from_xml(inode));
+    } else if (!std::strcmp(name, "sub")) {
+        ret = map(sub_from_xml(inode));
     }
 
     return ret;
