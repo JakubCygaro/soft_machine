@@ -202,7 +202,7 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
                         std::format("member {} not present in xml", member_ident))
                 };
             } else if (auto unm = unmarshall_node<stripped_member_type>(ch); unm.isok()) {
-                ret.[:member:] = unm.unwrap();
+                ret.[:member:] = std::move(unm.unwrap());
             } else {
                 return { unm.unwrap_err() };
             }

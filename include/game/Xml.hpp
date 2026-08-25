@@ -2,6 +2,9 @@
 #include "common/Result.hpp"
 #include "machine/MachineGraph.hpp"
 #include <pugixml.hpp>
+#ifndef CLANGD_SKIP
+#include <meta>
+#endif
 
 namespace game {
 Result<std::runtime_error, Unit>

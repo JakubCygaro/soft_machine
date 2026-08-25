@@ -128,6 +128,7 @@ int main(void)
         return 1;
     }
     auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });
+    ::SetTraceLogLevel(LOG_ALL);
     while (!::WindowShouldClose()) {
         scene.update();
         ::BeginDrawing();

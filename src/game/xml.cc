@@ -6,17 +6,22 @@
 #include "components/Passthrough.hpp"
 #include "game/XmlMarshalling.hpp"
 #include <algorithm>
+#include <cctype>
 #include <charconv>
+#include <concepts>
 #include <cstddef>
 #include <cstring>
 #include <format>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <print>
+#include <ranges>
 #include <raylib.h>
 #include <string>
 #include <system_error>
 #include <type_traits>
+#include <raylib.h>
 
 namespace {
 using err_t = std::runtime_error;
@@ -69,10 +74,12 @@ get_name_from_and_to(pugi::xml_node& n)
 }
 
 template <typename T>
-struct build {
-    Result<err_t, T*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept;
-};
+struct build;
+// {
+//     using result_t = Result<err_t, T*>;
+//     result_t
+//     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept = delete;
+// };
 
 template <>
 struct build<components::Passthrough> {
@@ -93,18 +100,6 @@ struct build<components::Passthrough> {
 
 template <>
 struct build<components::CPU> {
-    Result<err_t, std::vector<components::CPU::Instruction*>>
-    parse_code(pugi::xml_node& n) const noexcept
-    {
-        std::vector<components::CPU::Instruction*> ret { };
-        for (auto ch : n.children()) {
-            auto res = components::CPU::instruction_from_xml(ch);
-            if (res.iserr())
-                return { res.unwrap_err() };
-            ret.push_back(res.unwrap());
-        }
-        return { ret };
-    }
     Result<err_t, components::CPU*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
     {
@@ -142,8 +137,8 @@ struct build<components::CPU> {
                 std::unique_ptr<std::remove_pointer_t<ptr_t>>(i));
         });
         auto p = mg.create_component<components::CPU>(
-                cpu.attrs->name,
-                std::move(inst));
+            cpu.attrs->name,
+            std::move(inst));
         return { p };
     }
 };
@@ -234,38 +229,87 @@ struct build<components::Memory> {
             mem_n.attrs->name,
             std::move(mem_n.memset.mem));
         p->set_layout(mem_n.attrs->layout);
-
         return { p };
     }
 };
+template <typename T>
+concept Buildable = requires() {
+    sizeof(build<T>);
+};
 ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
+#ifndef CLANGD_SKIP
 {
-    auto name = n.name();
-    if (std::strcmp("passthrough", name) == 0) {
-        auto res = build<components::Passthrough>()(mg, n);
-        if (res.iserr())
-            return { res.unwrap_err() };
-    }
-    components::OComponent* as_comp = nullptr;
-    if (std::strcmp("memory", name) == 0) {
-        auto res = build<components::Memory>()(mg, n);
-        if (res.iserr())
-            return { res.unwrap_err() };
-        as_comp = res.unwrap();
-    }
-    if (std::strcmp("cpu", name) == 0) {
-        auto res = build<components::CPU>()(mg, n);
-        if (res.iserr())
-            return { res.unwrap_err() };
-        as_comp = res.unwrap();
-    }
-    if (as_comp) {
-        if (auto pos = get_position_node(n)) {
-            as_comp->set_pos(*pos);
+    const char* raw_name = n.name();
+    const std::string_view name(raw_name, std::strlen(raw_name));
+    constexpr auto ctx = std::meta::access_context::current();
+    constexpr auto components_ns = ^^::components;
+    template for (constexpr auto mem : std::define_static_array(
+                      std::meta::members_of(components_ns, ctx)))
+    {
+        constexpr auto mem_de = std::meta::dealias(mem);
+        if constexpr (std::meta::is_type(mem_de)) {
+            if constexpr (Buildable<typename[:mem_de:]>) {
+                constexpr auto class_name = std::meta::identifier_of(
+                    mem_de);
+                const auto check = std::ranges::equal(
+                    name,
+                    class_name,
+                    [](const auto& a, const auto& b) {
+                        return std::tolower(a) == std::tolower(b);
+                    });
+                if (check) {
+                    constexpr auto id = std::meta::display_string_of(mem_de);
+                    constexpr auto log = std::define_static_string(id);
+                    ::TraceLog(::LOG_DEBUG, "Building graph element: '");
+                    ::TraceLog(::LOG_DEBUG, log);
+                    ::TraceLog(::LOG_DEBUG, "'\n");
+                    auto res = build<typename[:mem_de:]>()(mg, n);
+                    if (res.iserr())
+                        return { res.unwrap_err() };
+                    auto comp = res.unwrap();
+                    if constexpr (
+                        std::derived_from<components::OComponent,
+                            typename[:mem_de:]>) {
+                        if (auto pos = get_position_node(n)) {
+                            comp->set_pos(*pos);
+                        }
+                    }
+                }
+            }
         }
     }
+    // if (std::strcmp("passthrough", name) == 0) {
+    //     auto res = build<components::Passthrough>()(mg, n);
+    //     if (res.iserr())
+    //         return { res.unwrap_err() };
+    // }
+    // components::OComponent* as_comp = nullptr;
+    // if (std::strcmp("memory", name) == 0) {
+    //     auto res = build<components::Memory>()(mg, n);
+    //     if (res.iserr())
+    //         return { res.unwrap_err() };
+    //     as_comp = res.unwrap();
+    // }
+    // if (std::strcmp("cpu", name) == 0) {
+    //     auto res = build<components::CPU>()(mg, n);
+    //     if (res.iserr())
+    //         return { res.unwrap_err() };
+    //     as_comp = res.unwrap();
+    // }
+    // if (as_comp) {
+    //     if (auto pos = get_position_node(n)) {
+    //         as_comp->set_pos(*pos);
+    //     }
+    // }
     return { unit() };
 }
+#else
+{
+    (void)mg;
+    (void)n;
+    return { unit() };
+}
+#endif
 }
 namespace game {
 Result<std::runtime_error, Unit>
