@@ -159,15 +159,15 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
         auto str = n.text();
         if (auto unm = T::parse_xml(str); unm.isok()) {
             ret = unm.unwrap();
-            if constexpr (UnmarshallSelf<T>) {
-                if (auto res = ret.unmarshall_self(n); res.iserr()) {
-                    return { ret.unwrap_err() };
-                }
-            }
-            return { ret };
         } else {
             return { unm.unwrap_err() };
         }
+    }
+    if constexpr (UnmarshallSelf<T>) {
+        if (auto res = ret.unmarshall_self(n); res.iserr()) {
+            return { res.unwrap_err() };
+        }
+        return { ret };
     }
     template for (constexpr auto member : std::define_static_array(
                       std::meta::nonstatic_data_members_of(info, ctx)))
@@ -188,6 +188,8 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
             } else {
                 ret.[:member:] = unm.unwrap();
             }
+        } else if constexpr (ParsableFromXml<T, pugi::xml_text>) {
+            continue;
         } else if constexpr (member_ident == "text") {
             ret.[:member:] = n.text().get();
         } else {

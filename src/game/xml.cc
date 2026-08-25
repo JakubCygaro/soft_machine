@@ -1,4 +1,5 @@
 #include "game/Xml.hpp"
+#include "common/Result.hpp"
 #include "common/String.hpp"
 #include "components/Cpu.hpp"
 #include "components/Memory.hpp"
@@ -107,32 +108,42 @@ struct build<components::CPU> {
     Result<err_t, components::CPU*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
     {
-        struct cpu_attrs {
-            std::string name;
+        struct cpu_node {
+            struct cpu_attrs {
+                std::string name;
+            };
+            game::xml::Attribute<cpu_attrs> attrs;
+            struct code_node {
+                std::vector<components::CPU::Instruction*> insts { };
+                auto unmarshall_self(const pugi::xml_node& n)
+                    -> Result<std::runtime_error, Unit>
+                {
+                    for (auto ch : n.children()) {
+                        auto res = components::CPU::instruction_from_xml(ch);
+                        if (res.iserr())
+                            return { res.unwrap_err() };
+                        insts.push_back(res.unwrap());
+                    }
+                    return { unit() };
+                }
+            } code;
         };
-        cpu_attrs attrs;
-        if (auto unm = game::xml::unmarshall_attributes<cpu_attrs>(n); unm.iserr()) {
+        cpu_node cpu;
+        if (auto unm = game::xml::unmarshall_node<cpu_node>(n); unm.iserr()) {
             return { unm.unwrap_err() };
         } else {
-            attrs = unm.unwrap();
+            cpu = unm.unwrap();
         }
-        if (attrs.name.empty())
-            return { err_t("Empty 'name' field") };
-        auto code_n = n.child("code");
-        if (!code_n)
-            return { err_t("'code' node not defined on cpu component") };
-        auto code = parse_code(code_n);
-        if (code.iserr())
-            return { code.unwrap_err() };
-        auto c = code.unwrap();
         components::CPU::code_t inst { };
-        std::for_each(c.begin(), c.end(), [&](auto i) {
+        std::for_each(cpu.code.insts.begin(), cpu.code.insts.end(), [&](auto i) {
             // because why the fuck not?
             using ptr_t = typename components::CPU::code_t::value_type::pointer;
             inst.push_back(
                 std::unique_ptr<std::remove_pointer_t<ptr_t>>(i));
         });
-        auto p = mg.create_component<components::CPU>(attrs.name, std::move(inst));
+        auto p = mg.create_component<components::CPU>(
+                cpu.attrs->name,
+                std::move(inst));
         return { p };
     }
 };
