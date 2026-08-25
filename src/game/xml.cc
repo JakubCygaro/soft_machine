@@ -205,7 +205,8 @@ struct build<components::Memory> {
         };
         memset_node memset;
         struct mem_attr {
-            std::string name, layout;
+            std::string name;
+            components::Memory::Layout layout;
         };
         game::xml::Attribute<mem_attr> attrs;
     };
@@ -218,25 +219,10 @@ struct build<components::Memory> {
         } else {
             mem_n = unm.unwrap();
         }
-        using components::Memory;
-        Memory::Layout l;
-        auto lay = mem_n.attrs->layout;
-        if (lay == "square") {
-            l = Memory::Layout::Square;
-        } else if (lay == "vertical") {
-            l = Memory::Layout::Vertical;
-        } else if (lay == "horizontal") {
-            l = Memory::Layout::Horizontal;
-        } else {
-            return { std::runtime_error(
-                std::format("unknown memory layout attribute value '{}'",
-                    lay)) };
-        }
-
         auto p = mg.create_component<components::Memory>(
             mem_n.attrs->name,
             std::move(mem_n.memset.mem));
-        p->set_layout(l);
+        p->set_layout(mem_n.attrs->layout);
 
         return { p };
     }

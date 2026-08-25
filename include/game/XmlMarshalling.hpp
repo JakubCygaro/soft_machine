@@ -2,8 +2,10 @@
 #include "common/Result.hpp"
 #include "game/Xml.hpp"
 #include <algorithm>
+#include <cctype>
 #include <concepts>
 #include <format>
+#include <map>
 #include <ranges>
 #ifndef CLANGD_SKIP
 #include <meta>
@@ -48,18 +50,46 @@ struct Attribute {
     inline const T* operator->() const { return &val; }
 };
 
+template <typename E>
+#ifndef CLANGD_SKIP
+    requires(std::meta::is_enum_type(^^E))
+#endif
+constexpr std::optional<E> enum_from_string(const std::string_view sv)
+#ifndef CLANGD_SKIP
+{
+    constexpr static auto enumerators = std::define_static_array(enumerators_of(^^E));
+    template for (constexpr auto enumerator : enumerators)
+    {
+        constexpr auto iden = std::meta::identifier_of(enumerator);
+        if (std::ranges::equal(sv, iden, [](const auto& a, const auto& b) {
+                return std::tolower(a) == std::tolower(b);
+            })) {
+            constexpr E val = [:enumerator:];
+            return E(val);
+        }
+    }
+    return std::nullopt;
+}
+#else
+{
+    (void)sv;
+}
+#endif
+
 template <std::default_initializable T>
 Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
 #ifndef CLANGD_SKIP
 {
     T ret { };
     constexpr auto ctx = std::meta::access_context::current();
-    constexpr auto info = ^^T;
+    constexpr auto info = std::meta::dealias(^^T);
     template for (constexpr auto member : std::define_static_array(
                       std::meta::nonstatic_data_members_of(info, ctx)))
     {
-        constexpr auto is_optional = std::is_assignable_v<
-            typename[:type_of(member):], std::nullopt_t>;
+        // constexpr auto is_optional = std::is_assignable_v<
+        //     typename[:type_of(member):], std::nullopt_t>;
+        constexpr auto is_optional = std::meta::has_template_arguments(std::meta::type_of(member))
+            && std::meta::template_of(std::meta::type_of(member)) == ^^std::optional;
         using member_type = typename strip_optional<typename[:type_of(member):]>::type;
         constexpr std::string_view member_ident = std::meta::identifier_of(member);
         auto attr = n.attribute(member_ident);
@@ -74,6 +104,23 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
         }
         if constexpr (std::is_same_v<member_type, std::string>) {
             ret.[:member:] = attr.as_string();
+        } else if constexpr (std::meta::is_enum_type(^^member_type)) {
+            auto as_str = attr.as_string();
+            if (!as_str) {
+                return { std::runtime_error(
+                    std::format(
+                        "Attribute '{}' not a string", member_ident)) };
+            }
+            if (auto en = enum_from_string<member_type>(as_str);
+                !en.has_value() && !is_optional) {
+                return { std::runtime_error(
+                    std::format(
+                        "Attribute '{}' of disallowed value '{}'",
+                        member_ident,
+                        as_str)) };
+            } else if (en.has_value()) {
+                ret.[:member:] = *en;
+            }
         } else if constexpr (std::is_same_v<member_type, unsigned int>) {
             ret.[:member:] = attr.as_uint();
         } else if constexpr (std::is_same_v<member_type, int>) {
@@ -96,7 +143,9 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
     return { ret };
 }
 #else
-    ;
+{
+    (void)n;
+}
 #endif
 
 template <std::default_initializable T>
@@ -160,6 +209,9 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
     return { ret };
 }
 #else
-    ;
+{
+    (void)n;
+}
 #endif
+
 }
