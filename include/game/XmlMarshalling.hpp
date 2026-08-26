@@ -31,6 +31,11 @@ struct strip_optional<std::optional<T>> {
     using type = T;
 };
 
+// Special class template that when detected as a non static member
+// of an unmarshalled node, will be set to a populated instantce of T.
+// The instance of T is populated via a call to unmarshall_attributes<T>,
+// this way one can obtain attributes of a node while calling
+// unmarshall_node.
 template <typename T>
 struct Attribute {
     T val;
@@ -76,6 +81,19 @@ constexpr std::optional<E> enum_from_string(const std::string_view sv)
 }
 #endif
 
+// Populates nonstatic members of T from attributes of n.
+// Member names are treated as attribute names and their types define how
+// the attribute values are extracted.
+//
+// Members of type:
+// std::string, int, unsigned int, double, float and enums are handled by default.
+//
+// Custom types are supported via the ParsableFromXml<member_type, const char*> concept.
+//
+// Errors if a member does not name an existing attribute of the node
+// and is not of type std::optional.
+//
+// Errors if the member type does not match the attribute type.
 template <std::default_initializable T>
 Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
 #ifndef CLANGD_SKIP
@@ -86,8 +104,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
     template for (constexpr auto member : std::define_static_array(
                       std::meta::nonstatic_data_members_of(info, ctx)))
     {
-        // constexpr auto is_optional = std::is_assignable_v<
-        //     typename[:type_of(member):], std::nullopt_t>;
+        // constexpr auto actual_mem_ty = std::meta::type_of(member);
         constexpr auto is_optional = std::meta::has_template_arguments(std::meta::type_of(member))
             && std::meta::template_of(std::meta::type_of(member)) == ^^std::optional;
         using member_type = typename strip_optional<typename[:type_of(member):]>::type;
@@ -100,7 +117,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             }
             return { std::runtime_error(
                 std::format(
-                    "Attribute '{}' not found", member_ident)) };
+                    "{} attribute '{}' not found", n.name(), member_ident)) };
         }
         if constexpr (std::is_same_v<member_type, std::string>) {
             ret.[:member:] = attr.as_string();
@@ -129,6 +146,31 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             ret.[:member:] = attr.as_double();
         } else if constexpr (std::is_same_v<member_type, float>) {
             ret.[:member:] = attr.as_float();
+        } else if constexpr (std::is_same_v<member_type, bool>) {
+            auto as_str = attr.as_string();
+            if (as_str) {
+                return { std::runtime_error(
+                    std::format(
+                        "Attribute '{}' not a string", member_ident)) };
+            }
+            const auto is_true = std::ranges::equal(as_str, "true",
+                [](const auto& a, const auto& b) {
+                    return std::tolower(a) == std::tolower(b);
+                });
+            const auto is_false = std::ranges::equal(as_str, "false",
+                [](const auto& a, const auto& b) {
+                    return std::tolower(a) == std::tolower(b);
+                });
+            if (is_true) {
+                ret.[:member:] = true;
+            } else if (is_false) {
+                ret.[:member:] = false;
+            } else {
+                return { std::runtime_error(
+                    std::format(
+                        "Attribute '{}' value is not a valid boolean",
+                        as_str)) };
+            }
         } else if constexpr (ParsableFromXml<member_type, const char*>) {
             const char* str = attr.as_string();
             auto parsed = member_type::parse_xml(str);
@@ -148,6 +190,22 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
 }
 #endif
 
+// Populates nonstatic members of T from children and attributes of n.
+// Member names are treated as child names and their types define how
+// the attribute values are extracted.
+//
+// A member child node must define either:
+// 1. ParsableFromXml<T, pugi::xml_text> -> where it populates itself from its text,
+//    but the function will unmarshall its attributes.
+// 2. UnmarshallSelf<T> -> where it populates itself from the xml_node,
+//    but the function will return immediately after unmarshall_self returns.
+//
+// A member named text will be set to the xml_text of the node.
+//
+// If a member is of type Attribute<T> then it is populated via unmarshall_attributes<T>.
+//
+// Errors if a member cannot me unmarshalled from xml_text or xml_node and is
+// not unmarshallable from attributes.
 template <std::default_initializable T>
 Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
 #ifndef CLANGD_SKIP
@@ -201,10 +259,15 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
                     std::runtime_error(
                         std::format("member {} not present in xml", member_ident))
                 };
-            } else if (auto unm = unmarshall_node<stripped_member_type>(ch); unm.isok()) {
+            } else if (auto unm = unmarshall_node<stripped_member_type>(ch);
+                unm.isok()) {
                 ret.[:member:] = std::move(unm.unwrap());
             } else {
-                return { unm.unwrap_err() };
+                if constexpr (is_optional) {
+                    ret.[:member:] = std::nullopt;
+                } else {
+                    return { unm.unwrap_err() };
+                }
             }
         }
     }

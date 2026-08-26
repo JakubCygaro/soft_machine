@@ -8,6 +8,7 @@
 #include "machine/Scheduler.hpp"
 #include <concepts>
 #include <deque>
+#include <format>
 #include <list>
 #include <memory>
 #include <stdexcept>
@@ -107,13 +108,22 @@ public:
         std::string to,
         Args&&... ctor_args)
     {
+        if(name.empty())
+            throw std::runtime_error(
+                    std::format("attempted to create connection with empty name"));
         if (m_named_conns.contains(name)) {
-            throw std::runtime_error("connection already exists");
+            throw std::runtime_error(
+                    std::format("'{}' connection already exists",
+                        name));
         }
         if (!m_named_comps.contains(from))
-            throw std::runtime_error("from component does not exist");
+            throw std::runtime_error(
+                    std::format("{} from component '{}' does not exist",
+                        name, from));
         if (!m_named_comps.contains(to))
-            throw std::runtime_error("to component does not exist");
+            throw std::runtime_error(
+                    std::format("{} from component '{}' does not exist",
+                        name, to));
 
         auto* from_ptr = m_named_comps[from];
         auto* to_ptr = m_named_comps[to];

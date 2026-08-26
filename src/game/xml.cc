@@ -2,6 +2,7 @@
 #include "common/Result.hpp"
 #include "common/String.hpp"
 #include "components/Cpu.hpp"
+#include "components/GameGraphElements.hpp"
 #include "components/Memory.hpp"
 #include "components/Passthrough.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -21,7 +22,6 @@
 #include <string>
 #include <system_error>
 #include <type_traits>
-#include <raylib.h>
 
 namespace {
 using err_t = std::runtime_error;
@@ -37,63 +37,59 @@ get_position_node(pugi::xml_node& n)
     if (auto v = game::xml::unmarshall_attributes<::Vector2>(p_n); v.isok()) {
         return { v.unwrap() };
     }
-    // auto ret = ::Vector2 { };
-    // if (auto x = p_n.attribute("x")) {
-    //     ret.x = x.as_int();
-    // }
-    // if (auto y = p_n.attribute("y")) {
-    //     ret.y = y.as_int();
-    // }
     return std::nullopt;
 }
 
-using name_from_to_t = std::tuple<std::string, std::string, std::string>;
-Result<err_t, name_from_to_t>
-get_name_from_and_to(pugi::xml_node& n)
-{
-    using ret = Result<err_t, name_from_to_t>;
-    auto name_a = n.attribute("name");
-    if (!name_a)
-        return { err_t("No 'name' defined for connector") };
-    auto name = name_a.as_string();
-    if (!name)
-        return ret::err(err_t("Empty 'name' field"));
-    auto from_a = n.attribute("from");
-    if (!from_a)
-        return ret::err(err_t("No 'from' defined for connector"));
-    auto from = from_a.as_string();
-    if (!from)
-        return ret::err(err_t("Empty 'from' field"));
-    auto to_a = n.attribute("to");
-    if (!to_a)
-        return ret::err(err_t("No 'to' defined for connector"));
-    auto to = to_a.as_string();
-    if (!to)
-        return ret::err(err_t("Empty 'to' field"));
-    return ret::ok(name_from_to_t(name, from, to));
-}
+struct pos_node {
+    struct attrs {
+        float x, y;
+    };
+    game::xml::Attribute<attrs> attrs;
+    inline ::Vector2 to_vec2() const noexcept
+    {
+        return ::Vector2 { attrs->x, attrs->y };
+    }
+};
+struct common_conn_attr {
+    std::string name, from, to;
+};
 
 template <typename T>
 struct build;
-// {
-//     using result_t = Result<err_t, T*>;
-//     result_t
-//     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept = delete;
-// };
 
 template <>
 struct build<components::Passthrough> {
     Result<err_t, components::Passthrough*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
     {
-        auto a = get_name_from_and_to(n);
-        if (a.iserr())
-            return { a.unwrap_err() };
-        auto [name, f, t] = std::get<name_from_to_t>(a);
+        struct attach_attrs {
+            std::string name;
+            components::AttachPt at;
+        };
+        struct passth_node {
+            struct from_node {
+                game::xml::Attribute<attach_attrs> attrs;
+            } from;
+            struct to_node {
+                game::xml::Attribute<attach_attrs> attrs;
+            } to;
+            struct attrs {
+                std::string name;
+            };
+            game::xml::Attribute<attrs> attrs;
+        };
+        passth_node passth;
+        if (auto unm = game::xml::unmarshall_node<passth_node>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            passth = *unm;
+        }
         auto p = mg.create_connection<components::Passthrough>(
-            name,
-            f,
-            t);
+            passth.attrs->name,
+            passth.from.attrs->name,
+            passth.to.attrs->name);
+        p->set_from_attp(passth.from.attrs->at);
+        p->set_to_attp(passth.to.attrs->at);
         return Result<err_t, components::Passthrough*>::ok(p);
     }
 };
@@ -122,6 +118,7 @@ struct build<components::CPU> {
                     return { unit() };
                 }
             } code;
+            std::optional<pos_node> position;
         };
         cpu_node cpu;
         if (auto unm = game::xml::unmarshall_node<cpu_node>(n); unm.iserr()) {
@@ -139,6 +136,9 @@ struct build<components::CPU> {
         auto p = mg.create_component<components::CPU>(
             cpu.attrs->name,
             std::move(inst));
+        if (cpu.position) {
+            p->set_pos(cpu.position->to_vec2());
+        }
         return { p };
     }
 };
@@ -215,6 +215,7 @@ struct build<components::Memory> {
             components::Memory::Layout layout;
         };
         game::xml::Attribute<mem_attr> attrs;
+        std::optional<pos_node> position;
     };
     Result<err_t, components::Memory*>
     operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
@@ -229,6 +230,9 @@ struct build<components::Memory> {
             mem_n.attrs->name,
             std::move(mem_n.memset.mem));
         p->set_layout(mem_n.attrs->layout);
+        if (mem_n.position) {
+            p->set_pos(mem_n.position->to_vec2());
+        }
         return { p };
     }
 };
@@ -236,6 +240,18 @@ template <typename T>
 concept Buildable = requires() {
     sizeof(build<T>);
 };
+// This function reflects on the components namespace and then
+// compares the name of parameter xml_node (lowercase) with classes
+// defined in that namespace. If the name matches and a coresponding
+// build<components::X> specialization exists then uses it to build
+// that component form the xml_node.
+//
+// For example:
+// components::CPU will match for a node named "cpu"
+// and then build<components::CPU> will be instantiated and
+// called as a functor
+// build<components::CPU>()(machine::MachineGraph&, pugi::xml_node&)
+//
 ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
 #ifndef CLANGD_SKIP
 {
@@ -268,9 +284,8 @@ ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
                         return { res.unwrap_err() };
                     auto comp = res.unwrap();
                     if constexpr (
-                        std::derived_from<components::OComponent,
-                            typename[:mem_de:]>) {
-                        if (auto pos = get_position_node(n)) {
+                        std::derived_from<components::OComponent, typename[:mem_de:]>) {
+                        if (auto pos = get_position_node(n); pos) {
                             comp->set_pos(*pos);
                         }
                     }
@@ -278,29 +293,6 @@ ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
             }
         }
     }
-    // if (std::strcmp("passthrough", name) == 0) {
-    //     auto res = build<components::Passthrough>()(mg, n);
-    //     if (res.iserr())
-    //         return { res.unwrap_err() };
-    // }
-    // components::OComponent* as_comp = nullptr;
-    // if (std::strcmp("memory", name) == 0) {
-    //     auto res = build<components::Memory>()(mg, n);
-    //     if (res.iserr())
-    //         return { res.unwrap_err() };
-    //     as_comp = res.unwrap();
-    // }
-    // if (std::strcmp("cpu", name) == 0) {
-    //     auto res = build<components::CPU>()(mg, n);
-    //     if (res.iserr())
-    //         return { res.unwrap_err() };
-    //     as_comp = res.unwrap();
-    // }
-    // if (as_comp) {
-    //     if (auto pos = get_position_node(n)) {
-    //         as_comp->set_pos(*pos);
-    //     }
-    // }
     return { unit() };
 }
 #else

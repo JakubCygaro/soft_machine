@@ -82,6 +82,10 @@ public:
             p.x += get_size().x;
             p.y += get_size().y / 2;
         } break;
+        case AttachPt::L: {
+            p = get_pos();
+            p.y += get_size().y / 2;
+        } break;
         case AttachPt::BL: {
             p = get_pos();
             p.y += get_size().y;
@@ -113,12 +117,8 @@ public:
         std::string out)
         : machine::Connection(start, end, in, out)
     {
-        if (auto s = dynamic_cast<OComponent*>(start)) {
-            m_start_pos = s->get_center();
-        }
-        if (auto e = dynamic_cast<OComponent*>(end)) {
-            m_end_pos = e->get_center();
-        }
+        _set_from_attp(*this, AttachPt::C);
+        _set_to_attp(*this, AttachPt::C);
     }
     inline OConnection(const OConnection&) = delete;
     inline OConnection& operator=(const OConnection&) = delete;
@@ -135,6 +135,30 @@ public:
         m_end_pos = o.m_end_pos;
         return *this;
     }
+
+private:
+    inline static void _set_from_attp(OConnection& self, const AttachPt& ap)
+    {
+        if (auto s = dynamic_cast<const OComponent*>(self.get_start())) {
+            self.m_start_pos = s->get_att_point(ap);
+        }
+    }
+    inline static void _set_to_attp(OConnection& self, const AttachPt& ap)
+    {
+        if (auto e = dynamic_cast<const OComponent*>(self.get_end())) {
+            self.m_end_pos = e->get_att_point(ap);
+        }
+    }
+
+public:
+    inline virtual void set_from_attp(const AttachPt& ap)
+    {
+        _set_from_attp(*this, ap);
+    };
+    inline virtual void set_to_attp(const AttachPt& ap)
+    {
+        _set_to_attp(*this, ap);
+    };
 
     inline virtual ~OConnection() { }
 };
