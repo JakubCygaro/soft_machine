@@ -126,6 +126,7 @@ public:
     inline static const ::Color INST_COLOR = ::BLACK;
     inline static const ::Color BODY_COLOR = ::LIME;
     inline static constexpr const size_t REG_COUNT = 10;
+    inline static constexpr const int REG_FONT_SIZE = 20;
     using code_t = std::vector<std::unique_ptr<Instruction>>;
     using regs_t = std::array<int, REG_COUNT>;
 
@@ -140,6 +141,13 @@ private:
     ::Vector2 m_max_inst_dims { };
     ::Vector2 m_name_sz;
     int m_pc { };
+    ::Vector2 m_max_reg_dims {};
+    struct reg_draw_data {
+        std::string rep;
+        ::Vector2 dims;
+    };
+    std::array<reg_draw_data, REG_COUNT> m_reg_draw_data;
+    std::pair<::Vector2, std::string> m_pc_draw_data;
 
 public:
     inline CPU(
@@ -160,6 +168,9 @@ public:
         , m_max_inst_dims { std::move(o.m_max_inst_dims) }
         , m_name_sz { std::move(o.m_name_sz) }
         , m_pc { std::move(o.m_pc) }
+        , m_max_reg_dims { std::move(o.m_max_reg_dims) }
+        , m_reg_draw_data { std::move(o.m_reg_draw_data) }
+        , m_pc_draw_data { std::move(o.m_pc_draw_data) }
     {
     }
     inline CPU& operator=(CPU&& o)
@@ -171,6 +182,8 @@ public:
         m_max_inst_dims = std::move(o.m_max_inst_dims);
         m_name_sz = std::move(o.m_name_sz);
         m_pc = std::move(o.m_pc);
+        m_reg_draw_data = std::move(o.m_reg_draw_data);
+        m_pc_draw_data = std::move(o.m_pc_draw_data);
         return *this;
     }
     inline virtual ~CPU() { };
@@ -187,5 +200,8 @@ public:
 
 private:
     static void setup(CPU& self);
+    static void setup_regs(CPU& self);
+    static void setup_pc(CPU& self);
+    static void setup_bounds(CPU& self);
 };
 }
