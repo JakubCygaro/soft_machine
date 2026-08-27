@@ -8,14 +8,18 @@
         <code>
             <wait
                 on="TRIG-CPU"
-                into="R0"/>
+                into="R1"/>
             <load
                 from="MEM-CPU"
                 at="0"
-                into="R1"/>
+                into="R0"/>
             <add
                 src="R1"
                 dst="R0"/>
+            <send
+                from="R0"
+                to="CPU-DISP"
+                />
         </code>
     </cpu>
     <passthrough name="MEM-CPU">
@@ -29,5 +33,15 @@
     <passthrough name="TRIG-CPU">
         <from name="TRIG" at="TC"/>
         <to name="CPU" at="BC"/>
+    </passthrough>
+    <display name="DISPLAY"
+        width="200"
+        height="200"
+        font_size="24" >
+        <position x="1500" y="0"/>
+    </display>
+    <passthrough name="CPU-DISP">
+        <from name="CPU" at="R"/>
+        <to name="DISPLAY" at="L"/>
     </passthrough>
 </graph>

@@ -52,6 +52,8 @@ CPU::instruction_from_xml(pugi::xml_node& inode)
         ret = map(load.operator()<InstAdd>(inode));
     } else if (!std::strcmp(name, "sub")) {
         ret = map(load.operator()<InstSub>(inode));
+    } else if (!std::strcmp(name, "send")) {
+        ret = map(load.operator()<InstSend>(inode));
     }
 
     return ret;
@@ -188,6 +190,10 @@ void CPU::unmark_all(void)
     std::ranges::for_each(m_reg_draw_data,
         [](auto& rd) { rd.marked = false; });
 }
+int& CPU::reg(const Register& r)
+{
+    return m_regs[r.idx];
+}
 void CPU::setup(CPU& self)
 {
     self.m_inst_draw.clear();
@@ -302,16 +308,25 @@ CPU::poll(machine::Mctx ctx)
                 auto [s, m] = co_await ctx.recv();
                 if (s != i->attrs->from)
                     continue;
-                if(auto mem_fail = std::any_cast<mem::MemoryFail>(&m)){
-                    //TODO: memory read failure handling
+                if (auto mem_fail = std::any_cast<mem::MemoryFail>(&m)) {
+                    // TODO: memory read failure handling
                     (void)mem_fail;
                 }
-                if(auto mem_succ = std::any_cast<mem::MemoryResponse>(&m)){
+                if (auto mem_succ = std::any_cast<mem::MemoryResponse>(&m)) {
                     m_regs[i->attrs->into.idx] = mem_succ->val;
                     m_reg_draw_data[i->attrs->into.idx].marked = true;
                     break;
                 }
             }
+        }
+        if (auto i = dynamic_cast<const InstSend*>(inst)) {
+            co_await ctx.send(i->attrs->to, reg(i->attrs->from));
+        }
+        if (auto i = dynamic_cast<const InstAdd*>(inst)) {
+            reg(i->attr->dst) += reg(i->attr->src);
+        }
+        if (auto i = dynamic_cast<const InstSub*>(inst)) {
+            reg(i->attr->dst) -= reg(i->attr->src);
         }
 
         m_pc++;

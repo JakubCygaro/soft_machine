@@ -206,5 +206,6 @@ private:
     static void setup_pc(CPU& self);
     static void setup_bounds(CPU& self);
     void unmark_all(void);
+    int& reg(const Register&);
 };
 }

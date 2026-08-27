@@ -2,6 +2,7 @@
 #include "common/Result.hpp"
 #include "common/String.hpp"
 #include "components/Button.hpp"
+#include "components/Display.hpp"
 #include "components/Cpu.hpp"
 #include "components/GameGraphElements.hpp"
 #include "components/Memory.hpp"
@@ -298,6 +299,37 @@ struct build<components::Button> {
             p->set_pos(button.position->to_vec2());
         }
         return Result<err_t, components::Button*>::ok(p);
+    }
+};
+template <>
+struct build<components::Display> {
+    Result<err_t, components::Display*>
+    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    {
+        struct display_node {
+            struct attrs {
+                std::string name;
+                float font_size;
+            };
+            game::xml::Attribute<attrs> attrs;
+            game::xml::Attribute<size_attr> sz;
+            std::optional<pos_node> position;
+        };
+        display_node display;
+        if (auto unm = game::xml::unmarshall_node<display_node>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            display = unm.unwrap();
+        }
+        auto p = mg.create_component<components::Display>(
+            display.attrs->name,
+            display.attrs->font_size);
+        p->set_size(display.sz->to_vec2());
+        if (display.position)
+        {
+            p->set_pos(display.position->to_vec2());
+        }
+        return Result<err_t, components::Display*>::ok(p);
     }
 };
 template <typename T>

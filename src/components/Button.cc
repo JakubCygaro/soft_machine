@@ -1,7 +1,5 @@
 #include "components/Button.hpp"
-#include "game/Globals.hpp"
 #include "game/Scene.hpp"
-#include <iostream>
 #include <raylib.h>
 namespace components {
 
