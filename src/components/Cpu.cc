@@ -1,4 +1,5 @@
 #include "components/Cpu.hpp"
+#include "components/Memory.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
@@ -6,7 +7,6 @@
 #include <concepts>
 #include <cstring>
 #include <format>
-#include <numeric>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -127,13 +127,14 @@ void CPU::draw()
             ::Vector2Scale(
                 r.dims,
                 0.5));
+        const auto c = (r.marked) ? CPU::MARKED_COLOR : CPU::INST_COLOR;
         ::DrawTextEx(
             get_node_font(),
             r.rep.c_str(),
             v_pos,
             CPU::REG_FONT_SIZE,
             default_font_spacing(),
-            CPU::INST_COLOR);
+            c);
         reg_p.x += (m_max_reg_dims.x);
     }
     auto pc_bounds = ::Rectangle {
@@ -181,6 +182,11 @@ void CPU::update()
 {
     setup_regs(*this);
     setup_bounds(*this);
+}
+void CPU::unmark_all(void)
+{
+    std::ranges::for_each(m_reg_draw_data,
+        [](auto& rd) { rd.marked = false; });
 }
 void CPU::setup(CPU& self)
 {
@@ -240,6 +246,7 @@ void CPU::setup_regs(CPU& self)
         self.m_reg_draw_data[i] = {
             .rep = rep,
             .dims = dims,
+            .marked = false,
         };
     }
 }
@@ -262,7 +269,57 @@ machine::actor::Actor
 CPU::poll(machine::Mctx ctx)
 {
     while (1) {
+        if (m_code.empty()) {
+            co_await ctx.pause();
+            continue;
+        }
+        const auto* inst = m_code[m_pc].get();
+
+        if (auto i = dynamic_cast<const InstWait*>(inst)) {
+            while (1) {
+                auto [s, m] = co_await ctx.recv();
+                if (s != i->attrs->on)
+                    continue;
+                if (auto as_int = std::any_cast<int>(&m); !as_int)
+                    continue;
+                else {
+                    m_regs[i->attrs->into.idx] = *as_int;
+                    m_reg_draw_data[i->attrs->into.idx].marked = true;
+                    break;
+                }
+            }
+        }
+        if (auto i = dynamic_cast<const InstLoad*>(inst)) {
+            while (1) {
+                auto s = co_await ctx.send(
+                    i->attrs->from,
+                    components::mem::MemoryRead(i->attrs->at));
+                if (s.iserr())
+                    continue;
+                break;
+            }
+            while (1) {
+                auto [s, m] = co_await ctx.recv();
+                if (s != i->attrs->from)
+                    continue;
+                if(auto mem_fail = std::any_cast<mem::MemoryFail>(&m)){
+                    //TODO: memory read failure handling
+                    (void)mem_fail;
+                }
+                if(auto mem_succ = std::any_cast<mem::MemoryResponse>(&m)){
+                    m_regs[i->attrs->into.idx] = mem_succ->val;
+                    m_reg_draw_data[i->attrs->into.idx].marked = true;
+                    break;
+                }
+            }
+        }
+
+        m_pc++;
+        if (m_pc >= static_cast<int>(m_code.size()))
+            m_pc = 0;
+        setup_pc(*this);
         co_await ctx.pause();
+        unmark_all();
     }
 }
 }

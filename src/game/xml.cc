@@ -1,6 +1,7 @@
 #include "game/Xml.hpp"
 #include "common/Result.hpp"
 #include "common/String.hpp"
+#include "components/Button.hpp"
 #include "components/Cpu.hpp"
 #include "components/GameGraphElements.hpp"
 #include "components/Memory.hpp"
@@ -13,10 +14,8 @@
 #include <cstddef>
 #include <cstring>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <optional>
-#include <print>
 #include <ranges>
 #include <raylib.h>
 #include <string>
@@ -52,6 +51,13 @@ struct pos_node {
 };
 struct common_conn_attr {
     std::string name, from, to;
+};
+struct size_attr {
+    float width, height;
+    inline ::Vector2 to_vec2() const noexcept
+    {
+        return { width, height };
+    }
 };
 
 template <typename T>
@@ -234,6 +240,64 @@ struct build<components::Memory> {
             p->set_pos(mem_n.position->to_vec2());
         }
         return { p };
+    }
+};
+template <>
+struct build<components::Button> {
+    Result<err_t, components::Button*>
+    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    {
+        struct button_node {
+            struct attrs {
+                std::string name;
+            };
+            game::xml::Attribute<attrs> attrs;
+            game::xml::Attribute<size_attr> sz;
+            std::optional<pos_node> position;
+            struct val_node {
+                struct attrs {
+                    components::Button::MsgKind kind;
+                };
+                game::xml::Attribute<attrs> attrs;
+                std::string text;
+            } value;
+        };
+        button_node button;
+        if (auto unm = game::xml::unmarshall_node<button_node>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            button = unm.unwrap();
+        }
+        using enum components::Button::MsgKind;
+        std::any msg;
+        switch (button.value.attrs->kind) {
+        case String: {
+            msg = common::trim(button.value.text);
+        } break;
+        case Number: {
+            auto trimmed = common::trim(button.value.text);
+            int out;
+            auto res = std::from_chars(
+                trimmed.data(),
+                trimmed.data() + trimmed.size(),
+                out,
+                10);
+            if (res.ec == std::errc::invalid_argument) {
+                return { std::runtime_error(
+                    std::format("Failed to parse button value node as a number")) };
+            }
+            msg = out;
+        } break;
+        }
+        auto p = mg.create_component<components::Button>(
+            button.attrs->name,
+            std::move(msg));
+        p->set_size(button.sz->to_vec2());
+        if (button.position)
+        {
+            p->set_pos(button.position->to_vec2());
+        }
+        return Result<err_t, components::Button*>::ok(p);
     }
 };
 template <typename T>

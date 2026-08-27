@@ -125,6 +125,7 @@ public:
 public:
     inline static const ::Color INST_COLOR = ::BLACK;
     inline static const ::Color BODY_COLOR = ::LIME;
+    inline static const ::Color MARKED_COLOR = ::BLUE;
     inline static constexpr const size_t REG_COUNT = 10;
     inline static constexpr const int REG_FONT_SIZE = 20;
     using code_t = std::vector<std::unique_ptr<Instruction>>;
@@ -145,6 +146,7 @@ private:
     struct reg_draw_data {
         std::string rep;
         ::Vector2 dims;
+        bool marked;
     };
     std::array<reg_draw_data, REG_COUNT> m_reg_draw_data;
     std::pair<::Vector2, std::string> m_pc_draw_data;
@@ -203,5 +205,6 @@ private:
     static void setup_regs(CPU& self);
     static void setup_pc(CPU& self);
     static void setup_bounds(CPU& self);
+    void unmark_all(void);
 };
 }

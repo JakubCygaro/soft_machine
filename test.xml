@@ -7,10 +7,10 @@
         <position x="200" y="0"/>
         <code>
             <wait
-                on="CPU-TRIGGER"
+                on="TRIG-CPU"
                 into="R0"/>
             <load
-                from="CPU-MEM"
+                from="MEM-CPU"
                 at="0"
                 into="R1"/>
             <add
@@ -22,7 +22,12 @@
         <from name="MEM" at="R"/>
         <to name="CPU" at="L"/>
     </passthrough>
-    <button name="TRIG" target="CPU-TRIG" >
-        <send number="20"/>
+    <button name="TRIG" width="200" height="200">
+        <position x="200" y="-250"/>
+        <value kind="number">2</value>
     </button>
+    <passthrough name="TRIG-CPU">
+        <from name="TRIG" at="TC"/>
+        <to name="CPU" at="BC"/>
+    </passthrough>
 </graph>

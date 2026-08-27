@@ -139,10 +139,10 @@ public:
         }
         auto [d1, c1] = conn->on_connecting_to_start();
         c1(
-            from_ptr->on_incoming_connection(name, conn.get(), d1));
+            from_ptr->on_outcoming_connection(name, conn.get(), d1));
         auto [d2, c2] = conn->on_connecting_to_end();
         c2(
-            to_ptr->on_outcoming_connection(name, conn.get(), d2));
+            to_ptr->on_incoming_connection(name, conn.get(), d2));
         m_named_conns[name] = conn.get();
         if (!m_incidents.contains(from_ptr)) {
             m_incidents[from_ptr] = { conn.get() };

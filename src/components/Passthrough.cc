@@ -7,13 +7,13 @@ void Passthrough::draw()
 machine::actor::Actor Passthrough::poll(machine::Mctx ctx)
 {
     while (true) {
-        m_color = ::BLACK;
         auto [s, m] = co_await ctx.recv();
+        m_color = ::RED;
         if (s == in)
             co_await ctx.send(out, std::move(m));
         else if (s == out)
             co_await ctx.send(in, std::move(m));
-        m_color = ::RED;
+        m_color = ::BLACK;
         co_await ctx.pause();
     }
 }

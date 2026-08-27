@@ -1,4 +1,5 @@
 #include "game/Scene.hpp"
+#include "game/Globals.hpp"
 #include <algorithm>
 #include <memory>
 #include <print>
@@ -63,9 +64,10 @@ void GraphScene::update()
                 ::Vector2Scale(::GetMouseDelta(), 1 / m_cam.zoom));
         }
     }
-    if(m_framec % 60 == 0){
+    if (m_framec % 60 == 0) {
         m_mgraph->poll_all();
     }
+    GraphScene::set_camera(&m_cam);
     for (auto o : m_graph_objs) {
         o->update();
     }

@@ -1,7 +1,6 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
 #include "components/msg/Message.hpp"
-#include "game/resources/Resources.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <format>

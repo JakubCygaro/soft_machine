@@ -21,12 +21,26 @@ private:
     std::unique_ptr<machine::MachineGraph> m_mgraph;
     std::vector<std::shared_ptr<Object>> m_graph_objs { };
     ::Camera2D m_cam;
-    uint64_t m_framec{};
+    uint64_t m_framec { };
+
 public:
     ::Rectangle bounds { };
 
 public:
     void draw();
     void update();
+
+private:
+    inline static ::Camera2D* camera2D = nullptr;
+    inline static void set_camera(::Camera2D* c)
+    {
+        camera2D = c;
+    }
+
+public:
+    inline static const ::Camera2D* get_camera()
+    {
+        return camera2D;
+    }
 };
 }
