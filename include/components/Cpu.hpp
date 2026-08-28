@@ -1,5 +1,6 @@
 #pragma once
 #include "common/Result.hpp"
+#include "common/reflect/Enum.hpp"
 #include "components/GameGraphElements.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -133,7 +134,7 @@ public:
         {
             return std::format("IF R{} {} R{}\n\tJMPTO {}",
                 attrs->a.idx,
-                static_cast<int>(attrs->op),
+                common::reflect::enum_to_string<Op>(attrs->op),
                 attrs->b.idx,
                 attrs->jmpto);
         }

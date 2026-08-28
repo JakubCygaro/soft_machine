@@ -278,5 +278,12 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
     (void)n;
 }
 #endif
-
+// TODO: Components marshalling themselves into xml for later serialization
+template <typename Self>
+struct MarshallToXml {
+    inline static pugi::xml_node marshall_to_xml(const Self& self) noexcept
+    {
+        pugi::xml_node();
+    }
+};
 }
