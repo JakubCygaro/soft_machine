@@ -1,5 +1,4 @@
 #include "components/Display.hpp"
-#include <iostream>
 #include <string>
 
 namespace components {

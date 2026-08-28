@@ -1,38 +1,88 @@
 <graph>
     <memory name="MEM" layout="vertical">
         <position x="-400" y="0"/>
-        <memset>1 2 3 5 100</memset>
+        <memset>2 1 3 7 100</memset>
     </memory>
     <cpu name="CPU">
-        <position x="200" y="0"/>
+        <position x="200" y="-500"/>
         <code>
             <wait
-                on="TRIG-CPU"
+                on="REP-CPU"
+                into="R0"/>
+            <wait
+                on="REP-CPU"
                 into="R1"/>
+            <wait
+                on="REP-CPU"
+                into="R2"/>
+            <wait
+                on="REP-CPU"
+                into="R3"/>
             <load
                 from="MEM-CPU"
                 at="0"
-                into="R0"/>
+                into="R4"
+                />
+            <load
+                from="MEM-CPU"
+                at="1"
+                into="R5"
+                />
+            <load
+                from="MEM-CPU"
+                at="2"
+                into="R6"
+                />
+            <load
+                from="MEM-CPU"
+                at="3"
+                into="R7"
+                />
+            <sub
+                src="R4"
+                dst="R0"
+                />
+            <sub
+                src="R5"
+                dst="R1"
+                />
+            <sub
+                src="R6"
+                dst="R2"
+                />
+            <sub
+                src="R7"
+                dst="R3"
+                />
             <add
-                src="R1"
-                dst="R0"/>
+                src="R0"
+                dst="R1"
+                />
+            <add
+                src="R0"
+                dst="R2"
+                />
+            <add
+                src="R0"
+                dst="R3"
+                />
+            <movi
+                ival="0"
+                into="R1"/>
+            <if
+                a="R0" op="NE" b="R1"
+                jmpto="0"/>
+            <movi
+                ival="1"
+                into="R0"/>
             <send
                 from="R0"
-                to="CPU-DISP"
-                />
+                to="CPU-DISP"/>
         </code>
     </cpu>
     <passthrough name="MEM-CPU">
         <from name="MEM" at="R"/>
         <to name="CPU" at="L"/>
-    </passthrough>
-    <button name="TRIG" width="200" height="200">
-        <position x="200" y="-250"/>
-        <value kind="number">2</value>
-    </button>
-    <passthrough name="TRIG-CPU">
-        <from name="TRIG" at="TC"/>
-        <to name="CPU" at="BC"/>
     </passthrough>
     <display name="DISPLAY"
         width="200"
@@ -44,4 +94,113 @@
         <from name="CPU" at="R"/>
         <to name="DISPLAY" at="L"/>
     </passthrough>
+    <!--Keypad section-->
+    <!--repeater-->
+    <repeater name="REP" width="100" height="100">
+        <position x="600" y="1400"/>
+    </repeater>
+    <passthrough name="REP-CPU">
+        <from name="REP" at="TC"/>
+        <to name="CPU" at="BC"/>
+    </passthrough>
+    <!--repeater end-->
+
+    <!--top row-->
+    <button name="7BUTTON" width="200" height="200">
+        <position x="200" y="1600"/>
+        <value kind="number">7</value>
+    </button>
+    <passthrough name="7BUTTON-REP">
+        <from name="7BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="8BUTTON" width="200" height="200">
+        <position x="500" y="1600"/>
+        <value kind="number">8</value>
+    </button>
+    <passthrough name="8BUTTON-REP">
+        <from name="8BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="9BUTTON" width="200" height="200">
+        <position x="800" y="1600"/>
+        <value kind="number">9</value>
+    </button>
+    <passthrough name="9BUTTON-REP">
+        <from name="9BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+    <!--top row end-->
+
+    <!--middle row-->
+    <button name="4BUTTON" width="200" height="200">
+        <position x="200" y="1900"/>
+        <value kind="number">4</value>
+    </button>
+    <passthrough name="4BUTTON-REP">
+        <from name="4BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="5BUTTON" width="200" height="200">
+        <position x="500" y="1900"/>
+        <value kind="number">5</value>
+    </button>
+    <passthrough name="5BUTTON-REP">
+        <from name="5BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="6BUTTON" width="200" height="200">
+        <position x="800" y="1900"/>
+        <value kind="number">6</value>
+    </button>
+    <passthrough name="6BUTTON-REP">
+        <from name="6BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+    <!--middle row end-->
+
+    <!--bottom row-->
+    <button name="1BUTTON" width="200" height="200">
+        <position x="200" y="2200"/>
+        <value kind="number">1</value>
+    </button>
+    <passthrough name="1BUTTON-REP">
+        <from name="1BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="2BUTTON" width="200" height="200">
+        <position x="500" y="2200"/>
+        <value kind="number">2</value>
+    </button>
+    <passthrough name="2BUTTON-REP">
+        <from name="2BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <button name="3BUTTON" width="200" height="200">
+        <position x="800" y="2200"/>
+        <value kind="number">3</value>
+    </button>
+    <passthrough name="3BUTTON-REP">
+        <from name="3BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+    <!--bottlom row end-->
+
+    <!--zero-->
+    <button name="0BUTTON" width="200" height="200">
+        <position x="500" y="2500"/>
+        <value kind="number">0</value>
+    </button>
+    <passthrough name="0BUTTON-REP">
+        <from name="0BUTTON" at="TC"/>
+        <to name="REP" at="BC"/>
+    </passthrough>
+
+    <!--Keypad section end-->
 </graph>

@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstring>
 #include <format>
+#include <iostream>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -54,6 +55,10 @@ CPU::instruction_from_xml(pugi::xml_node& inode)
         ret = map(load.operator()<InstSub>(inode));
     } else if (!std::strcmp(name, "send")) {
         ret = map(load.operator()<InstSend>(inode));
+    } else if (!std::strcmp(name, "if")) {
+        ret = map(load.operator()<InstIf>(inode));
+    } else if (!std::strcmp(name, "movi")) {
+        ret = map(load.operator()<InstMovi>(inode));
     }
 
     return ret;
@@ -69,7 +74,7 @@ void CPU::draw()
         BODY_COLOR);
     auto code_d = ::Vector2 {
         .x = m_max_inst_dims.x,
-        .y = m_max_inst_dims.y * m_inst_draw.size(),
+        .y = m_inst_dims_y_acc,
     };
     auto code_p = ::Vector2 {
         .x = center.x - (code_d.x / 2.0f),
@@ -97,10 +102,6 @@ void CPU::draw()
             color);
         code_p.y += (inst.dims.y);
     }
-    // auto reg_d = ::Vector2 {
-    //     .x = m_max_reg_dims.x * m_regs.size(),
-    //     .y = m_max_reg_dims.y,
-    // };
     auto reg_p = ::Vector2 {
         .x = center.x - (code_d.x / 2.0f),
         .y = center.y - (code_d.y / 2.0f) - (m_max_reg_dims.y * 1.1f),
@@ -198,6 +199,7 @@ void CPU::setup(CPU& self)
 {
     self.m_inst_draw.clear();
     self.m_max_inst_dims = { };
+    self.m_inst_dims_y_acc = 0;
     for (const auto& inst : self.m_code) {
         const auto rep = inst->to_render_string();
         const auto dims = ::MeasureTextEx(
@@ -206,14 +208,16 @@ void CPU::setup(CPU& self)
             game::resources::default_node_font_size(),
             game::resources::default_font_spacing());
         self.m_max_inst_dims = {
-            .x = std::max(self.m_max_inst_dims.x, dims.x * 1.5f),
-            .y = std::max(self.m_max_inst_dims.y, dims.y * 1.5f),
+            .x = std::max(self.m_max_inst_dims.x, dims.x * 1.2f),
+            .y = std::max(self.m_max_inst_dims.y, dims.y * 1.0f),
         };
         self.m_inst_draw.push_back({
             .rep = rep,
             .dims = dims,
         });
+        self.m_inst_dims_y_acc += dims.y;
     }
+    self.m_inst_dims_y_acc *= 1.2f;
     setup_regs(self);
     setup_pc(self);
     using namespace game::resources;
@@ -263,12 +267,12 @@ void CPU::setup_bounds(CPU& self)
         .y = self.m_bounds.y,
         .width = (self.m_max_inst_dims.x
                      + self.m_max_reg_dims.x * self.m_regs.size())
-            * 1.4f,
-        .height = (self.m_max_inst_dims.y * self.m_inst_draw.size()
+            * 1.0f,
+        .height = (self.m_inst_dims_y_acc
                       + self.m_max_reg_dims.y
                       + self.m_name_sz.y
                       + std::get<::Vector2>(self.m_pc_draw_data).y)
-            * 1.8f,
+            * 1.2f,
     };
 }
 machine::actor::Actor
@@ -318,6 +322,37 @@ CPU::poll(machine::Mctx ctx)
                     break;
                 }
             }
+        }
+        if (auto i = dynamic_cast<const InstIf*>(inst)) {
+            const auto& a = reg(i->attrs->a);
+            const auto& b = reg(i->attrs->b);
+            std::cout << "a: " << a << " b: " << b << std::endl;
+            bool res = false;
+            switch (i->attrs->op) {
+            case InstIf::Op::L:
+                res = a < b;
+                break;
+            case InstIf::Op::LE:
+                res = a <= b;
+                break;
+            case InstIf::Op::E:
+                res = a == b;
+                break;
+            case InstIf::Op::NE:
+                res = a != b;
+                break;
+            case InstIf::Op::G:
+                res = a > b;
+                break;
+            case InstIf::Op::GE:
+                res = a >= b;
+                break;
+            }
+            if (res)
+                m_pc = i->attrs->jmpto - 1;
+        }
+        if (auto i = dynamic_cast<const InstMovi*>(inst)) {
+            reg(i->attrs->into) = i->attrs->ival;
         }
         if (auto i = dynamic_cast<const InstSend*>(inst)) {
             co_await ctx.send(i->attrs->to, reg(i->attrs->from));

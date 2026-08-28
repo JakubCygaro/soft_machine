@@ -73,6 +73,7 @@ add_executable(soft_machine
     ${CMAKE_SOURCE_DIR}/src/components/Cpu.cc
     ${CMAKE_SOURCE_DIR}/src/components/Button.cc
     ${CMAKE_SOURCE_DIR}/src/components/Display.cc
+    ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc
 )
 target_link_libraries(soft_machine

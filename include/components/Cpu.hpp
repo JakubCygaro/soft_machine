@@ -88,6 +88,57 @@ public:
         }
         inline virtual ~InstSend() { }
     };
+    struct InstMovi : public Instruction {
+        struct movi_attr {
+            Register into;
+            int ival;
+        };
+        game::xml::Attribute<movi_attr> attrs;
+        inline virtual std::string to_string()
+        {
+            return std::format("MOVI {} INTO R{}",
+                attrs->ival, attrs->into.idx);
+        }
+        inline virtual std::string to_render_string()
+        {
+            return to_string();
+        }
+        inline virtual ~InstMovi() { }
+    };
+    struct InstIf : public Instruction {
+        // TODO: enum_to_string<E>
+        enum class Op {
+            L,
+            LE,
+            E,
+            NE,
+            G,
+            GE
+        };
+        struct if_attr {
+            Register a, b;
+            Op op;
+            int jmpto;
+        };
+        game::xml::Attribute<if_attr> attrs;
+        inline virtual std::string to_string()
+        {
+            return std::format("IF R{} {} R{} JMPTO {}",
+                attrs->a.idx,
+                static_cast<int>(attrs->op),
+                attrs->b.idx,
+                attrs->jmpto);
+        }
+        inline virtual std::string to_render_string()
+        {
+            return std::format("IF R{} {} R{}\n\tJMPTO {}",
+                attrs->a.idx,
+                static_cast<int>(attrs->op),
+                attrs->b.idx,
+                attrs->jmpto);
+        }
+        inline virtual ~InstIf() { }
+    };
     struct arth_attr {
         Register src, dst;
     };
@@ -142,7 +193,7 @@ private:
     ::Vector2 m_max_inst_dims { };
     ::Vector2 m_name_sz;
     int m_pc { };
-    ::Vector2 m_max_reg_dims {};
+    ::Vector2 m_max_reg_dims { };
     struct reg_draw_data {
         std::string rep;
         ::Vector2 dims;
@@ -150,6 +201,7 @@ private:
     };
     std::array<reg_draw_data, REG_COUNT> m_reg_draw_data;
     std::pair<::Vector2, std::string> m_pc_draw_data;
+    float m_inst_dims_y_acc;
 
 public:
     inline CPU(
@@ -173,6 +225,7 @@ public:
         , m_max_reg_dims { std::move(o.m_max_reg_dims) }
         , m_reg_draw_data { std::move(o.m_reg_draw_data) }
         , m_pc_draw_data { std::move(o.m_pc_draw_data) }
+        , m_inst_dims_y_acc { std::move(o.m_inst_dims_y_acc) }
     {
     }
     inline CPU& operator=(CPU&& o)
@@ -186,6 +239,7 @@ public:
         m_pc = std::move(o.m_pc);
         m_reg_draw_data = std::move(o.m_reg_draw_data);
         m_pc_draw_data = std::move(o.m_pc_draw_data);
+        m_inst_dims_y_acc = std::move(o.m_inst_dims_y_acc);
         return *this;
     }
     inline virtual ~CPU() { };
