@@ -8,6 +8,7 @@ set(RAYLIB_VERSION 5.5)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include_directories(
+    BEFORE ${CMAKE_SOURCE_DIR}/vendor/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_BINARY_DIR}
 )
@@ -60,8 +61,7 @@ target_compile_options(cppfeatures
 
 find_package(pugixml)
 
-add_executable(soft_machine
-    ${CMAKE_SOURCE_DIR}/src/main.cc
+add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/machine/Component.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/Connection.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/MachineContext.cpp
@@ -76,10 +76,17 @@ add_executable(soft_machine
     ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc
 )
+target_link_libraries(sf_commons
+    PUBLIC cppfeatures
+)
+
+add_executable(soft_machine
+    ${CMAKE_SOURCE_DIR}/src/main.cc
+)
 target_link_libraries(soft_machine
-    PRIVATE cppfeatures
     PRIVATE raylib
     PRIVATE pugixml
+    PRIVATE sf_commons
 )
 
 find_library(
@@ -95,14 +102,12 @@ add_executable(facelift
 target_compile_definitions(facelift
     PRIVATE -DFACELIFT_EDITOR
 )
-target_include_directories(facelift
-    PRIVATE ${CMAKE_SOURCE_DIR}/vendor/include
-)
+
 target_link_libraries(facelift
-    PRIVATE cppfeatures
     PRIVATE raylib
     PRIVATE pugixml
     PRIVATE ${rlimgui}
+    PRIVATE sf_commons
 )
 
 target_clangformat_setup(soft_machine)

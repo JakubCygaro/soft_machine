@@ -29,6 +29,12 @@ public:
 public:
     void draw();
     void update();
+#ifdef FACELIFT_EDITOR
+    inline machine::MachineGraph* get_graph()
+    {
+        return m_mgraph.get();
+    }
+#endif
 
 private:
     inline static ::Camera2D* camera2D = nullptr;
