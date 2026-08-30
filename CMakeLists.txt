@@ -82,7 +82,31 @@ target_link_libraries(soft_machine
     PRIVATE pugixml
 )
 
+find_library(
+    rlimgui
+    rlImGui
+    PATHS ${CMAKE_SOURCE_DIR}/vendor/lib
+    NO_DEFAULT_PATH
+    REQUIRED
+)
+add_executable(facelift
+    ${CMAKE_SOURCE_DIR}/src/facelift/main.cc
+)
+target_compile_definitions(facelift
+    PRIVATE -DFACELIFT_EDITOR
+)
+target_include_directories(facelift
+    PRIVATE ${CMAKE_SOURCE_DIR}/vendor/include
+)
+target_link_libraries(facelift
+    PRIVATE cppfeatures
+    PRIVATE raylib
+    PRIVATE pugixml
+    PRIVATE ${rlimgui}
+)
+
 target_clangformat_setup(soft_machine)
+target_clangformat_setup(facelift)
 
 if(WIN32 AND CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(bootleg
