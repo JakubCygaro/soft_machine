@@ -1,4 +1,5 @@
 #include "components/Cpu.hpp"
+#include "components/CpuInst.hpp"
 #include "components/Memory.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -358,10 +359,10 @@ CPU::poll(machine::Mctx ctx)
             co_await ctx.send(i->attrs->to, reg(i->attrs->from));
         }
         if (auto i = dynamic_cast<const InstAdd*>(inst)) {
-            reg(i->attr->dst) += reg(i->attr->src);
+            reg(i->attrs->dst) += reg(i->attrs->src);
         }
         if (auto i = dynamic_cast<const InstSub*>(inst)) {
-            reg(i->attr->dst) -= reg(i->attr->src);
+            reg(i->attrs->dst) -= reg(i->attrs->src);
         }
 
         m_pc++;
@@ -370,6 +371,20 @@ CPU::poll(machine::Mctx ctx)
         setup_pc(*this);
         co_await ctx.pause();
         unmark_all();
+    }
+}
+const char*
+CPU::marshall_to_xml_name() const noexcept
+{
+    return "cpu";
+}
+void CPU::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    OComponent::marshall_to_xml(self);
+    auto code = self.append_child("code");
+    for (const auto& inst : m_code) {
+        auto ich = code.append_child(inst->marshall_to_xml_name());
+        inst->marshall_to_xml(ich);
     }
 }
 }

@@ -25,27 +25,27 @@ private:
         bool set { };
         std::vector<std::string> recipents { };
     };
-    AutoMoveD<data> d { };
+    AutoMoveD<data> m_d { };
 
 public:
     inline Button(
         std::string name,
         std::any&& msg_value)
         : components::OComponent(name)
-        , d { { msg_value } }
+        , m_d { { msg_value } }
     {
     }
     Button(const Button&) = delete;
     Button& operator=(const Button&) = delete;
     inline Button(Button&& o)
         : components::OComponent(std::move(o))
-        , d { std::move(o.d) }
+        , m_d { std::move(o.m_d) }
     {
     }
     inline Button& operator=(Button&& o)
     {
         components::OComponent::operator=(std::move(o));
-        d = std::move(o.d);
+        m_d = std::move(o.m_d);
         return *this;
     }
     inline virtual ~Button() { };
@@ -59,5 +59,10 @@ public:
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
     virtual void set_size(const ::Vector2&);
+
+    virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    virtual void
+    marshall_to_xml(pugi::xml_node&) const noexcept override;
 };
 }

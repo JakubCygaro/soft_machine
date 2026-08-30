@@ -1,6 +1,8 @@
 #include "components/Button.hpp"
+#include "common/reflect/Enum.hpp"
 #include "game/Scene.hpp"
 #include <raylib.h>
+#include <string>
 namespace components {
 
 void Button::draw()
@@ -19,7 +21,7 @@ void Button::draw()
         .x = center.x - button_d.x / 2.0f,
         .y = center.y - button_d.y / 2.0f,
     };
-    const auto c = (d->set) ? BUTTON_ACTIVE_COLOR : BUTTON_INACTIVE_COLOR;
+    const auto c = (m_d->set) ? BUTTON_ACTIVE_COLOR : BUTTON_INACTIVE_COLOR;
     ::DrawRectangleRounded(
         {
             .x = button_p.x,
@@ -37,8 +39,8 @@ void Button::update()
         *game::GraphScene::get_camera());
     if (::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
         && ::CheckCollisionPointRec(m, m_bounds)
-        && !d->set) {
-        d->set = true;
+        && !m_d->set) {
+        m_d->set = true;
     }
 }
 std::any Button::on_outcoming_connection(
@@ -46,19 +48,19 @@ std::any Button::on_outcoming_connection(
     const machine::Connection*,
     std::any)
 {
-    this->d->recipents.push_back(std::string(conn_name));
+    this->m_d->recipents.push_back(std::string(conn_name));
     return nullptr;
 }
 machine::actor::Actor Button::poll(machine::Mctx ctx)
 {
     while (1) {
         co_await ctx.pause();
-        if (this->d->set) {
-            for (const auto& rc : this->d->recipents) {
-                auto msg = std::any(d->m_msg_value);
+        if (this->m_d->set) {
+            for (const auto& rc : this->m_d->recipents) {
+                auto msg = std::any(m_d->m_msg_value);
                 co_await ctx.send(rc, std::move(msg));
             }
-            this->d->set = false;
+            this->m_d->set = false;
         }
     }
 }
@@ -66,5 +68,27 @@ void Button::set_size(const ::Vector2& sz)
 {
     m_bounds.width = sz.x;
     m_bounds.height = sz.y;
+}
+const char*
+Button::marshall_to_xml_name() const noexcept
+{
+    return "button";
+}
+void Button::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    OComponent::marshall_to_xml(self);
+    append_size_attributes(self, get_size());
+    auto value = self.append_child("value");
+    if (auto ss = std::any_cast<std::string>(&this->m_d->m_msg_value); ss) {
+        value.append_attribute("kind")
+            .set_value(common::reflect::enum_to_string(MsgKind::String));
+        value.text()
+            .set(*ss);
+    } else if (auto nn = std::any_cast<int>(&this->m_d->m_msg_value); nn) {
+        value.append_attribute("kind")
+            .set_value(common::reflect::enum_to_string(MsgKind::Number));
+        value.text()
+            .set(std::to_string(*nn));
+    }
 }
 }

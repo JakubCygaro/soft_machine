@@ -1,6 +1,5 @@
 #pragma once
 #include "common/Result.hpp"
-#include "common/reflect/Enum.hpp"
 #include "components/GameGraphElements.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -30,146 +29,15 @@ public:
                 Register { str[1] - '0' }
             };
         };
+        inline std::string to_string() const noexcept
+        {
+            return std::format("R{}", idx);
+        }
     };
-    struct Instruction {
+    struct Instruction : game::xml::MarshallToXml {
         virtual std::string to_string() = 0;
         virtual std::string to_render_string() = 0;
         inline virtual ~Instruction() { }
-    };
-    struct InstWait : public Instruction {
-        struct wait_attr {
-            std::string on;
-            Register into;
-        };
-        game::xml::Attribute<wait_attr> attrs;
-        inline virtual std::string to_string()
-        {
-            return std::format("WAIT ON {} INTO R{}", attrs->on, attrs->into.idx);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("WAIT\n\tON {}\n\tINTO R{}", attrs->on, attrs->into.idx);
-        }
-        inline virtual ~InstWait() { }
-    };
-    struct InstLoad : public Instruction {
-        struct load_attr {
-            std::string from;
-            int at;
-            Register into;
-        };
-        game::xml::Attribute<load_attr> attrs;
-        inline virtual std::string to_string()
-        {
-            return std::format("LOAD FROM {} AT {} INTO R{}",
-                attrs->from, attrs->at, attrs->into.idx);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("LOAD\n\tFROM {}\n\tAT {}\n\tINTO R{}",
-                attrs->from, attrs->at, attrs->into.idx);
-        }
-        inline virtual ~InstLoad() { }
-    };
-    struct InstSend : public Instruction {
-        struct send_attr {
-            Register from;
-            std::string to;
-        };
-        game::xml::Attribute<send_attr> attrs;
-        inline virtual std::string to_string()
-        {
-            return std::format("SEND FROM R{} TO {}",
-                attrs->from.idx, attrs->to);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("SEND\n\tFROM R{}\n\tTO {}",
-                attrs->from.idx, attrs->to);
-        }
-        inline virtual ~InstSend() { }
-    };
-    struct InstMovi : public Instruction {
-        struct movi_attr {
-            Register into;
-            int ival;
-        };
-        game::xml::Attribute<movi_attr> attrs;
-        inline virtual std::string to_string()
-        {
-            return std::format("MOVI {} INTO R{}",
-                attrs->ival, attrs->into.idx);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return to_string();
-        }
-        inline virtual ~InstMovi() { }
-    };
-    struct InstIf : public Instruction {
-        // TODO: enum_to_string<E>
-        enum class Op {
-            L,
-            LE,
-            E,
-            NE,
-            G,
-            GE
-        };
-        struct if_attr {
-            Register a, b;
-            Op op;
-            int jmpto;
-        };
-        game::xml::Attribute<if_attr> attrs;
-        inline virtual std::string to_string()
-        {
-            return std::format("IF R{} {} R{} JMPTO {}",
-                attrs->a.idx,
-                static_cast<int>(attrs->op),
-                attrs->b.idx,
-                attrs->jmpto);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("IF R{} {} R{}\n\tJMPTO {}",
-                attrs->a.idx,
-                common::reflect::enum_to_string<Op>(attrs->op),
-                attrs->b.idx,
-                attrs->jmpto);
-        }
-        inline virtual ~InstIf() { }
-    };
-    struct arth_attr {
-        Register src, dst;
-    };
-    struct InstAdd : public Instruction {
-        game::xml::Attribute<arth_attr> attr;
-        inline virtual std::string to_string()
-        {
-            return std::format("ADD R{} INTO R{}",
-                attr->src.idx, attr->dst.idx);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("ADD R{} INTO R{}",
-                attr->src.idx, attr->dst.idx);
-        }
-        inline virtual ~InstAdd() { }
-    };
-    struct InstSub : public Instruction {
-        game::xml::Attribute<arth_attr> attr;
-        inline virtual std::string to_string()
-        {
-            return std::format("SUB R{} INTO R{}",
-                attr->src.idx, attr->dst.idx);
-        }
-        inline virtual std::string to_render_string()
-        {
-            return std::format("SUB R{} INTO R{}",
-                attr->src.idx, attr->dst.idx);
-        }
-        inline virtual ~InstSub() { }
     };
     static Result<std::runtime_error, Instruction*>
     instruction_from_xml(pugi::xml_node&);
@@ -255,6 +123,11 @@ public:
 
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
+    inline virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    inline virtual void
+    marshall_to_xml(pugi::xml_node& self) const noexcept override;
+
 private:
     static void setup(CPU& self);
     static void setup_regs(CPU& self);
@@ -262,5 +135,7 @@ private:
     static void setup_bounds(CPU& self);
     void unmark_all(void);
     int& reg(const Register&);
+
+protected:
 };
 }

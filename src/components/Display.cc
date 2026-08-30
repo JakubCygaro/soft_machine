@@ -1,4 +1,5 @@
 #include "components/Display.hpp"
+#include "components/GameGraphElements.hpp"
 #include <string>
 
 namespace components {
@@ -32,7 +33,7 @@ void Display::draw()
         .y = center.y - m_d->val_dims.y / 2.0f,
     };
     using namespace game::resources;
-    if(m_d->val){
+    if (m_d->val) {
         // ::BeginScissorMode(
         //     screen_p.x,
         //     screen_p.y,
@@ -77,5 +78,15 @@ void Display::set_size(const ::Vector2& sz)
 {
     m_bounds.width = sz.x;
     m_bounds.height = sz.y;
+}
+const char*
+Display::marshall_to_xml_name() const noexcept
+{
+    return "display";
+}
+void Display::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    OComponent::marshall_to_xml(self);
+    append_size_attributes(self, get_size());
 }
 }

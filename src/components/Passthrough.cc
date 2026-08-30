@@ -17,5 +17,13 @@ machine::actor::Actor Passthrough::poll(machine::Mctx ctx)
         co_await ctx.pause();
     }
 }
-
+const char*
+Passthrough::marshall_to_xml_name() const noexcept
+{
+    return "passthrough";
+}
+// void Passthrough::marshall_to_xml(pugi::xml_node&) const noexcept
+// {
+//
+// }
 }

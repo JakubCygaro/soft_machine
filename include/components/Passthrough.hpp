@@ -7,11 +7,13 @@ private:
     ::Color m_color { ::BLACK };
 
 public:
-    inline Passthrough(machine::Component* a,
+    inline Passthrough(
+        std::string name,
+        machine::Component* a,
         machine::Component* b,
         std::string in,
         std::string out)
-        : components::OConnection(a, b, in, out)
+        : components::OConnection(name, a, b, in, out)
     {
     }
     inline Passthrough(const Passthrough&) = delete;
@@ -30,5 +32,10 @@ public:
     inline virtual ~Passthrough() { }
     virtual void draw() override;
     virtual machine::actor::Actor poll(machine::Mctx ctx) override;
+
+    virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    // virtual void
+    // marshall_to_xml(pugi::xml_node&) const noexcept override;
 };
 }

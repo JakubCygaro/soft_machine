@@ -1,8 +1,10 @@
 #include "components/Memory.hpp"
+#include "common/reflect/Enum.hpp"
 #include "game/resources/Resources.hpp"
 #include <algorithm>
 #include <any>
 #include <cmath>
+#include <ranges>
 #include <raylib.h>
 #include <raymath.h>
 #include <string>
@@ -256,5 +258,33 @@ auto Memory::mem() -> mem_t&
 auto Memory::mem() const -> const mem_t&
 {
     return m_mem;
+}
+const char*
+Memory::marshall_to_xml_name() const noexcept
+{
+    return "memory";
+}
+void Memory::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    OComponent::marshall_to_xml(self);
+    self.append_attribute("layout")
+        .set_value(common::reflect::enum_to_string(this->m_lay));
+    auto memset = self.append_child("memset");
+    std::string memset_str;
+    std::ranges::for_each(
+        std::views::zip(
+            std::views::transform(
+                this->m_mem,
+                [](const int& i) {
+                    return std::to_string(i);
+                }),
+            std::views::iota(1)),
+        [&](const auto& tp) {
+            const auto [s, i] = tp;
+            memset_str.append(s);
+            if (i != static_cast<int>(m_mem.size()))
+                memset_str.push_back(' ');
+        });
+    memset.text().set(memset_str);
 }
 }

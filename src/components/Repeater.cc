@@ -1,4 +1,5 @@
 #include "components/Repeater.hpp"
+#include "components/GameGraphElements.hpp"
 #include <format>
 
 namespace components {
@@ -62,5 +63,21 @@ std::any Repeater::on_outcoming_connection(
     }
     m_d->to.push_back(std::string(n));
     return nullptr;
+}
+const char*
+Repeater::marshall_to_xml_name() const noexcept
+{
+    return "repeater";
+}
+void Repeater::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    OComponent::marshall_to_xml(self);
+    if (m_d->max_in) {
+        self.append_attribute("max_in").set_value(*m_d->max_in);
+    }
+    if (m_d->max_out) {
+        self.append_attribute("max_out").set_value(*m_d->max_out);
+    }
+    append_size_attributes(self, get_size());
 }
 }

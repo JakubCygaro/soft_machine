@@ -1,6 +1,7 @@
 #include "components/GameGraphElements.hpp"
 #include "game/Scene.hpp"
 #include "game/Xml.hpp"
+#include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineGraph.hpp"
@@ -9,10 +10,12 @@
 #include <iostream>
 #include <memory>
 #include <print>
+#include <ranges>
 #include <raylib.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <variant>
 
 struct Packet {
     std::string sender;
@@ -119,7 +122,7 @@ int main(void)
     std::stringstream buf;
     buf << ifs.rdbuf();
     xml = buf.str();
-    ::InitWindow(800, 600, "Soft Machine");
+    ::InitWindow(1000, 800, "Soft Machine");
     ::SetTargetFPS(60);
     game::resources::init_resources();
     auto res = game::populate_machine_from_xml(*m, xml);
@@ -127,7 +130,28 @@ int main(void)
         std::cout << std::move(res).unwrap_err().what() << std::endl;
         return 1;
     }
-    auto scene = game::GraphScene(std::move(m), { 0, 0, 800, 600 });
+    // pugi::xml_document doc;
+    // auto graph = doc.root().append_child("graph");
+    // using namespace std::views;
+    // using elem_t = machine::MachineGraph::comp_or_conn_ptr_t;
+    // auto xmls = transform(m->get_elements(),
+    //     [](const elem_t& e) {
+    //         if (auto n = std::get_if<machine::Component*>(&e); n) {
+    //             return dynamic_cast<game::xml::MarshallToXml*>(*n);
+    //         } else {
+    //             return dynamic_cast<
+    //                 game::xml::MarshallToXml*>(
+    //                 std::get<machine::Connection*>(e));
+    //         }
+    //     });
+    // for (const auto& elem : xmls) {
+    //     auto node = graph.append_child(elem->marshall_to_xml_name());
+    //     elem->marshall_to_xml(node);
+    // }
+    // std::cout << "marshalled:\n";
+    // doc.save(std::cout);
+    // std::cout << std::endl;
+    auto scene = game::GraphScene(std::move(m), { 0, 0, 1000, 800 });
     ::SetTraceLogLevel(LOG_ALL);
     while (!::WindowShouldClose()) {
         scene.update();

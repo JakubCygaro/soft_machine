@@ -106,6 +106,30 @@ MachineGraph::conn_ref MachineGraph::get_connections() const
 {
     return this->m_conns;
 }
+std::optional<Component*> MachineGraph::query_component(const std::string& sv)
+{
+    if (this->m_named_comps.contains(sv)) {
+        return m_named_comps[sv];
+    }
+    return std::nullopt;
+}
+std::optional<Connection*> MachineGraph::query_connection(const std::string& sv)
+{
+    if (this->m_named_conns.contains(sv)) {
+        return m_named_conns[sv];
+    }
+    return std::nullopt;
+}
+std::optional<MachineGraph::comp_or_conn_ptr_t>
+MachineGraph::query_element(const std::string& sv)
+{
+    if (auto comp = query_component(sv); comp) {
+        return MachineGraph::comp_or_conn_ptr_t { *comp };
+    } else if (auto conn = query_connection(sv); conn) {
+        return MachineGraph::comp_or_conn_ptr_t { *conn };
+    }
+    return std::nullopt;
+}
 std::optional<const std::vector<Connection*>*>
 MachineGraph::get_incident_to(const std::string& name) const
 {
@@ -123,11 +147,12 @@ std::optional<std::vector<const Component*>>
 MachineGraph::get_adjecent_to(const std::string& name) const
 {
     auto incident = get_incident_to(name);
-    if (!incident.has_value()) return std::nullopt;
+    if (!incident.has_value())
+        return std::nullopt;
     const auto n = m_named_comps.at(name);
-    std::vector<const Component*> ret{};
-    for(const auto i : **incident){
-        if(i->get_end() != n){
+    std::vector<const Component*> ret { };
+    for (const auto i : **incident) {
+        if (i->get_end() != n) {
             ret.push_back(i->get_end());
         } else {
             ret.push_back(i->get_start());

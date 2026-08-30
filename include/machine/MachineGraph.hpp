@@ -9,22 +9,24 @@
 #include <concepts>
 #include <deque>
 #include <format>
+#include <functional>
 #include <list>
 #include <memory>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
 
 namespace machine {
-class MachineContext;
-
 class MachineGraph : public shed::Scheduler {
 private:
     std::list<std::shared_ptr<Component>> m_comps { };
-    std::unordered_map<std::string, Component*> m_named_comps { };
+    std::unordered_map<std::string, Component*>
+        m_named_comps { };
     std::list<std::shared_ptr<Connection>> m_conns { };
-    std::unordered_map<std::string, Connection*> m_named_conns { };
+    std::unordered_map<std::string, Connection*>
+        m_named_conns { };
     std::unordered_map<Component*, std::vector<Connection*>> m_incidents { };
 
     struct MessageSent {
@@ -108,34 +110,36 @@ public:
         std::string to,
         Args&&... ctor_args)
     {
-        if(name.empty())
+        if (name.empty())
             throw std::runtime_error(
-                    std::format("attempted to create connection with empty name"));
+                std::format("attempted to create connection with empty name"));
         if (m_named_conns.contains(name)) {
             throw std::runtime_error(
-                    std::format("'{}' connection already exists",
-                        name));
+                std::format("'{}' connection already exists",
+                    name));
         }
         if (!m_named_comps.contains(from))
             throw std::runtime_error(
-                    std::format("{} from component '{}' does not exist",
-                        name, from));
+                std::format("{} from component '{}' does not exist",
+                    name, from));
         if (!m_named_comps.contains(to))
             throw std::runtime_error(
-                    std::format("{} from component '{}' does not exist",
-                        name, to));
+                std::format("{} from component '{}' does not exist",
+                    name, to));
 
         auto* from_ptr = m_named_comps[from];
         auto* to_ptr = m_named_comps[to];
         std::shared_ptr<T> conn = nullptr;
         if constexpr (sizeof...(ctor_args) > 0) {
-            conn = std::make_shared<T>(from_ptr,
+            conn = std::make_shared<T>(
+                name,
+                from_ptr,
                 to_ptr,
                 from,
                 to,
                 std::forward<Args>(ctor_args)...);
         } else {
-            conn = std::make_shared<T>(from_ptr, to_ptr, from, to);
+            conn = std::make_shared<T>(name, from_ptr, to_ptr, from, to);
         }
         auto [d1, c1] = conn->on_connecting_to_start();
         c1(
@@ -209,6 +213,19 @@ public:
     inline auto get_connections_end() -> auto
     {
         return this->m_conns.end();
+    }
+    std::optional<Component*> query_component(const std::string&);
+    std::optional<Connection*> query_connection(const std::string&);
+    using comp_or_conn_ptr_t = std::variant<Component*, Connection*>;
+    std::optional<comp_or_conn_ptr_t> query_element(const std::string&);
+
+    inline auto get_elements() -> auto
+    {
+        using namespace std::views;
+        const auto t = [](auto& c) {
+            return comp_or_conn_ptr_t { c.get() };
+        };
+        return concat(transform(m_comps, t), transform(m_conns, t));
     }
 
     // As Scheduler

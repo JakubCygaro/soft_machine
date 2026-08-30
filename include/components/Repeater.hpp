@@ -59,5 +59,10 @@ public:
         std::string_view,
         const machine::Connection*,
         std::any conn_msg) override;
+
+    virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    virtual void
+    marshall_to_xml(pugi::xml_node&) const noexcept override;
 };
 }

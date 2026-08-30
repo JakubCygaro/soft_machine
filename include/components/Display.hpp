@@ -50,6 +50,10 @@ public:
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
     virtual void set_size(const ::Vector2&);
+    virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    virtual void
+    marshall_to_xml(pugi::xml_node&) const noexcept override;
 };
 
 }

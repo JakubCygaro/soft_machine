@@ -148,6 +148,10 @@ public:
     }
     inline virtual auto get_layout() const -> Layout { return m_lay; }
 
+    virtual const char*
+    marshall_to_xml_name() const noexcept override;
+    virtual void
+    marshall_to_xml(pugi::xml_node&) const noexcept override;
 private:
     static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
     setup_mem(const mem_t&);

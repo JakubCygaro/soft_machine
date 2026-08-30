@@ -5,6 +5,7 @@
 #include <cctype>
 #include <concepts>
 #include <format>
+#include <iostream>
 #include <map>
 #include <ranges>
 #ifndef CLANGD_SKIP
@@ -279,11 +280,13 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
 }
 #endif
 // TODO: Components marshalling themselves into xml for later serialization
-template <typename Self>
+// template <typename Self>
 struct MarshallToXml {
-    inline static pugi::xml_node marshall_to_xml(const Self& self) noexcept
-    {
-        pugi::xml_node();
-    }
+    inline MarshallToXml() = default;
+    inline virtual ~MarshallToXml() { };
+    inline virtual const char*
+    marshall_to_xml_name() const noexcept = 0;
+    inline virtual void
+    marshall_to_xml(pugi::xml_node&) const noexcept = 0;
 };
 }
