@@ -116,7 +116,7 @@ public:
     inline Memory(
         fl::string_param_t name)
         : components::OComponent(std::string(name.data(), name.size()))
-        , m_mem({ })
+        , m_mem({ 1, 2, 3, 4 })
     {
         setup(*this);
     }

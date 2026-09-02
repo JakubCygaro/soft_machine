@@ -1,6 +1,10 @@
 #pragma once
 #include "components/Button.hpp"
 #include "components/Memory.hpp"
+#include "components/Display.hpp"
+#include "components/Cpu.hpp"
+// #include "components/Passthrough.hpp"
+#include "components/Repeater.hpp"
 #include "facelift/Fl.hpp"
 #include "game/Scene.hpp"
 #include "imgui.h"

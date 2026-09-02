@@ -1,11 +1,12 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
+#include "facelift/Fl.hpp"
 #include <set>
 namespace components {
 
 // Takes a message from any incoming connection
 // and repeats it on every outgoing connection
-class Repeater : public components::OComponent {
+class ANNOTATE(fl::component) Repeater : public components::OComponent {
 public:
     inline static const ::Color BODY_COLOR = ::GRAY;
 
@@ -28,6 +29,13 @@ public:
     {
         m_d->max_in = max_in;
         m_d->max_out = max_out;
+    }
+    ANNOTATE(fl::use_ctor)
+    inline Repeater(
+        fl::string_param_t name)
+        : components::OComponent(std::string(name.data()))
+        , m_d { { } }
+    {
     }
     Repeater(const Repeater&) = delete;
     Repeater& operator=(const Repeater&) = delete;

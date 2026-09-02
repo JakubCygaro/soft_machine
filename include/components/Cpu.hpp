@@ -1,6 +1,7 @@
 #pragma once
 #include "common/Result.hpp"
 #include "components/GameGraphElements.hpp"
+#include "facelift/Fl.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "machine/Actor.hpp"
@@ -11,7 +12,7 @@
 #include <stdexcept>
 
 namespace components {
-class CPU : public components::OComponent {
+class ANNOTATE(fl::component) CPU : public components::OComponent {
 public:
     struct Register {
         int idx { };
@@ -78,6 +79,14 @@ public:
         code_t&& code)
         : components::OComponent(name)
         , m_code { std::move(code) }
+    {
+        setup(*this);
+    }
+    ANNOTATE(fl::use_ctor)
+    inline CPU(
+        fl::string_param_t name)
+        : components::OComponent(std::string(name.data()))
+        , m_code { }
     {
         setup(*this);
     }

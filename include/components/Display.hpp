@@ -1,11 +1,12 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
 #include "components/Memory.hpp"
+#include "facelift/Fl.hpp"
 #include "game/resources/Resources.hpp"
 
 namespace components {
 
-class Display : public components::OComponent {
+class ANNOTATE(fl::component) Display : public components::OComponent {
 public:
     using display_msg_t = mem::MemoryWrite;
 
@@ -26,6 +27,15 @@ public:
         std::string name,
         int font_size)
         : components::OComponent(name)
+        , m_d { { } }
+    {
+        m_d->font_size = font_size;
+    }
+    ANNOTATE(fl::use_ctor)
+    inline Display(
+        fl::string_param_t name,
+        int font_size)
+        : components::OComponent(std::string(name.data()))
         , m_d { { } }
     {
         m_d->font_size = font_size;
