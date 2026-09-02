@@ -1,7 +1,9 @@
 #include "game/Scene.hpp"
 #include "game/Globals.hpp"
 #include <algorithm>
+#include <iostream>
 #include <memory>
+#include <ostream>
 #include <print>
 #include <raylib.h>
 #include <raymath.h>
@@ -30,17 +32,21 @@ GraphScene::GraphScene(std::unique_ptr<machine::MachineGraph>&& g, ::Rectangle b
     , m_cam { }
     , bounds { bounds }
 {
-    for (auto c : m_mgraph->get_connections()) {
-        if (auto o = std::dynamic_pointer_cast<Object>(c))
-            this->m_graph_objs.push_back(o);
+    init(*this);
+}
+
+void GraphScene::init(GraphScene& self){
+    for (auto c : self.m_mgraph->get_connections()) {
+        if (auto o = dynamic_cast<Object*>(c.get()))
+            self.m_graph_objs.push_back(o);
     }
-    for (auto c : m_mgraph->get_components()) {
-        if (auto o = std::dynamic_pointer_cast<Object>(c))
-            this->m_graph_objs.push_back(o);
+    for (auto c : self.m_mgraph->get_components()) {
+        if (auto o = dynamic_cast<Object*>(c.get()))
+            self.m_graph_objs.push_back(o);
     }
-    m_cam.target = { 0, 0 };
-    m_cam.offset = { bounds.width / 2.0f, bounds.height / 2.0f };
-    m_cam.zoom = 2.0;
+    self.m_cam.target = { 0, 0 };
+    self.m_cam.offset = { self.bounds.width / 2.0f, self.bounds.height / 2.0f };
+    self.m_cam.zoom = 2.0;
 }
 
 void GraphScene::draw()

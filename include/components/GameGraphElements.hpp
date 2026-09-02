@@ -8,12 +8,6 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <string_view>
-#ifndef CLANGD_SKIP
-#define ANNOTATE(VAL) \
-    [[= VAL]]
-#else
-#define ANNOTATE(VAL)
-#endif
 
 namespace components {
 
@@ -95,12 +89,21 @@ enum class AttachPt {
 class OComponent : public machine::Component,
                    public game::Object,
                    public game::xml::MarshallToXml {
+public:
+    const ::Rectangle DEFAULT_BOUNDS = ::Rectangle {
+        .x = 0,
+        .y = 0,
+        .width = 100,
+        .height = 100
+    };
+
 protected:
     ::Rectangle m_bounds { };
 
 public:
     inline OComponent(std::string name)
         : machine::Component(name)
+        , m_bounds { DEFAULT_BOUNDS }
     {
     }
     inline OComponent(const OComponent&) = delete;
@@ -198,8 +201,6 @@ class OConnection : public machine::Connection,
                     public game::Object,
                     public game::xml::MarshallToXml {
 protected:
-    // [[="attrib"]]
-    ANNOTATE("attrib")
     ::Vector2 m_start_pos { },
         m_end_pos { };
     AttachPt m_start_ap { }, m_end_ap { };

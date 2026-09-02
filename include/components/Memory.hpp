@@ -1,6 +1,7 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
 #include "components/msg/Message.hpp"
+#include "facelift/Fl.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <format>
@@ -76,7 +77,7 @@ namespace mem {
         }
     };
 }
-class Memory : public components::OComponent {
+class ANNOTATE(fl::component) Memory : public components::OComponent {
 public:
     const Color BODY_COLOR = ::BLUE;
     const Color DATA_COLOR = ::BLACK;
@@ -107,6 +108,14 @@ public:
         mem_t&& mem)
         : components::OComponent(name)
         , m_mem(std::move(mem))
+    {
+        setup(*this);
+    }
+    ANNOTATE(fl::use_ctor)
+    inline Memory(
+        std::string name)
+        : components::OComponent(name)
+        , m_mem({ })
     {
         setup(*this);
     }
@@ -152,6 +161,7 @@ public:
     marshall_to_xml_name() const noexcept override;
     virtual void
     marshall_to_xml(pugi::xml_node&) const noexcept override;
+
 private:
     static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
     setup_mem(const mem_t&);
