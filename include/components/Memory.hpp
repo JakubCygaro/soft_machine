@@ -4,6 +4,7 @@
 #include "facelift/Fl.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
+#include <array>
 #include <format>
 #include <raylib.h>
 #include <string>
@@ -113,8 +114,8 @@ public:
     }
     ANNOTATE(fl::use_ctor)
     inline Memory(
-        std::string name)
-        : components::OComponent(name)
+        fl::string_param_t name)
+        : components::OComponent(std::string(name.data(), name.size()))
         , m_mem({ })
     {
         setup(*this);

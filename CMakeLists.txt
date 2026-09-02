@@ -75,6 +75,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/components/Display.cc
     ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc
+    ${CMAKE_SOURCE_DIR}/include/misc/cpp/imgui_stdlib.cpp
 )
 target_link_libraries(sf_commons
     PUBLIC cppfeatures

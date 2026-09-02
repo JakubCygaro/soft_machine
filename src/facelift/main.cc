@@ -3,7 +3,9 @@
 #include "game/Scene.hpp"
 #include "imgui.h"
 #include "machine/MachineGraph.hpp"
+#include "misc/cpp/imgui_stdlib.h"
 #include "rlImGui.h"
+#include <format>
 #include <memory>
 #include <raylib.h>
 
@@ -15,20 +17,18 @@ std::optional<std::string> open_builder { };
 
 void builder_menu_draw()
 {
-    static bool open_builders = false;
-    ImGui::Begin("Chooj", &open_builders, 0);
-    ImGui::BeginListBox("Components");
-    for (const auto& [s, b] : builders) {
-        ImGui::PushID(s.c_str());
-        ImGui::Text("%s", s.c_str());
-        if (ImGui::Button("Open menu")) {
-            open_builder = s;
+    if (ImGui::Begin("Component builder")) {
+        ImGui::BeginListBox("Components");
+        for (const auto& [s, b] : builders) {
+            ImGui::PushID(s.c_str());
+            ImGui::Text("%s", s.c_str());
+            if (ImGui::Button(std::format("Open {} menu", s).c_str())) {
+                open_builder = s;
+            }
             ImGui::PopID();
-            break;
         }
-        ImGui::PopID();
+        ImGui::EndListBox();
     }
-    ImGui::EndListBox();
     ImGui::End();
 }
 
@@ -38,6 +38,7 @@ int main(void)
         ::FLAG_WINDOW_RESIZABLE);
     ::InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Facelift");
     ::rlImGuiSetup(true);
+    ::SetTargetFPS(60);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -45,20 +46,6 @@ int main(void)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     builders = facelift::make_component_builders();
-    builders["button"] = [](game::GraphScene* s) {
-        bool close = false;
-        ImGui::Begin("button", &close);
-        static char name_buf[128] = { };
-        ImGui::InputText("Name", name_buf, sizeof(name_buf));
-        static int val { };
-        ImGui::InputInt("Val", &val);
-        if (ImGui::Button("create")) {
-            s->create_component<components::Button>(
-                std::string(name_buf), val);
-        }
-        ImGui::End();
-    };
-
     auto mg = std::unique_ptr<machine::MachineGraph>(
         machine::MachineGraph::create());
     auto sc = game::GraphScene(std::move(mg),
@@ -80,7 +67,8 @@ int main(void)
         ::rlImGuiBegin();
         builder_menu_draw();
         if (open_builder) {
-            builders[*open_builder](&sc);
+            if (builders[*open_builder](&sc))
+                open_builder = std::nullopt;
         }
         ImGui::Render();
         ::rlImGuiEnd();

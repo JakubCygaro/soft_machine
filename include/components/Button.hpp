@@ -1,5 +1,6 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
+#include "facelift/Fl.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <raylib.h>
@@ -7,7 +8,7 @@
 
 namespace components {
 
-class Button : public components::OComponent {
+class ANNOTATE(fl::component) Button : public components::OComponent {
 public:
     inline static const ::Color BODY_COLOR = ::GRAY;
     inline static const ::Color BUTTON_INACTIVE_COLOR = { 189, 13, 13, 255 };
@@ -34,6 +35,25 @@ public:
         : components::OComponent(name)
         , m_d { { msg_value } }
     {
+    }
+    ANNOTATE(fl::use_ctor)
+    inline Button(
+        fl::string_param_t name,
+        fl::string_param_t msg_value)
+        : components::OComponent(std::string(name.data(), name.size()))
+        , m_d { { nullptr } }
+    {
+        int out{};
+        auto res = std::from_chars(
+            msg_value.data(),
+            msg_value.data() + msg_value.size(),
+            out,
+            10);
+        if (res.ec == std::errc::invalid_argument) {
+            m_d->m_msg_value = std::string(name.data(), name.size());
+        } else {
+            m_d->m_msg_value = out;
+        }
     }
     Button(const Button&) = delete;
     Button& operator=(const Button&) = delete;

@@ -1,15 +1,11 @@
 #pragma once
+#include "components/Button.hpp"
 #include "components/Memory.hpp"
 #include "facelift/Fl.hpp"
 #include "game/Scene.hpp"
 #include "imgui.h"
-#include "machine/MachineGraph.hpp"
 #include <array>
-#include <format>
 #include <functional>
-#include <iostream>
-#include <optional>
-#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -21,7 +17,7 @@
 
 namespace facelift {
 
-using builder_fn = std::function<void(game::GraphScene*)>;
+using builder_fn = std::function<bool(game::GraphScene*)>;
 
 #ifndef CLANGD_SKIP
 using namespace std::meta;
@@ -120,7 +116,7 @@ consteval auto make_spec_for_ctor(std::meta::info ctor) -> std::vector<std::meta
     return members_spec;
 }
 
-constexpr info str_buf_t_rfl = dealias(^^std::array<char, 128>);
+constexpr info str_buf_t_rfl = dealias(^^fl::string_param_t);
 using str_buf_t = typename[:str_buf_t_rfl:];
 
 consteval auto make_spec_for_param(info param) -> auto
@@ -156,17 +152,41 @@ struct Params {
         define_storage_for_component<T>(^^storage);
     }
     storage data { };
+    using storage_t = storage;
+    static Params default_init_members()
+    {
+        Params self = { };
+        constexpr auto ctx = access_context::current();
+        static constexpr auto dms = std::define_static_array(nonstatic_data_members_of(
+            dealias(^^storage), ctx));
+        template for (constexpr auto m : dms)
+        {
+            self.data.[:m:] = { };
+        }
+        return self;
+    }
 };
 
-// consteval auto unsupported_param_type_error(info comp, info param) -> void
-// {
-//     static_assert(false,
-//         std::format(
-//             "Unsupported constructor parameter '{}' type '{}' for component '{}'",
-//             display_string_of(type_of(param)),
-//             display_string_of(param),
-//             display_string_of(comp)));
-// }
+template <class T, class Storage, std::size_t... Is>
+constexpr void make_from_params(
+    Storage&& storage,
+    game::GraphScene* s,
+    std::index_sequence<Is...>)
+{
+    constexpr auto ctx = access_context::current();
+    constexpr auto dms = std::define_static_array(nonstatic_data_members_of(
+        dealias(^^Storage), ctx));
+    if constexpr (std::derived_from<T,
+                      components::OComponent>) {
+        s->create_component<T>(
+            ((std::forward<Storage>(storage).[:dms[Is]:]))...);
+    }
+    if constexpr (std::derived_from<T,
+                      components::OConnection>) {
+        s->create_connection<T>(
+            ((std::forward<Storage>(storage)).[:dms[Is]:])...);
+    }
+};
 #endif
 
 inline std::unordered_map<std::string, builder_fn>
@@ -180,54 +200,61 @@ make_component_builders()
     template for (constexpr auto c : std::define_static_array(get_components()))
     {
         static constexpr auto iden = std::define_static_string(identifier_of(c));
-        ret[std::string(iden)] = [](game::GraphScene* s) {
-            using storage_t = typename Params<typename[:c:]>::storage;
-            Params<typename[:c:]> params { };
+        ret[std::string(iden)] = [](game::GraphScene* s) -> bool {
+            using storage_t = typename Params<typename[:c:]>::storage_t;
+            static Params<typename[:c:]> params = Params<
+                typename[:c:]>::default_init_members();
             auto& storage = params.data;
-            static bool close = false;
-            ImGui::Begin(iden, &close);
-            template for (constexpr auto mem :
-                std::define_static_array(
-                    nonstatic_data_members_of(dealias(^^storage_t), ctx)))
-            {
-                static constexpr auto mem_iden = std::define_static_string(
-                    identifier_of(mem));
-                // std::cout << display_string_of(type_of(mem)) << std::endl;
-                if constexpr (type_of(mem) == str_buf_t_rfl) {
-                    ImGui::InputText(mem_iden,
-                        storage.[:mem:]
-                            .data(),
-                        storage.
-                                [:mem:]
-                            .size());
-                } else if constexpr (
-                    std::is_integral_v<typename[:type_of(mem):]>) {
-                    ImGui::InputInt(mem_iden,
-                        &storage.[:mem:]);
-                } else if constexpr (type_of(mem) == ^^float) {
-                    ImGui::InputFloat(mem_iden,
-                        &storage.[:mem:]);
-                } else if constexpr (type_of(mem) == ^^double) {
-                    ImGui::InputDouble(mem_iden,
-                        &storage.[:mem:]);
-                } else {
-                    static_assert(false, "Unsupported constructor parameter type");
-                }
-                if (ImGui::Button("Create")) {
-                    if (constexpr std::derived_from<
-                            components::OComponent, typename[:c:]>) {
-                        s->create_component<typename[:c:]>(
+            bool open = true;
+            if (ImGui::Begin(iden, &open)) {
 
-                                );
+                template for (constexpr auto mem :
+                    std::define_static_array(
+                        nonstatic_data_members_of(dealias(^^storage_t), ctx)))
+                {
+                    static constexpr auto mem_iden = std::define_static_string(
+                        identifier_of(mem));
+                    // std::cout << display_string_of(dealias(^^storage_t)) << std::endl;
+                    if constexpr (type_of(mem) == str_buf_t_rfl) {
+                        ImGui::InputText(mem_iden,
+                            storage.[:mem:]
+                                .data(),
+                            storage.
+                                    [:mem:]
+                                .size());
+                    } else if constexpr (
+                        std::is_integral_v<typename[:type_of(mem):]>) {
+                        ImGui::InputInt(mem_iden,
+                            &storage.[:mem:]);
+                    } else if constexpr (type_of(mem) == ^^float) {
+                        ImGui::InputFloat(mem_iden,
+                            &storage.[:mem:]);
+                    } else if constexpr (type_of(mem) == ^^double) {
+                        ImGui::InputDouble(mem_iden,
+                            &storage.[:mem:]);
                     } else {
-                        s->create_connection<typename[:c:]>(
-
-                                );
-
+                        static_assert(false, "Unsupported constructor parameter type");
                     }
+                }
+                template for (constexpr auto mem :
+                    std::define_static_array(
+                        nonstatic_data_members_of(dealias(^^storage_t), ctx)))
+                {
+                    constexpr auto dms = std::define_static_array(nonstatic_data_members_of(
+                        dealias(^^storage_t), ctx));
+                    constexpr auto n = dms.size();
+
+                    if (ImGui::Button("Create")) {
+                        auto st = storage_t(storage);
+                        make_from_params<typename[:dealias(c):], storage_t>(
+                            std::move(st), s, std::make_index_sequence<n> { });
+                    }
+                    // BECAUSE FUCK YOU
+                    break;
                 }
             }
             ImGui::End();
+            return !open;
         };
     }
 #endif
