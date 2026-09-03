@@ -79,6 +79,7 @@ add_library(sf_commons STATIC
 )
 target_link_libraries(sf_commons
     PUBLIC cppfeatures
+    PRIVATE ${rlimgui}
 )
 
 add_executable(soft_machine

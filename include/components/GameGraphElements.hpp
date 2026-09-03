@@ -3,6 +3,7 @@
 #include "game/Drawable.hpp"
 #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
+#include "imgui.h"
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
 #include <raylib.h>
@@ -86,9 +87,16 @@ enum class AttachPt {
     BC,
     BR
 };
+
+struct Editable {
+    inline virtual ~Editable() { }
+    virtual void draw_edit_window() = 0;
+};
+
 class OComponent : public machine::Component,
                    public game::Object,
-                   public game::xml::MarshallToXml {
+                   public game::xml::MarshallToXml,
+                   public Editable {
 public:
     const ::Rectangle DEFAULT_BOUNDS = ::Rectangle {
         .x = 0,
@@ -196,10 +204,19 @@ public:
         append_position_node(self, get_pos());
         self.append_attribute("name").set_value(get_name());
     }
+    inline virtual void draw_edit_window() override
+    {
+        static float pos[2] = { m_bounds.x, m_bounds.y };
+        if (ImGui::InputFloat2("Position", pos)) {
+            m_bounds.x = pos[0];
+            m_bounds.y = pos[1];
+        }
+    }
 };
 class OConnection : public machine::Connection,
                     public game::Object,
-                    public game::xml::MarshallToXml {
+                    public game::xml::MarshallToXml,
+                    public Editable {
 protected:
     ::Vector2 m_start_pos { },
         m_end_pos { };
@@ -292,6 +309,9 @@ public:
             .set_value(out);
         to.append_attribute("at")
             .set_value(common::reflect::enum_to_string(m_end_ap));
+    }
+    inline virtual void draw_edit_window() override
+    {
     }
 };
 }

@@ -1,14 +1,15 @@
 #include "common/String.hpp"
 #include "facelift/GatherComponents.hpp"
-#include <cstring>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace facelift {
 std::unordered_map<std::string, builder_fn>
 runtime_make_component_builders()
 {
     std::unordered_map<std::string, builder_fn> ret { };
-    ret["memory"] = [](game::GraphScene* s) -> bool {
+    ret["memory"] = [](game::GraphScene* s) -> builder_fn::result_type {
         bool open = true;
         static bool is_ok;
         if (ImGui::Begin("memory", &open)) {
@@ -34,13 +35,14 @@ runtime_make_component_builders()
                 if (!is_ok) {
                     ImGui::TextColored({ 255, 0, 0, 255 }, "Invalid memset");
                 } else {
-                    s->create_component<components::Memory>(
+                    auto o = s->create_component<components::Memory>(
                         std::string(name), std::move(mem));
+                    return std::make_pair(!open, o);
                 }
             }
         }
         ImGui::End();
-        return !open;
+        return std::make_pair(!open, std::nullopt);
     };
 
     return ret;
