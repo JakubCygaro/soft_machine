@@ -1,10 +1,7 @@
 #include "game/Scene.hpp"
 #include "game/Globals.hpp"
 #include <algorithm>
-#include <iostream>
 #include <memory>
-#include <ostream>
-#include <print>
 #include <raylib.h>
 #include <raymath.h>
 namespace game {
@@ -13,6 +10,7 @@ GraphScene::GraphScene(GraphScene&& o)
     , m_graph_objs { std::move(o.m_graph_objs) }
     , m_cam { o.m_cam }
     , m_framec { o.m_framec }
+    , bounds { o.bounds }
 {
 }
 GraphScene& GraphScene::operator=(GraphScene&& o)
@@ -35,7 +33,8 @@ GraphScene::GraphScene(std::unique_ptr<machine::MachineGraph>&& g, ::Rectangle b
     init(*this);
 }
 
-void GraphScene::init(GraphScene& self){
+void GraphScene::init(GraphScene& self)
+{
     for (auto c : self.m_mgraph->get_connections()) {
         if (auto o = dynamic_cast<Object*>(c.get()))
             self.m_graph_objs.push_back(o);
