@@ -159,62 +159,69 @@ struct build<components::Memory> {
             static Result<std::runtime_error, memset_node>
             parse_xml(pugi::xml_text txt) noexcept
             {
-                const auto parse_int =
-                    [](std::string& slice) -> Result<std::runtime_error, int> {
-                    int out;
-                    auto trimmed = common::trim(slice);
-                    auto res = std::from_chars(
-                        trimmed.data(),
-                        trimmed.data() + trimmed.size(),
-                        out,
-                        10);
-                    if (res.ec == std::errc::invalid_argument) {
-                        return { std::runtime_error(
-                            std::format("failed to parse '{}' as integer", slice)) };
-                    }
-                    return { out };
-                };
-                auto s = txt.as_string();
-                if (!s)
-                    return { std::runtime_error("empty memset node") };
-                components::Memory::mem_t ret { };
-                auto str = common::trim(std::string(s));
-                str.erase(std::remove_if(
-                              str.begin(),
-                              str.end(),
-                              [](auto c) {
-                                  return std::isspace(c) && c != ' ';
-                              }),
-                    str.end());
-                size_t pos = str.find(' ');
-                size_t init_pos = 0;
-
-                while (pos != std::string::npos) {
-                    auto i = common::trim(str.substr(init_pos, pos - init_pos));
-                    if (!i.empty()) {
-                        auto res = parse_int(i);
-                        if (res.iserr())
-                            return { res.unwrap_err() };
-                        ret.push_back(std::get<int>(res));
-                    }
-                    init_pos = pos + 1;
-                    pos = str.find(' ', init_pos);
+                if (auto memset = components::Memory::parse_memset_from_text(
+                        txt.as_string());
+                    memset.isok()) {
+                    return { memset_node { memset.unwrap() } };
+                } else {
+                    return { memset.unwrap_err() };
                 }
-                auto i = common::trim(str.substr(
-                    init_pos,
-                    std::min(
-                        pos,
-                        str.size())
-                        - init_pos + 1));
-                if (!i.empty()) {
-                    auto res = parse_int(i);
-                    if (res.iserr())
-                        return { res.unwrap_err() };
-                    ret.push_back(std::get<int>(res));
-                }
-                memset_node m { };
-                m.mem = std::move(ret);
-                return { m };
+                // const auto parse_int =
+                //     [](std::string& slice) -> Result<std::runtime_error, int> {
+                //     int out;
+                //     auto trimmed = common::trim(slice);
+                //     auto res = std::from_chars(
+                //         trimmed.data(),
+                //         trimmed.data() + trimmed.size(),
+                //         out,
+                //         10);
+                //     if (res.ec == std::errc::invalid_argument) {
+                //         return { std::runtime_error(
+                //             std::format("failed to parse '{}' as integer", slice)) };
+                //     }
+                //     return { out };
+                // };
+                // auto s = txt.as_string();
+                // if (!s)
+                //     return { std::runtime_error("empty memset node") };
+                // components::Memory::mem_t ret { };
+                // auto str = common::trim(std::string(s));
+                // str.erase(std::remove_if(
+                //               str.begin(),
+                //               str.end(),
+                //               [](auto c) {
+                //                   return std::isspace(c) && c != ' ';
+                //               }),
+                //     str.end());
+                // size_t pos = str.find(' ');
+                // size_t init_pos = 0;
+                //
+                // while (pos != std::string::npos) {
+                //     auto i = common::trim(str.substr(init_pos, pos - init_pos));
+                //     if (!i.empty()) {
+                //         auto res = parse_int(i);
+                //         if (res.iserr())
+                //             return { res.unwrap_err() };
+                //         ret.push_back(std::get<int>(res));
+                //     }
+                //     init_pos = pos + 1;
+                //     pos = str.find(' ', init_pos);
+                // }
+                // auto i = common::trim(str.substr(
+                //     init_pos,
+                //     std::min(
+                //         pos,
+                //         str.size())
+                //         - init_pos + 1));
+                // if (!i.empty()) {
+                //     auto res = parse_int(i);
+                //     if (res.iserr())
+                //         return { res.unwrap_err() };
+                //     ret.push_back(std::get<int>(res));
+                // }
+                // memset_node m { };
+                // m.mem = std::move(ret);
+                // return { m };
             }
         };
         memset_node memset;

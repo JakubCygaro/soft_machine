@@ -264,4 +264,6 @@ make_component_builders()
 #endif
     return ret;
 }
+std::unordered_map<std::string, builder_fn>
+runtime_make_component_builders();
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "common/String.hpp"
 #include "components/GameGraphElements.hpp"
 #include "components/msg/Message.hpp"
 #include "facelift/Fl.hpp"
@@ -162,6 +163,65 @@ public:
     marshall_to_xml_name() const noexcept override;
     virtual void
     marshall_to_xml(pugi::xml_node&) const noexcept override;
+
+    static Result<std::runtime_error, mem_t>
+    parse_memset_from_text(const std::string& txt) noexcept
+    {
+        const auto parse_int =
+            [](std::string& slice) -> Result<std::runtime_error, int> {
+            int out;
+            auto trimmed = common::trim(slice);
+            auto res = std::from_chars(
+                trimmed.data(),
+                trimmed.data() + trimmed.size(),
+                out,
+                10);
+            if (res.ec == std::errc::invalid_argument) {
+                return { std::runtime_error(
+                    std::format("failed to parse '{}' as integer", slice)) };
+            }
+            return { out };
+        };
+        auto s = txt.c_str();
+        if (!s)
+            return { std::runtime_error("empty memset node") };
+        components::Memory::mem_t ret { };
+        auto str = common::trim(std::string(s));
+        str.erase(std::remove_if(
+                      str.begin(),
+                      str.end(),
+                      [](auto c) {
+                          return std::isspace(c) && c != ' ';
+                      }),
+            str.end());
+        size_t pos = str.find(' ');
+        size_t init_pos = 0;
+
+        while (pos != std::string::npos) {
+            auto i = common::trim(str.substr(init_pos, pos - init_pos));
+            if (!i.empty()) {
+                auto res = parse_int(i);
+                if (res.iserr())
+                    return { res.unwrap_err() };
+                ret.push_back(std::get<int>(res));
+            }
+            init_pos = pos + 1;
+            pos = str.find(' ', init_pos);
+        }
+        auto i = common::trim(str.substr(
+            init_pos,
+            std::min(
+                pos,
+                str.size())
+                - init_pos + 1));
+        if (!i.empty()) {
+            auto res = parse_int(i);
+            if (res.iserr())
+                return { res.unwrap_err() };
+            ret.push_back(std::get<int>(res));
+        }
+        return { ret };
+    }
 
 private:
     static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>

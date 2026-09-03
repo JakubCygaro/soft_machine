@@ -45,7 +45,8 @@ int main(void)
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    builders = facelift::make_component_builders();
+    game::resources::init_resources();
+    builders = facelift::runtime_make_component_builders();
     auto mg = std::unique_ptr<machine::MachineGraph>(
         machine::MachineGraph::create());
     auto sc = game::GraphScene(std::move(mg),

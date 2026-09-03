@@ -41,7 +41,7 @@ public:
                         ->m_mgraph
                         ->create_connection<T>(
                             name, from, to, std::forward<Args>(ctor_args)...);
-        if (auto o = dynamic_cast<Object*>(conn); o)
+        if (auto o = static_cast<Object*>(conn); o)
             this->m_graph_objs.push_back(o);
         return conn;
     }
@@ -51,7 +51,7 @@ public:
         auto conn = this
                         ->m_mgraph
                         ->create_component<T>(std::forward<Args>(ctor_args)...);
-        if (auto o = dynamic_cast<Object*>(conn); o)
+        if (auto o = static_cast<Object*>(conn); o)
             this->m_graph_objs.push_back(o);
         return conn;
     }
