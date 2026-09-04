@@ -74,5 +74,9 @@ public:
     {
         return camera2D;
     }
+    inline const ::Camera2D* get_instance_camera()
+    {
+        return &m_cam;
+    }
 };
 }

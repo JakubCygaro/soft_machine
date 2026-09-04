@@ -2,6 +2,9 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+
 namespace facelift {
 using either_comp_or_conn = std::variant<
     components::OComponent*, components::OConnection*>;
@@ -17,9 +20,12 @@ struct FaceliftState {
         selected;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
+
+    //
+    components::OComponent* connect_to = nullptr;
 };
 
-inline static FaceliftState facelift_state;
+inline static FaceliftState fl_state;
 
 void init();
 void update();

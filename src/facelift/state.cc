@@ -9,19 +9,18 @@
 #include <memory>
 #include <optional>
 #include <raylib.h>
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#include <variant>
 
 namespace facelift {
 void builder_menu_draw()
 {
     if (ImGui::Begin("Component builder")) {
         ImGui::BeginListBox("Components");
-        for (const auto& [s, b] : facelift_state.builders) {
+        for (const auto& [s, b] : fl_state.builders) {
             ImGui::PushID(s.c_str());
             ImGui::Text("%s", s.c_str());
             if (ImGui::Button(std::format("Open {} menu", s).c_str())) {
-                facelift_state.open_builder = s;
+                fl_state.open_builder = s;
             }
             ImGui::PopID();
         }
@@ -32,19 +31,19 @@ void builder_menu_draw()
 
 void update_objects()
 {
-    for (auto obj : facelift_state.objects) {
+    for (auto obj : fl_state.objects) {
         auto wmouse = ::GetScreenToWorld2D(::GetMousePosition(),
             *game::GraphScene::get_camera());
         const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT);
         if (auto comp = std::get_if<components::OComponent*>(&obj); comp) {
             if (released && ::CheckCollisionPointRec(wmouse, (*comp)->get_bounds())) {
-                facelift_state.selected = { *comp,
+                fl_state.selected = { *comp,
                     static_cast<components::Editable*>(*comp) };
             }
         } else {
             if (released && ::CheckCollisionPointRec(wmouse, (*comp)->get_bounds())) {
                 auto conn = std::get<components::OConnection*>(obj);
-                facelift_state.selected = { conn,
+                fl_state.selected = { conn,
                     static_cast<components::Editable*>(conn) };
             }
         }
@@ -56,36 +55,59 @@ void update()
         auto w = ::GetScreenWidth();
         auto h = ::GetScreenHeight();
         ::SetWindowSize(w, h);
-        facelift_state.graph_scene->bounds.width = w;
-        facelift_state.graph_scene->bounds.height = h;
+        fl_state.graph_scene->bounds.width = w;
+        fl_state.graph_scene->bounds.height = h;
     }
-    facelift_state.graph_scene->update();
+    fl_state.graph_scene->update();
     update_objects();
+}
+
+void draw_highlight_selected_comp(components::OComponent* as_comp)
+{
+    ::BeginMode2D(*fl_state.graph_scene->get_instance_camera());
+    ::DrawRectangleLinesEx(
+        as_comp->get_bounds(),
+        1.0f,
+        ::RED);
+    ::EndMode2D();
+}
+
+void selected_draw()
+{
+    bool open = true;
+    components::OComponent* as_comp = nullptr;
+    if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected->first);
+        c) {
+        as_comp = *c;
+    }
+    if (as_comp && ::IsKeyDown(::KEY_C)) {
+        draw_highlight_selected_comp(as_comp);
+    }
+    ImGui::Begin("Selected", &open);
+    fl_state.selected->second->draw_edit_window();
+    ImGui::End();
+    if (!open)
+        fl_state.selected = std::nullopt;
 }
 
 void draw()
 {
     ::BeginDrawing();
-    facelift_state.graph_scene->draw();
+    fl_state.graph_scene->draw();
     ::rlImGuiBegin();
     builder_menu_draw();
-    if (facelift_state.open_builder) {
-        auto [c, obj] = facelift_state
-                            .builders[*facelift_state.open_builder](
-                                facelift_state.graph_scene.get());
+    if (fl_state.open_builder) {
+        auto [c, obj] = fl_state
+                            .builders[*fl_state.open_builder](
+                                fl_state.graph_scene.get());
         if (c)
-            facelift_state.open_builder = std::nullopt;
+            fl_state.open_builder = std::nullopt;
         if (obj) {
-            facelift_state.objects.push_back(*obj);
+            fl_state.objects.push_back(*obj);
         }
     }
-    if (facelift_state.selected) {
-        bool open = true;
-        ImGui::Begin("Selected", &open);
-        facelift_state.selected->second->draw_edit_window();
-        ImGui::End();
-        if (!open)
-            facelift_state.selected = std::nullopt;
+    if (fl_state.selected) {
+        selected_draw();
     }
     ImGui::Render();
     ::rlImGuiEnd();
@@ -106,7 +128,7 @@ void init()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     game::resources::init_resources();
-    facelift_state.builders = facelift::runtime_make_component_builders();
+    fl_state.builders = facelift::runtime_make_component_builders();
     auto mg = std::unique_ptr<machine::MachineGraph>(
         machine::MachineGraph::create());
     auto sc = game::GraphScene(std::move(mg),
@@ -114,7 +136,7 @@ void init()
             0,
             SCREEN_WIDTH,
             SCREEN_HEIGHT });
-    facelift_state.graph_scene = std::make_unique<game::GraphScene>(std::move(sc));
+    fl_state.graph_scene = std::make_unique<game::GraphScene>(std::move(sc));
 }
 void deinit()
 {
