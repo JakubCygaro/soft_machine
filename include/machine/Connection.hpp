@@ -1,6 +1,7 @@
 #ifndef CONNECTION_HPP
 #define CONNECTION_HPP
 #include "Pollable.hpp"
+#include <concepts>
 namespace machine {
 class Component;
 class Connection : public Pollable {
@@ -45,6 +46,24 @@ public:
     }
     const Component* get_start() const;
     const Component* get_end() const;
+    template <std::derived_from<Component> T>
+    const std::optional<T*> get_start_as() const
+    {
+        if (auto* c = dynamic_cast<T*>(get_start()); c) {
+            return c;
+        } else {
+            return { };
+        }
+    }
+    template <std::derived_from<Component> T>
+    const std::optional<T*> get_end_as() const
+    {
+        if (auto* c = dynamic_cast<T*>(get_end()); c) {
+            return c;
+        } else {
+            return { };
+        }
+    }
     const std::string& get_name() const;
     virtual std::pair<std::any, std::function<void(std::any)>> on_connecting_to_start();
     virtual std::pair<std::any, std::function<void(std::any)>> on_connecting_to_end();

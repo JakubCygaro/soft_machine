@@ -287,6 +287,22 @@ public:
     {
         return m_end_ap;
     };
+    inline virtual ::Vector2 get_start_pos()
+    {
+        return m_start_pos;
+    };
+    inline virtual ::Vector2 get_start_pos() const
+    {
+        return m_start_pos;
+    };
+    inline virtual ::Vector2 get_end_pos()
+    {
+        return m_end_pos;
+    };
+    inline virtual ::Vector2 get_end_pos() const
+    {
+        return m_end_pos;
+    };
 
     inline virtual ~OConnection() { }
     inline virtual const char*

@@ -23,10 +23,11 @@
 
 namespace facelift {
 
-using builder_fn = std::function<std::pair<bool,
-    std::optional<
-        std::variant<
-            components::OComponent*, components::OConnection*>>>(game::GraphScene*)>;
+using comp_builder_fn = std::function<std::pair<bool,
+    std::optional<components::OComponent*>>(game::GraphScene*)>;
+using conn_builder_fn = std::function<std::pair<bool,
+    std::optional<components::OConnection*>>(
+    game::GraphScene*, const std::string&, const std::string&)>;
 
 #ifndef CLANGD_SKIP
 using namespace std::meta;
@@ -198,10 +199,10 @@ constexpr void make_from_params(
 };
 #endif
 
-inline std::unordered_map<std::string, builder_fn>
+inline std::unordered_map<std::string, comp_builder_fn>
 make_component_builders()
 {
-    auto ret = std::unordered_map<std::string, builder_fn> { };
+    auto ret = std::unordered_map<std::string, comp_builder_fn> { };
 #ifndef CLANGD_SKIP
     // using namespace std::views;
     // using namespace std::ranges::views;
@@ -269,6 +270,8 @@ make_component_builders()
 #endif
     return ret;
 }
-std::unordered_map<std::string, builder_fn>
+std::unordered_map<std::string, comp_builder_fn>
 runtime_make_component_builders();
+std::unordered_map<std::string, conn_builder_fn>
+runtime_make_connection_builders();
 }

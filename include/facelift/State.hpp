@@ -10,8 +10,10 @@ using either_comp_or_conn = std::variant<
     components::OComponent*, components::OConnection*>;
 struct FaceliftState {
 
-    std::unordered_map<std::string, facelift::builder_fn> builders;
-    std::optional<std::string> open_builder { };
+    std::unordered_map<std::string, facelift::comp_builder_fn> comp_blds;
+    std::unordered_map<std::string, facelift::conn_builder_fn> conn_blds;
+    std::optional<std::string> open_comp_bld { };
+    std::optional<std::string> open_conn_bld { };
 
     std::vector<either_comp_or_conn> objects { };
     std::optional<
