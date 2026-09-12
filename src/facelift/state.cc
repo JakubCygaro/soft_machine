@@ -51,7 +51,8 @@ void update_objects()
     for (auto obj : fl_state.objects) {
         auto wmouse = ::GetScreenToWorld2D(::GetMousePosition(),
             *game::GraphScene::get_camera());
-        const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT);
+        const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
+            && !ImGui::GetIO().WantCaptureMouse;
         hit = !released;
         using namespace components;
         if (auto comp = std::get_if<OComponent*>(&obj); comp) {
@@ -113,7 +114,7 @@ void selected_draw()
         c) {
         as_comp = *c;
     }
-    if (as_comp && ::IsKeyDown(::KEY_C)) {
+    if (as_comp) {
         draw_highlight_selected_comp(as_comp, ::RED);
         if (fl_state.connect_to) {
             draw_highlight_selected_comp(fl_state.connect_to, ::BLUE);

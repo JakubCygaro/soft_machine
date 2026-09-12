@@ -135,9 +135,9 @@ runtime_make_connection_builders()
                              const std::string& t)
         -> conn_builder_fn::result_type {
         bool open = true;
-        static char name[128] = { };
-        ImGui::InputText("Name", name, sizeof(name));
         if (ImGui::Begin("passthrough", &open)) {
+            static char name[128] = { };
+            ImGui::InputText("Name", name, sizeof(name));
             if (ImGui::Button("Connect")) {
                 auto o = s->create_connection<components::Passthrough>(
                     std::string(name), f, t);
