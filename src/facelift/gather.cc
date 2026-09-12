@@ -57,6 +57,7 @@ runtime_make_component_builders()
                 } else {
                     auto o = s->create_component<components::Memory>(
                         std::string(name), std::move(mem));
+                    ImGui::End();
                     return std::make_pair(!open, o);
                 }
             }
@@ -83,6 +84,7 @@ runtime_make_component_builders()
                 }
                 auto o = s->create_component<components::Button>(
                     std::string(name), std::move(val));
+                ImGui::End();
                 return std::make_pair(!open, o);
             }
         }
@@ -97,6 +99,7 @@ runtime_make_component_builders()
             if (ImGui::Button("Create")) {
                 auto o = s->create_component<components::CPU>(
                     std::string(name), components::CPU::code_t { });
+                ImGui::End();
                 return std::make_pair(!open, o);
             }
         }
@@ -113,6 +116,7 @@ runtime_make_component_builders()
             if (ImGui::Button("Create")) {
                 auto o = s->create_component<components::Display>(
                     std::string(name), font_sz);
+                ImGui::End();
                 return std::make_pair(!open, o);
             }
         }
@@ -137,6 +141,7 @@ runtime_make_connection_builders()
             if (ImGui::Button("Connect")) {
                 auto o = s->create_connection<components::Passthrough>(
                     std::string(name), f, t);
+                ImGui::End();
                 return std::make_pair(!open, o);
             }
         }

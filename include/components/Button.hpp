@@ -43,7 +43,7 @@ public:
         : components::OComponent(std::string(name.data(), name.size()))
         , m_d { { nullptr } }
     {
-        int out{};
+        int out { };
         auto res = std::from_chars(
             msg_value.data(),
             msg_value.data() + msg_value.size(),
@@ -72,6 +72,8 @@ public:
 
     virtual void draw() override;
     virtual void update() override;
+    virtual void on_input() override;
+
     virtual std::any on_outcoming_connection(
         std::string_view,
         const machine::Connection*,

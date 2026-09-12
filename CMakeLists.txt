@@ -8,9 +8,9 @@ set(RAYLIB_VERSION 5.5)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include_directories(
-    BEFORE ${CMAKE_SOURCE_DIR}/vendor/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/vendor/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
@@ -61,6 +61,14 @@ target_compile_options(cppfeatures
 
 find_package(pugixml)
 
+find_library(
+    rlimgui
+    librlImGui.a
+    PATHS ${CMAKE_SOURCE_DIR}/vendor/lib
+    NO_DEFAULT_PATH
+    REQUIRED
+)
+
 add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/machine/Component.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/Connection.cpp
@@ -91,13 +99,6 @@ target_link_libraries(soft_machine
     PRIVATE sf_commons
 )
 
-find_library(
-    rlimgui
-    rlImGui
-    PATHS ${CMAKE_SOURCE_DIR}/vendor/lib
-    NO_DEFAULT_PATH
-    REQUIRED
-)
 add_executable(facelift
     ${CMAKE_SOURCE_DIR}/src/facelift/main.cc
     ${CMAKE_SOURCE_DIR}/src/facelift/gather.cc
@@ -106,11 +107,14 @@ add_executable(facelift
 target_compile_definitions(facelift
     PRIVATE -DFACELIFT_EDITOR
 )
+target_include_directories(facelift
+    PUBLIC ${CMAKE_SOURCE_DIR}/vendor/include
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
+)
 
 target_link_libraries(facelift
     PRIVATE raylib
     PRIVATE pugixml
-    PRIVATE ${rlimgui}
     PRIVATE sf_commons
 )
 

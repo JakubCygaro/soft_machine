@@ -1,6 +1,7 @@
 #include "game/Scene.hpp"
 #include "game/Globals.hpp"
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <raylib.h>
 #include <raymath.h>
@@ -11,6 +12,7 @@ GraphScene::GraphScene(GraphScene&& o)
     , m_cam { o.m_cam }
     , m_framec { o.m_framec }
     , bounds { o.bounds }
+    , m_has_focus { o.m_has_focus }
 {
 }
 GraphScene& GraphScene::operator=(GraphScene&& o)
@@ -20,6 +22,7 @@ GraphScene& GraphScene::operator=(GraphScene&& o)
     m_cam = o.m_cam;
     bounds = o.bounds;
     m_framec = o.m_framec;
+    m_has_focus = o.m_has_focus;
     return *this;
 }
 GraphScene::~GraphScene()
@@ -29,6 +32,7 @@ GraphScene::GraphScene(std::unique_ptr<machine::MachineGraph>&& g, ::Rectangle b
     : m_mgraph { std::move(g) }
     , m_cam { }
     , bounds { bounds }
+    , m_has_focus { false }
 {
     init(*this);
 }
@@ -61,9 +65,9 @@ void GraphScene::draw()
 }
 void GraphScene::update()
 {
-    if (::CheckCollisionPointRec(::GetMousePosition(), bounds)) {
-        m_cam.zoom += ::GetMouseWheelMove() * .3;
-        m_cam.zoom = std::clamp<float>(m_cam.zoom, 0.0, 100.0);
+    if (m_has_focus && ::CheckCollisionPointRec(::GetMousePosition(), bounds)) {
+        m_cam.zoom = std::exp(std::log(m_cam.zoom) + (::GetMouseWheelMove() * 0.1f));
+        m_cam.zoom = std::clamp<float>(m_cam.zoom, 0.0, 75.0);
         if (::IsMouseButtonDown(::MOUSE_BUTTON_RIGHT)) {
             m_cam.target = ::Vector2Subtract(m_cam.target,
                 ::Vector2Scale(::GetMouseDelta(), 1 / m_cam.zoom));
@@ -73,9 +77,17 @@ void GraphScene::update()
         m_mgraph->poll_all();
     }
     GraphScene::set_camera(&m_cam);
+    const auto m = ::GetScreenToWorld2D(::GetMousePosition(), m_cam);
     for (auto o : m_graph_objs) {
+        if (m_has_focus && o->check_point_collision(m)) {
+            o->on_input();
+        }
         o->update();
     }
     m_framec++;
+}
+void GraphScene::set_focus(bool f)
+{
+    m_has_focus = f;
 }
 }

@@ -3,9 +3,11 @@
 #include "facelift/GatherComponents.hpp"
 #include "game/Scene.hpp"
 #include "imgui.h"
+#include "imgui_impl_raylib.h"
 #include "machine/MachineGraph.hpp"
 #include "rlImGui.h"
 #include <format>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <raylib.h>
@@ -127,9 +129,19 @@ void selected_draw()
 
 void draw()
 {
+    // ::rlImGuiBegin();
+    const auto& io = ImGui::GetIO();
+    fl_state.graph_scene->set_focus(
+        !(io.WantCaptureMouse));
+    ::ImGui_ImplRaylib_ProcessEvents();
+    ::ImGui_ImplRaylib_NewFrame();
+    ImGui::NewFrame();
+
+
     ::BeginDrawing();
+    ::ClearBackground(::BLACK);
+
     fl_state.graph_scene->draw();
-    ::rlImGuiBegin();
     comp_builder_menu_draw();
     if (fl_state.open_comp_bld) {
         auto [c, obj] = fl_state
@@ -159,8 +171,9 @@ void draw()
     if (fl_state.selected) {
         selected_draw();
     }
+    // ::rlImGuiEnd();
     ImGui::Render();
-    ::rlImGuiEnd();
+    ::ImGui_ImplRaylib_RenderDrawData(ImGui::GetDrawData());
     ::EndDrawing();
 }
 
@@ -169,13 +182,14 @@ void init()
     ::SetConfigFlags(
         ::FLAG_WINDOW_RESIZABLE);
     ::InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Facelift");
-    ::rlImGuiSetup(true);
+    ::rlImGuiBeginInitImGui();
     ::SetTargetFPS(60);
 
     IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
+    ImGui::StyleColorsDark();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ::rlImGuiEndInitImGui();
 
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();

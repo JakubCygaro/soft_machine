@@ -35,10 +35,10 @@ void Button::draw()
 }
 void Button::update()
 {
-    const auto m = ::GetScreenToWorld2D(::GetMousePosition(),
-        *game::GraphScene::get_camera());
+}
+void Button::on_input()
+{
     if (::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
-        && ::CheckCollisionPointRec(m, m_bounds)
         && !m_d->set) {
         m_d->set = true;
     }

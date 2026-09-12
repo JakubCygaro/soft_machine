@@ -150,6 +150,9 @@ public:
     {
         return { m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height / 2 };
     }
+    inline virtual bool check_point_collision(const ::Vector2& point) const override {
+        return ::CheckCollisionPointRec(point, m_bounds);
+    }
     inline virtual ::Vector2 get_att_point(AttachPt att) const
     {
         ::Vector2 p = get_center();
@@ -303,7 +306,9 @@ public:
     {
         return m_end_pos;
     };
-
+    inline virtual bool check_point_collision(const ::Vector2& point) const override {
+        return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 5);
+    }
     inline virtual ~OConnection() { }
     inline virtual const char*
     marshall_to_xml_name() const noexcept override

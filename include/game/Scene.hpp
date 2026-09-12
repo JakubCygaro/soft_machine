@@ -26,6 +26,7 @@ private:
 
 public:
     ::Rectangle bounds { };
+    bool m_has_focus { };
 
 public:
     void draw();
@@ -78,5 +79,7 @@ public:
     {
         return &m_cam;
     }
+
+    void set_focus(bool);
 };
 }
