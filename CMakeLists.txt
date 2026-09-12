@@ -8,7 +8,7 @@ set(RAYLIB_VERSION 5.5)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/vendor/include
+    ${CMAKE_SOURCE_DIR}/vendor/rlImGui
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/include
 )
@@ -108,7 +108,7 @@ target_compile_definitions(facelift
     PRIVATE -DFACELIFT_EDITOR
 )
 target_include_directories(facelift
-    PUBLIC ${CMAKE_SOURCE_DIR}/vendor/include
+    PUBLIC ${CMAKE_SOURCE_DIR}/vendor/rlImGui
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
 )
 
