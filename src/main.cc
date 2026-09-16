@@ -115,8 +115,8 @@ public:
 };
 int main(void)
 {
-    auto m = std::unique_ptr<machine::MachineGraph>(
-        machine::MachineGraph::create());
+    auto m = std::unique_ptr<game::GraphScene::graph_t>(
+        game::GraphScene::graph_t::create());
     std::string xml;
     std::ifstream ifs("./test.xml");
     std::stringstream buf;

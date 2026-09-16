@@ -1,8 +1,9 @@
 #ifndef MACHINE_CONTEXT_HPP
 #define MACHINE_CONTEXT_HPP
+#include "common/Result.hpp"
+#include "machine/Preamble.hpp"
 #include "machine/Actor.hpp"
 #include "machine/Message.hpp"
-#include "common/Result.hpp"
 #include "machine/Scheduler.hpp"
 #include <any>
 #include <stdexcept>
@@ -11,8 +12,14 @@
 namespace machine {
 
 class MachineContext {
-    friend class MachineGraph;
+    // class Component;
+    // class Connection;
     using shd = shed::Scheduler;
+
+    template <
+        std::derived_from<Component> Comp,
+        std::derived_from<Connection> Conn>
+    friend class MachineGraph;
 
 private:
     std::string m_name_of_this { };

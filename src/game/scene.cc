@@ -8,7 +8,7 @@
 namespace game {
 GraphScene::GraphScene(GraphScene&& o)
     : m_mgraph { std::move(o.m_mgraph) }
-    , m_graph_objs { std::move(o.m_graph_objs) }
+    // , m_graph_objs { std::move(o.m_graph_objs) }
     , m_cam { o.m_cam }
     , m_framec { o.m_framec }
     , bounds { o.bounds }
@@ -18,7 +18,7 @@ GraphScene::GraphScene(GraphScene&& o)
 GraphScene& GraphScene::operator=(GraphScene&& o)
 {
     m_mgraph = std::move(o.m_mgraph);
-    m_graph_objs = std::move(o.m_graph_objs);
+    // m_graph_objs = std::move(o.m_graph_objs);
     m_cam = o.m_cam;
     bounds = o.bounds;
     m_framec = o.m_framec;
@@ -28,7 +28,7 @@ GraphScene& GraphScene::operator=(GraphScene&& o)
 GraphScene::~GraphScene()
 {
 }
-GraphScene::GraphScene(std::unique_ptr<machine::MachineGraph>&& g, ::Rectangle bounds)
+GraphScene::GraphScene(std::unique_ptr<graph_t>&& g, ::Rectangle bounds)
     : m_mgraph { std::move(g) }
     , m_cam { }
     , bounds { bounds }
@@ -39,14 +39,14 @@ GraphScene::GraphScene(std::unique_ptr<machine::MachineGraph>&& g, ::Rectangle b
 
 void GraphScene::init(GraphScene& self)
 {
-    for (auto c : self.m_mgraph->get_connections()) {
-        if (auto o = dynamic_cast<Object*>(c.get()))
-            self.m_graph_objs.push_back(o);
-    }
-    for (auto c : self.m_mgraph->get_components()) {
-        if (auto o = dynamic_cast<Object*>(c.get()))
-            self.m_graph_objs.push_back(o);
-    }
+    // for (auto c : self.m_mgraph->get_connections()) {
+    //     if (auto o = dynamic_cast<Object*>(c.get()))
+    //         self.m_graph_objs.push_back(o);
+    // }
+    // for (auto c : self.m_mgraph->get_components()) {
+    //     if (auto o = dynamic_cast<Object*>(c.get()))
+    //         self.m_graph_objs.push_back(o);
+    // }
     self.m_cam.target = { 0, 0 };
     self.m_cam.offset = { self.bounds.width / 2.0f, self.bounds.height / 2.0f };
     self.m_cam.zoom = 2.0;
@@ -57,7 +57,10 @@ void GraphScene::draw()
     ::BeginScissorMode(bounds.x, bounds.y, bounds.width, bounds.height);
     ::ClearBackground(::GetColor(0xffffc1ff));
     ::BeginMode2D(m_cam);
-    for (auto o : m_graph_objs) {
+    for (auto o : this->m_mgraph->get_connections()) {
+        o->draw();
+    }
+    for (auto o : this->m_mgraph->get_components()) {
         o->draw();
     }
     ::EndMode2D();
@@ -78,7 +81,7 @@ void GraphScene::update()
     }
     GraphScene::set_camera(&m_cam);
     const auto m = ::GetScreenToWorld2D(::GetMousePosition(), m_cam);
-    for (auto o : m_graph_objs) {
+    for (auto o : m_mgraph->get_elements_as<Object>()) {
         if (m_has_focus && o->check_point_collision(m)) {
             o->on_input();
         }

@@ -195,8 +195,8 @@ void init()
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();
-    auto mg = std::unique_ptr<machine::MachineGraph>(
-        machine::MachineGraph::create());
+    auto mg = std::unique_ptr<game::GraphScene::graph_t>(
+        game::GraphScene::graph_t::create());
     auto sc = game::GraphScene(std::move(mg),
         { 0,
             0,

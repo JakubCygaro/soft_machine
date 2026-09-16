@@ -27,6 +27,7 @@
 namespace {
 using err_t = std::runtime_error;
 using ret_t = unit_result_t<err_t>;
+using graph_t = machine::MachineGraph<components::OComponent, components::OConnection>;
 
 std::optional<::Vector2>
 get_position_node(pugi::xml_node& n)
@@ -68,7 +69,7 @@ struct build;
 template <>
 struct build<components::Passthrough> {
     Result<err_t, components::Passthrough*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         struct attach_attrs {
             std::string name;
@@ -105,7 +106,7 @@ struct build<components::Passthrough> {
 template <>
 struct build<components::CPU> {
     Result<err_t, components::CPU*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         struct cpu_node {
             struct cpu_attrs {
@@ -233,7 +234,7 @@ struct build<components::Memory> {
         std::optional<pos_node> position;
     };
     Result<err_t, components::Memory*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         mem_node mem_n;
         if (auto unm = game::xml::unmarshall_node<mem_node>(n); unm.iserr()) {
@@ -254,7 +255,7 @@ struct build<components::Memory> {
 template <>
 struct build<components::Button> {
     Result<err_t, components::Button*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         struct button_node {
             struct attrs {
@@ -311,7 +312,7 @@ struct build<components::Button> {
 template <>
 struct build<components::Display> {
     Result<err_t, components::Display*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         struct display_node {
             struct attrs {
@@ -341,7 +342,7 @@ struct build<components::Display> {
 template <>
 struct build<components::Repeater> {
     Result<err_t, components::Repeater*>
-    operator()(machine::MachineGraph& mg, pugi::xml_node& n) const noexcept
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
     {
         struct repeater_node {
             struct attrs {
@@ -384,9 +385,9 @@ concept Buildable = requires() {
 // components::CPU will match for a node named "cpu"
 // and then build<components::CPU> will be instantiated and
 // called as a functor
-// build<components::CPU>()(machine::MachineGraph&, pugi::xml_node&)
+// build<components::CPU>()(graph_t&, pugi::xml_node&)
 //
-ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
+ret_t build_from_xml_node(graph_t& mg, pugi::xml_node& n)
 #ifndef CLANGD_SKIP
 {
     const char* raw_name = n.name();
@@ -439,7 +440,7 @@ ret_t build_from_xml_node(machine::MachineGraph& mg, pugi::xml_node& n)
 }
 namespace game {
 Result<std::runtime_error, Unit>
-populate_machine_from_xml(machine::MachineGraph& mg, const std::string& xml)
+populate_machine_from_xml(graph_t& mg, const std::string& xml)
 {
     pugi::xml_document doc;
     pugi::xml_parse_result res = doc.load_string(xml.c_str());

@@ -1,13 +1,14 @@
 #pragma once
 #include "common/reflect/Enum.hpp"
 #include "game/Drawable.hpp"
-#include "game/Xml.hpp"
+// #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "imgui.h"
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
 #include <raylib.h>
 #include <raymath.h>
+#include <pugixml.hpp>
 #include <string_view>
 
 namespace components {

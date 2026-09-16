@@ -53,7 +53,6 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/machine/Component.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/Connection.cpp
     ${CMAKE_SOURCE_DIR}/src/machine/MachineContext.cpp
-    ${CMAKE_SOURCE_DIR}/src/machine/MachineGraph.cpp
     ${CMAKE_SOURCE_DIR}/src/game/scene.cc
     ${CMAKE_SOURCE_DIR}/src/game/xml.cc
     ${CMAKE_SOURCE_DIR}/src/components/Passthrough.cc
