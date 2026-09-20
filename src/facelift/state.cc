@@ -1,6 +1,7 @@
 #include "facelift/State.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
+#include "game/Drawable.hpp"
 #include "game/Scene.hpp"
 #include "game/Xml.hpp"
 #include "imgui.h"
@@ -53,36 +54,60 @@ void conn_builder_menu_draw()
 
 void update_objects()
 {
+    const auto wmouse = ::GetScreenToWorld2D(
+        ::GetMousePosition(),
+        *game::GraphScene::get_camera());
+    const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
+        && !ImGui::GetIO().WantCaptureMouse;
     bool hit = true;
-    for (auto obj : fl_state.objects) {
-        auto wmouse = ::GetScreenToWorld2D(::GetMousePosition(),
-            *game::GraphScene::get_camera());
-        const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
-            && !ImGui::GetIO().WantCaptureMouse;
-        hit = !released;
-        using namespace components;
-        if (auto comp = std::get_if<OComponent*>(&obj); comp) {
-            if (released && ::CheckCollisionPointRec(wmouse, (*comp)->get_bounds())) {
+    for (auto obj : fl_state.graph_scene
+             ->get_graph()
+             ->get_elements_as<game::Object>()) {
+        if (released && obj->check_point_collision(wmouse)) {
+            if (auto as_comp = dynamic_cast<components::OComponent*>(obj); as_comp) {
                 if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
-                    fl_state.connect_to = *comp;
+                    fl_state.connect_to = as_comp;
                 } else {
-                    fl_state.selected = { *comp,
-                        static_cast<Editable*>(*comp) };
+                    fl_state.selected = { as_comp, dynamic_cast<game::Editable*>(obj) };
                     fl_state.connect_to = nullptr;
                 }
-                hit = true;
+            } else {
+                fl_state.selected = { dynamic_cast<components::OConnection*>(obj),
+                    dynamic_cast<game::Editable*>(obj) };
+                fl_state.connect_to = nullptr;
             }
-        } else if (auto* conn = std::get<OConnection*>(obj); released
-            && ::CheckCollisionPointLine(
-                wmouse,
-                conn->get_start_pos(),
-                conn->get_end_pos(),
-                5)) {
-            fl_state.selected = { conn,
-                static_cast<Editable*>(conn) };
             hit = true;
         }
     }
+    // for (auto obj : fl_state.objects) {
+    //     auto wmouse = ::GetScreenToWorld2D(::GetMousePosition(),
+    //         *game::GraphScene::get_camera());
+    //     const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
+    //         && !ImGui::GetIO().WantCaptureMouse;
+    //     hit = !released;
+    //     using namespace components;
+    //     if (auto comp = std::get_if<OComponent*>(&obj); comp) {
+    //         if (released && ::CheckCollisionPointRec(wmouse, (*comp)->get_bounds())) {
+    //             if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
+    //                 fl_state.connect_to = *comp;
+    //             } else {
+    //                 fl_state.selected = { *comp,
+    //                     static_cast<Editable*>(*comp) };
+    //                 fl_state.connect_to = nullptr;
+    //             }
+    //             hit = true;
+    //         }
+    //     } else if (auto* conn = std::get<OConnection*>(obj); released
+    //         && ::CheckCollisionPointLine(
+    //             wmouse,
+    //             conn->get_start_pos(),
+    //             conn->get_end_pos(),
+    //             5)) {
+    //         fl_state.selected = { conn,
+    //             static_cast<Editable*>(conn) };
+    //         hit = true;
+    //     }
+    // }
     if (!hit && fl_state.connect_to) {
         fl_state.connect_to = nullptr;
         fl_state.open_conn_bld = std::nullopt;
@@ -116,7 +141,7 @@ void selected_draw()
 {
     bool open = true;
     components::OComponent* as_comp = nullptr;
-    if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected->first);
+    if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected.value().first);
         c) {
         as_comp = *c;
     }
@@ -128,7 +153,9 @@ void selected_draw()
         }
     }
     ImGui::Begin("Selected", &open);
-    fl_state.selected->second->draw_edit_window();
+    if (fl_state.selected) {
+        fl_state.selected->second->draw_edit_window();
+    }
     ImGui::End();
     if (!open)
         fl_state.selected = std::nullopt;

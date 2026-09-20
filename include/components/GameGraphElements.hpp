@@ -89,15 +89,11 @@ enum class AttachPt {
     BR
 };
 
-struct Editable {
-    inline virtual ~Editable() { }
-    virtual void draw_edit_window() = 0;
-};
 
 class OComponent : public machine::Component,
                    public game::Object,
-                   public game::xml::MarshallToXml,
-                   public Editable {
+                   public game::xml::MarshallToXml
+                   {
 public:
     const ::Rectangle DEFAULT_BOUNDS = ::Rectangle {
         .x = 0,
@@ -219,8 +215,8 @@ public:
 };
 class OConnection : public machine::Connection,
                     public game::Object,
-                    public game::xml::MarshallToXml,
-                    public Editable {
+                    public game::xml::MarshallToXml
+                    {
 protected:
     ::Vector2 m_start_pos { },
         m_end_pos { };

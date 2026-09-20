@@ -1,6 +1,7 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
+#include "game/Drawable.hpp"
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
@@ -18,7 +19,7 @@ struct FaceliftState {
     std::vector<either_comp_or_conn> objects { };
     std::optional<
         std::pair<
-            either_comp_or_conn, components::Editable*>>
+            either_comp_or_conn, game::Editable*>>
         selected;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;

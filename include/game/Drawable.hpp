@@ -2,7 +2,11 @@
 
 #include <raylib.h>
 namespace game {
-class Object {
+struct Editable {
+    inline virtual ~Editable() { }
+    virtual void draw_edit_window() = 0;
+};
+class Object : public Editable {
 public:
     inline virtual void draw() { };
     inline virtual void update() { };
