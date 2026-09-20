@@ -2,16 +2,22 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/Scene.hpp"
+#include "game/Xml.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
 #include "machine/MachineGraph.hpp"
 #include "rlImGui.h"
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <raylib.h>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <variant>
+#include <vector>
 
 namespace facelift {
 void comp_builder_menu_draw()
@@ -138,7 +144,6 @@ void draw()
     ::ImGui_ImplRaylib_NewFrame();
     ImGui::NewFrame();
 
-
     ::BeginDrawing();
     ::ClearBackground(::BLACK);
 
@@ -151,6 +156,7 @@ void draw()
         if (c)
             fl_state.open_comp_bld = std::nullopt;
         if (obj) {
+            fl_state.open_comp_bld = std::nullopt;
             fl_state.objects.push_back(*obj);
         }
     }
@@ -178,8 +184,11 @@ void draw()
     ::EndDrawing();
 }
 
-void init()
+void init(const std::vector<std::string>& args)
 {
+    if (args.size() > 1) {
+        throw std::runtime_error("too many command line arguments passed");
+    }
     ::SetConfigFlags(
         ::FLAG_WINDOW_RESIZABLE);
     ::InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Facelift");
@@ -195,8 +204,21 @@ void init()
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();
+
     auto mg = std::unique_ptr<game::GraphScene::graph_t>(
         game::GraphScene::graph_t::create());
+    if (args.size() == 1) {
+        std::string xml;
+        std::ifstream ifs(args[0]);
+        std::stringstream buf;
+        buf << ifs.rdbuf();
+        xml = buf.str();
+        auto res = game::populate_machine_from_xml(*mg, xml);
+        if (res.iserr()) {
+            throw res.unwrap_err();
+        }
+    }
+
     auto sc = game::GraphScene(std::move(mg),
         { 0,
             0,

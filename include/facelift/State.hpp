@@ -29,7 +29,7 @@ struct FaceliftState {
 
 inline static FaceliftState fl_state;
 
-void init();
+void init(const std::vector<std::string>& args);
 void update();
 void draw();
 void deinit();
