@@ -4,7 +4,8 @@
 namespace game {
 struct Editable {
     inline virtual ~Editable() { }
-    virtual void draw_edit_window() = 0;
+    /// the return value indicates whether a change to the underlying object occured
+    virtual bool draw_edit_window() = 0;
 };
 class Object : public Editable {
 public:

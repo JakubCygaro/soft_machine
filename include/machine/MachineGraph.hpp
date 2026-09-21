@@ -1,10 +1,10 @@
 #pragma once
-#include "machine/Scheduler.hpp"
-#include "machine/Preamble.hpp"
+#include "Pollable.hpp"
 #include "machine/Actor.hpp"
 #include "machine/Connection.hpp"
-#include "Pollable.hpp"
 #include "machine/Message.hpp"
+#include "machine/Preamble.hpp"
+#include "machine/Scheduler.hpp"
 #include <concepts>
 #include <deque>
 #include <format>
@@ -205,6 +205,15 @@ public:
         m_comps.push_back(comp);
         register_actor(name, comp.get());
         return comp.get();
+    }
+    inline void notify(const std::string& name)
+    {
+        if (m_named_comps.contains(name)) {
+            if (m_incidents.contains(m_named_comps[name]))
+                for (auto* i : m_incidents[m_named_comps[name]]) {
+                    i->on_notified();
+                }
+        }
     }
 
 private:

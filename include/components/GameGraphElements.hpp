@@ -6,9 +6,9 @@
 #include "imgui.h"
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
+#include <pugixml.hpp>
 #include <raylib.h>
 #include <raymath.h>
-#include <pugixml.hpp>
 #include <string_view>
 
 namespace components {
@@ -89,11 +89,9 @@ enum class AttachPt {
     BR
 };
 
-
 class OComponent : public machine::Component,
                    public game::Object,
-                   public game::xml::MarshallToXml
-                   {
+                   public game::xml::MarshallToXml {
 public:
     const ::Rectangle DEFAULT_BOUNDS = ::Rectangle {
         .x = 0,
@@ -147,7 +145,8 @@ public:
     {
         return { m_bounds.x + m_bounds.width / 2, m_bounds.y + m_bounds.height / 2 };
     }
-    inline virtual bool check_point_collision(const ::Vector2& point) const override {
+    inline virtual bool check_point_collision(const ::Vector2& point) const override
+    {
         return ::CheckCollisionPointRec(point, m_bounds);
     }
     inline virtual ::Vector2 get_att_point(AttachPt att) const
@@ -204,19 +203,20 @@ public:
         append_position_node(self, get_pos());
         self.append_attribute("name").set_value(get_name());
     }
-    inline virtual void draw_edit_window() override
+    inline virtual bool draw_edit_window() override
     {
+        auto notify = false;
         static float pos[2] = { m_bounds.x, m_bounds.y };
-        if (ImGui::InputFloat2("Position", pos)) {
+        if ((notify |= ImGui::InputFloat2("Position", pos))) {
             m_bounds.x = pos[0];
             m_bounds.y = pos[1];
         }
+        return notify;
     }
 };
 class OConnection : public machine::Connection,
                     public game::Object,
-                    public game::xml::MarshallToXml
-                    {
+                    public game::xml::MarshallToXml {
 protected:
     ::Vector2 m_start_pos { },
         m_end_pos { };
@@ -303,7 +303,8 @@ public:
     {
         return m_end_pos;
     };
-    inline virtual bool check_point_collision(const ::Vector2& point) const override {
+    inline virtual bool check_point_collision(const ::Vector2& point) const override
+    {
         return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 5);
     }
     inline virtual ~OConnection() { }
@@ -328,8 +329,14 @@ public:
         to.append_attribute("at")
             .set_value(common::reflect::enum_to_string(m_end_ap));
     }
-    inline virtual void draw_edit_window() override
+    inline virtual bool draw_edit_window() override
     {
+        return false;
     }
+    inline virtual void on_notified() override
+    {
+        set_from_attp(m_start_ap);
+        set_to_attp(m_end_ap);
+    };
 };
 }

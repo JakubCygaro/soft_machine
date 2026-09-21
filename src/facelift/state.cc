@@ -6,10 +6,9 @@
 #include "game/Xml.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
-#include "machine/MachineGraph.hpp"
 #include "rlImGui.h"
-#include <format>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -21,6 +20,17 @@
 #include <vector>
 
 namespace facelift {
+namespace {
+    template <typename Func, typename L, typename R>
+    void apply_on(std::variant<L, R>& var, Func fn)
+    {
+        if (std::holds_alternative<L>(var)) {
+            fn(std::get<L>(var));
+        } else if (std::holds_alternative<R>(var)) {
+            fn(std::get<R>(var));
+        }
+    }
+}
 void comp_builder_menu_draw()
 {
     if (ImGui::Begin("Component builder")) {
@@ -154,7 +164,13 @@ void selected_draw()
     }
     ImGui::Begin("Selected", &open);
     if (fl_state.selected) {
-        fl_state.selected->second->draw_edit_window();
+        fl_state.selected->second->draw_edit_window()
+            ? apply_on(fl_state.selected->first, [&](auto elem) {
+                  fl_state.graph_scene
+                      ->get_graph()
+                      ->notify(elem->get_name());
+              })
+            : (void)0;
     }
     ImGui::End();
     if (!open)
@@ -184,7 +200,7 @@ void draw()
             fl_state.open_comp_bld = std::nullopt;
         if (obj) {
             fl_state.open_comp_bld = std::nullopt;
-            fl_state.objects.push_back(*obj);
+            // fl_state.objects.push_back(*obj);
         }
     }
     if (fl_state.open_conn_bld) {
@@ -198,9 +214,9 @@ void draw()
                                 to);
         if (c)
             fl_state.open_conn_bld = std::nullopt;
-        if (obj) {
-            fl_state.objects.push_back(*obj);
-        }
+        // if (obj) {
+        //     fl_state.objects.push_back(*obj);
+        // }
     }
     if (fl_state.selected) {
         selected_draw();

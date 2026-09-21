@@ -16,7 +16,7 @@ struct FaceliftState {
     std::optional<std::string> open_comp_bld { };
     std::optional<std::string> open_conn_bld { };
 
-    std::vector<either_comp_or_conn> objects { };
+    // std::vector<either_comp_or_conn> objects { };
     std::optional<
         std::pair<
             either_comp_or_conn, game::Editable*>>
