@@ -168,7 +168,12 @@ void selected_draw()
             ? apply_on(fl_state.selected->first, [&](auto elem) {
                   fl_state.graph_scene
                       ->get_graph()
-                      ->notify(elem->get_name());
+                      ->get_incident_to(elem->get_name())
+                      .and_then([&](auto* incident) {
+                          for (auto* conn : *incident)
+                              conn->on_notified();
+                          return std::optional(Unit());
+                      });
               })
             : (void)0;
     }

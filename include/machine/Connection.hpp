@@ -67,7 +67,6 @@ public:
     const std::string& get_name() const;
     virtual std::pair<std::any, std::function<void(std::any)>> on_connecting_to_start();
     virtual std::pair<std::any, std::function<void(std::any)>> on_connecting_to_end();
-    inline virtual void on_notified() { };
 };
 
 }

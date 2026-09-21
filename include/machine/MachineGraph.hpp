@@ -206,15 +206,15 @@ public:
         register_actor(name, comp.get());
         return comp.get();
     }
-    inline void notify(const std::string& name)
-    {
-        if (m_named_comps.contains(name)) {
-            if (m_incidents.contains(m_named_comps[name]))
-                for (auto* i : m_incidents[m_named_comps[name]]) {
-                    i->on_notified();
-                }
-        }
-    }
+    // inline void notify(const std::string& name)
+    // {
+    //     if (m_named_comps.contains(name)) {
+    //         if (m_incidents.contains(m_named_comps[name]))
+    //             for (auto* i : m_incidents[m_named_comps[name]]) {
+    //                 i->on_notified();
+    //             }
+    //     }
+    // }
 
 private:
     inline void deliver_messages()
@@ -287,8 +287,8 @@ public:
             h.resume();
         }
     }
-    inline std::optional<const std::vector<Connection*>*>
-    get_incident_to(const std::string& name) const
+    inline std::optional<std::vector<Conn*>*>
+    get_incident_to(const std::string& name)
     {
         if (!this->m_named_comps.contains(name)) {
             return std::nullopt;
@@ -300,8 +300,8 @@ public:
         const auto in = &this->m_incidents.at(ptr);
         return std::make_optional(in);
     }
-    inline std::optional<std::vector<const Component*>>
-    get_adjecent_to(const std::string& name) const
+    inline std::optional<std::vector<Comp*>>
+    get_adjecent_to(const std::string& name)
     {
         auto incident = get_incident_to(name);
         if (!incident.has_value())
