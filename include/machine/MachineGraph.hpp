@@ -5,6 +5,7 @@
 #include "machine/Message.hpp"
 #include "machine/Preamble.hpp"
 #include "machine/Scheduler.hpp"
+#include <algorithm>
 #include <concepts>
 #include <deque>
 #include <format>
@@ -43,6 +44,7 @@ private:
     struct Process {
         std::string name;
         actor::Actor actor;
+        actor::Actor::handle_t handle;
         Pollable* pollable;
         inline Process(
             std::string name,
@@ -50,6 +52,7 @@ private:
             Pollable* pollable)
             : name { name }
             , actor { std::move(actor) }
+            , handle { std::move(handle) }
             , pollable { pollable }
         {
         }
@@ -58,22 +61,26 @@ private:
         inline Process(Process&& o)
             : name { o.name }
             , actor { std::move(o.actor) }
+            , handle { std::move(handle) }
             , pollable { o.pollable }
         {
             o.pollable = nullptr;
+            o.handle = nullptr;
         }
         inline Process& operator=(Process&& o)
         {
             name = o.name;
             actor = std::move(o.actor);
+            handle = std::move(o.handle);
             pollable = o.pollable;
             o.pollable = nullptr;
+            o.handle = nullptr;
             return *this;
         }
     };
 
     std::deque<Process> m_procs { };
-    std::deque<actor::Actor::handle_t> m_scheduled { };
+    std::deque<std::pair<const std::string, shed::pause_callback_t>> m_paused { };
 
 private:
     inline MachineGraph() { }
@@ -94,7 +101,7 @@ public:
         , m_msgq { std::move(o.m_msgq) }
         , m_waiting { std::move(o.m_waiting) }
         , m_procs { std::move(o.m_procs) }
-        , m_scheduled { std::move(o.m_scheduled) }
+        , m_paused { std::move(o.m_paused) }
     {
     }
     inline MachineGraph& operator=(MachineGraph&& o)
@@ -106,7 +113,7 @@ public:
         m_msgq = std::move(o.m_msgq);
         m_waiting = std::move(o.m_waiting);
         m_procs = std::move(o.m_procs);
-        m_scheduled = std::move(o.m_scheduled);
+        m_paused = std::move(o.m_paused);
         m_incidents = std::move(o.m_incidents);
         return *this;
     }
@@ -206,15 +213,38 @@ public:
         register_actor(name, comp.get());
         return comp.get();
     }
-    // inline void notify(const std::string& name)
-    // {
-    //     if (m_named_comps.contains(name)) {
-    //         if (m_incidents.contains(m_named_comps[name]))
-    //             for (auto* i : m_incidents[m_named_comps[name]]) {
-    //                 i->on_notified();
-    //             }
-    //     }
-    // }
+    inline void remove_element(const std::string& name)
+    {
+        auto found = std::find_if(
+            m_procs.begin(),
+            m_procs.end(),
+            [&](auto& proc) {
+                return proc.name == name;
+            });
+        if (found != m_procs.end())
+            m_procs.erase(found);
+
+        if (is_component(name)) {
+            m_named_comps.erase(name);
+            m_comps.erase(
+                std::find_if(
+                    m_comps.begin(),
+                    m_comps.end(),
+                    [&](auto& comp) {
+                        return comp->get_name() == name;
+                    }));
+        }
+        if (is_connector(name)) {
+            m_named_conns.erase(name);
+            m_conns.erase(
+                std::find_if(
+                    m_conns.begin(),
+                    m_conns.end(),
+                    [&](auto& conn) {
+                        return conn->get_name() == name;
+                    }));
+        }
+    }
 
 private:
     inline void deliver_messages()
@@ -226,6 +256,8 @@ private:
                 m_msgq.push_back(std::move(ms));
                 continue;
             }
+            if (!exists(ms.sender))
+                continue;
             // cannot send from comp to comp
             if (is_component(ms.recipent) && is_component(ms.sender)) {
                 ms.sender_callback(
@@ -256,6 +288,10 @@ private:
             ms.sender_callback(std::nullopt);
         }
     }
+    inline bool exists(const std::string& n) const
+    {
+        return is_component(n) || is_connector(n);
+    }
     inline bool is_connector(const std::string& n) const
     {
         return m_named_conns.contains(n);
@@ -279,15 +315,21 @@ public:
             return;
         }
         deliver_messages();
-        decltype(m_scheduled) scheduled = decltype(m_scheduled)(m_scheduled);
-        m_scheduled.clear();
+        decltype(m_paused) scheduled = decltype(m_paused)(m_paused);
+        // decltype(m_paused) scheduled;
+        // decltype(m_paused)::swap(m_paused, scheduled);
+        m_paused.clear();
         while (!scheduled.empty()) {
-            auto h = scheduled.front();
+            auto [n, wake] = scheduled.front();
             scheduled.pop_front();
-            h.resume();
+            if (exists(n)) {
+                wake();
+            }
+            // h.resume();
         }
     }
-    inline std::optional<std::vector<Conn*>*>
+    using incident_t = std::vector<Conn*>;
+    inline std::optional<incident_t*>
     get_incident_to(const std::string& name)
     {
         if (!this->m_named_comps.contains(name)) {
@@ -300,10 +342,11 @@ public:
         const auto in = &this->m_incidents.at(ptr);
         return std::make_optional(in);
     }
-    inline std::optional<std::vector<Comp*>>
+    using adjecent_t = std::vector<Comp*>;
+    inline std::optional<adjecent_t>
     get_adjecent_to(const std::string& name)
     {
-        auto incident = get_incident_to(name);
+        const auto incident = get_incident_to(name);
         if (!incident.has_value())
             return std::nullopt;
         const auto n = m_named_comps.at(name);
@@ -392,9 +435,9 @@ public:
 
     // As Scheduler
 public:
-    inline virtual void pause(ahandle_t h)
+    inline virtual void pause(const std::string& name, shed::pause_callback_t clb)
     {
-        m_scheduled.push_back(h);
+        m_paused.push_back(std::make_pair(name, clb));
     }
     inline virtual void send(
         std::string sender,

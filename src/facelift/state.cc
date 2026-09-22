@@ -89,38 +89,20 @@ void update_objects()
             hit = true;
         }
     }
-    // for (auto obj : fl_state.objects) {
-    //     auto wmouse = ::GetScreenToWorld2D(::GetMousePosition(),
-    //         *game::GraphScene::get_camera());
-    //     const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
-    //         && !ImGui::GetIO().WantCaptureMouse;
-    //     hit = !released;
-    //     using namespace components;
-    //     if (auto comp = std::get_if<OComponent*>(&obj); comp) {
-    //         if (released && ::CheckCollisionPointRec(wmouse, (*comp)->get_bounds())) {
-    //             if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
-    //                 fl_state.connect_to = *comp;
-    //             } else {
-    //                 fl_state.selected = { *comp,
-    //                     static_cast<Editable*>(*comp) };
-    //                 fl_state.connect_to = nullptr;
-    //             }
-    //             hit = true;
-    //         }
-    //     } else if (auto* conn = std::get<OConnection*>(obj); released
-    //         && ::CheckCollisionPointLine(
-    //             wmouse,
-    //             conn->get_start_pos(),
-    //             conn->get_end_pos(),
-    //             5)) {
-    //         fl_state.selected = { conn,
-    //             static_cast<Editable*>(conn) };
-    //         hit = true;
-    //     }
-    // }
     if (!hit && fl_state.connect_to) {
         fl_state.connect_to = nullptr;
         fl_state.open_conn_bld = std::nullopt;
+    }
+    if (fl_state.selected
+        && !fl_state.connect_to
+        && ::IsKeyReleased(::KEY_DELETE)
+        && !ImGui::GetIO().WantCaptureMouse) {
+        apply_on(fl_state.selected->first, [&](auto elem) {
+            fl_state.graph_scene
+                ->get_graph()
+                ->remove_element(elem->get_name());
+        });
+        fl_state.selected = std::nullopt;
     }
 }
 void update()
@@ -166,10 +148,11 @@ void selected_draw()
     if (fl_state.selected) {
         fl_state.selected->second->draw_edit_window()
             ? apply_on(fl_state.selected->first, [&](auto elem) {
+                  using gs_t = game::GraphScene;
                   fl_state.graph_scene
                       ->get_graph()
                       ->get_incident_to(elem->get_name())
-                      .and_then([&](auto* incident) {
+                      .and_then([&](gs_t::graph_t::incident_t* incident) {
                           for (auto* conn : *incident)
                               conn->on_notified();
                           return std::optional(Unit());

@@ -9,7 +9,7 @@ MachineContext::MachineContext(std::string name_of_this, shed::Scheduler* s)
 }
 MachineContext::Pause MachineContext::pause() const
 {
-    return Pause(this->m_sched);
+    return Pause(this->m_sched, this->m_name_of_this);
 }
 
 MachineContext::Send MachineContext::send(std::string recipent, message_t&& msg)

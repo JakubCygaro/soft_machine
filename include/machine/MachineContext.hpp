@@ -1,9 +1,9 @@
 #ifndef MACHINE_CONTEXT_HPP
 #define MACHINE_CONTEXT_HPP
 #include "common/Result.hpp"
-#include "machine/Preamble.hpp"
 #include "machine/Actor.hpp"
 #include "machine/Message.hpp"
+#include "machine/Preamble.hpp"
 #include "machine/Scheduler.hpp"
 #include <any>
 #include <stdexcept>
@@ -33,20 +33,24 @@ public:
 
     private:
         shd* m_s { };
-        inline Pause(shd* s)
+        std::string name;
+        inline Pause(shd* s, std::string name)
             : m_s { s }
+            , name { name }
         {
         }
         inline Pause(const Pause&) = delete;
         inline Pause& operator=(const Pause&) = delete;
-        inline Pause(Pause&& o)
+        inline Pause(Pause&& o, std::string name)
             : m_s { o.m_s }
+            , name { name }
         {
             o.m_s = nullptr;
         }
         inline Pause& operator=(Pause&& o)
         {
             m_s = o.m_s;
+            name = o.name;
             o.m_s = nullptr;
             return *this;
         }
@@ -55,7 +59,9 @@ public:
         inline bool await_ready() { return false; }
         inline void await_suspend(actor::Actor::handle_t h)
         {
-            this->m_s->pause(h);
+            this->m_s->pause(name, [=]() {
+                h.resume();
+            });
         }
         inline void await_resume() { }
     };
@@ -111,7 +117,8 @@ public:
             const auto on_send = [h, this](auto err) {
                 if (err)
                     m_ret = decltype(m_ret)::err(std::move(*err));
-                m_s->pause(h);
+                h.resume();
+                // m_s->pause(h);
             };
             m_s->send(
                 m_sender,
@@ -166,7 +173,8 @@ public:
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {
                 this->m_msg = std::move(msg);
                 this->m_sender = snd;
-                m_s->pause(h);
+                h.resume();
+                // m_s->pause(h);
             };
             m_s->recv(
                 m_reciever,
