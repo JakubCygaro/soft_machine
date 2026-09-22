@@ -252,12 +252,12 @@ private:
         for (auto i = m_msgq.size(); i > 0; i--) {
             auto ms = std::move(m_msgq.front());
             m_msgq.pop_front();
+            if (!exists(ms.sender))
+                continue;
             if (!m_waiting.contains(ms.recipent)) {
                 m_msgq.push_back(std::move(ms));
                 continue;
             }
-            if (!exists(ms.sender))
-                continue;
             // cannot send from comp to comp
             if (is_component(ms.recipent) && is_component(ms.sender)) {
                 ms.sender_callback(
