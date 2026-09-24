@@ -21,6 +21,9 @@ struct FaceliftState {
         std::pair<
             either_comp_or_conn, game::Editable*>>
         selected;
+    bool is_dragging = false;
+    bool was_dragging = false;
+    bool is_element_list_open = false;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
 

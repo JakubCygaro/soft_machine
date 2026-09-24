@@ -21,6 +21,10 @@
 
 namespace facelift {
 namespace {
+    inline void toggle(bool& thing)
+    {
+        thing = !thing;
+    }
     template <typename Func, typename L, typename R>
     void apply_on(std::variant<L, R>& var, Func fn)
     {
@@ -30,6 +34,61 @@ namespace {
             fn(std::get<R>(var));
         }
     }
+    // notify all relevant Editable elements related to the passed element
+    void notify_element(either_comp_or_conn& element)
+    {
+        apply_on(element, [&](auto elem) {
+            using gs_t = game::GraphScene;
+            fl_state.graph_scene
+                ->get_graph()
+                ->get_incident_to(elem->get_name())
+                .and_then([&](gs_t::graph_t::incident_t* incident) {
+                    for (auto* conn : *incident)
+                        conn->on_notified();
+                    return std::optional(Unit());
+                });
+        });
+    }
+}
+void element_list_draw()
+{
+    // ImGui::ShowDemoWindow();
+    ImGui::Begin("Graph elements list");
+    if(ImGui::TreeNode("Components")){
+        ImGui::BeginListBox("Components");
+        for (const auto& component : fl_state.graph_scene
+                 ->get_graph()
+                 ->get_components()) {
+            ImGui::PushID(component->get_name().c_str());
+            if (ImGui::Selectable(component->get_name().c_str())) {
+                fl_state.selected = {
+                    component.get(),
+                    static_cast<game::Editable*>(component.get())
+                };
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndListBox();
+        ImGui::TreePop();
+    }
+    if(ImGui::TreeNode("Connections")){
+        ImGui::BeginListBox("Connections");
+        for (const auto& connector : fl_state.graph_scene
+                 ->get_graph()
+                 ->get_connections()) {
+            ImGui::PushID(connector->get_name().c_str());
+            if (ImGui::Selectable(connector->get_name().c_str())) {
+                fl_state.selected = {
+                    connector.get(),
+                    static_cast<game::Editable*>(connector.get())
+                };
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndListBox();
+        ImGui::TreePop();
+    }
+    ImGui::End();
 }
 void comp_builder_menu_draw()
 {
@@ -97,13 +156,37 @@ void update_objects()
         && !fl_state.connect_to
         && ::IsKeyReleased(::KEY_DELETE)
         && !ImGui::GetIO().WantCaptureMouse) {
-        apply_on(fl_state.selected->first, [&](auto elem) {
+        apply_on(fl_state.selected->first, [&](auto& elem) {
             fl_state.graph_scene
                 ->get_graph()
                 ->remove_element(elem->get_name());
         });
         fl_state.selected = std::nullopt;
     }
+    const auto holds_component = fl_state.selected
+        && std::holds_alternative<components::OComponent*>(
+            fl_state.selected->first);
+    fl_state.is_dragging = fl_state.selected
+        && !ImGui::GetIO().WantCaptureMouse
+        && ::IsMouseButtonDown(::MOUSE_BUTTON_LEFT)
+        && holds_component
+        && (std::get<components::OComponent*>(fl_state.selected->first)
+                ->check_point_collision(wmouse)
+            || fl_state.was_dragging);
+    // stopped dragging
+    if (fl_state.was_dragging
+        && !fl_state.is_dragging
+        && holds_component) {
+        auto comp = std::get<components::OComponent*>(fl_state.selected->first);
+        const auto b = comp->get_bounds();
+        const ::Vector2 pos = {
+            .x = wmouse.x - (b.width / 2.0f),
+            .y = wmouse.y - (b.height / 2.0f),
+        };
+        comp->set_pos(pos);
+        notify_element(fl_state.selected->first);
+    }
+    fl_state.was_dragging = fl_state.is_dragging;
 }
 void update()
 {
@@ -116,6 +199,9 @@ void update()
     }
     fl_state.graph_scene->update();
     update_objects();
+    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyReleased(::KEY_E)) {
+        toggle(fl_state.is_element_list_open);
+    }
 }
 
 void draw_highlight_selected_comp(components::OComponent* as_comp,
@@ -133,6 +219,9 @@ void selected_draw()
 {
     bool open = true;
     components::OComponent* as_comp = nullptr;
+    const auto wmouse = ::GetScreenToWorld2D(
+        ::GetMousePosition(),
+        *game::GraphScene::get_camera());
     if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected.value().first);
         c) {
         as_comp = *c;
@@ -143,21 +232,32 @@ void selected_draw()
             draw_highlight_selected_comp(fl_state.connect_to, ::BLUE);
             conn_builder_menu_draw();
         }
+        // is still dragging
+        if (fl_state.was_dragging
+            && fl_state.is_dragging) {
+            auto comp = std::get<components::OComponent*>(fl_state.selected->first);
+            const auto b = comp->get_bounds();
+            const ::Vector2 pos = {
+                .x = wmouse.x - (b.width / 2.0f),
+                .y = wmouse.y - (b.height / 2.0f),
+            };
+            ::BeginMode2D(*fl_state.graph_scene->get_camera());
+            ::DrawRectangleLinesEx(
+                ::Rectangle {
+                    .x = pos.x,
+                    .y = pos.y,
+                    .width = b.width,
+                    .height = b.height,
+                },
+                5.0f,
+                ::RED);
+            ::EndMode2D();
+        }
     }
     ImGui::Begin("Selected", &open);
     if (fl_state.selected) {
         fl_state.selected->second->draw_edit_window()
-            ? apply_on(fl_state.selected->first, [&](auto elem) {
-                  using gs_t = game::GraphScene;
-                  fl_state.graph_scene
-                      ->get_graph()
-                      ->get_incident_to(elem->get_name())
-                      .and_then([&](gs_t::graph_t::incident_t* incident) {
-                          for (auto* conn : *incident)
-                              conn->on_notified();
-                          return std::optional(Unit());
-                      });
-              })
+            ? notify_element(fl_state.selected->first)
             : (void)0;
     }
     ImGui::End();
@@ -202,13 +302,12 @@ void draw()
                                 to);
         if (c)
             fl_state.open_conn_bld = std::nullopt;
-        // if (obj) {
-        //     fl_state.objects.push_back(*obj);
-        // }
     }
     if (fl_state.selected) {
         selected_draw();
     }
+    if(fl_state.is_element_list_open)
+        element_list_draw();
     // ::rlImGuiEnd();
     ImGui::Render();
     ::ImGui_ImplRaylib_RenderDrawData(ImGui::GetDrawData());
