@@ -21,9 +21,10 @@
 
 namespace facelift {
 namespace {
-    inline void toggle(bool& thing)
+    inline bool& toggle(bool& thing)
     {
         thing = !thing;
+        return thing;
     }
     template <typename Func, typename L, typename R>
     void apply_on(std::variant<L, R>& var, Func fn)
@@ -54,7 +55,7 @@ void element_list_draw()
 {
     // ImGui::ShowDemoWindow();
     ImGui::Begin("Graph elements list");
-    if(ImGui::TreeNode("Components")){
+    if (ImGui::TreeNode("Components")) {
         ImGui::BeginListBox("Components");
         for (const auto& component : fl_state.graph_scene
                  ->get_graph()
@@ -71,7 +72,7 @@ void element_list_draw()
         ImGui::EndListBox();
         ImGui::TreePop();
     }
-    if(ImGui::TreeNode("Connections")){
+    if (ImGui::TreeNode("Connections")) {
         ImGui::BeginListBox("Connections");
         for (const auto& connector : fl_state.graph_scene
                  ->get_graph()
@@ -132,7 +133,9 @@ void update_objects()
     for (auto obj : fl_state.graph_scene
              ->get_graph()
              ->get_elements_as<game::Object>()) {
-        if (released && obj->check_point_collision(wmouse)) {
+        if (fl_state.is_edit_mode
+            && released
+            && obj->check_point_collision(wmouse)) {
             if (auto as_comp = dynamic_cast<components::OComponent*>(obj); as_comp) {
                 if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
                     fl_state.connect_to = as_comp;
@@ -174,7 +177,8 @@ void update_objects()
                 ->check_point_collision(wmouse)
             || fl_state.was_dragging);
     // stopped dragging
-    if (fl_state.was_dragging
+    if (fl_state.is_edit_mode
+        && fl_state.was_dragging
         && !fl_state.is_dragging
         && holds_component) {
         auto comp = std::get<components::OComponent*>(fl_state.selected->first);
@@ -199,8 +203,13 @@ void update()
     }
     fl_state.graph_scene->update();
     update_objects();
-    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyReleased(::KEY_E)) {
+    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyPressed(::KEY_E)) {
         toggle(fl_state.is_element_list_open);
+    }
+    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyPressed(::KEY_W)) {
+        fl_state.selected = toggle(fl_state.is_edit_mode)
+            ? fl_state.selected
+            : std::nullopt;
     }
 }
 
@@ -234,7 +243,8 @@ void selected_draw()
         }
         // is still dragging
         if (fl_state.was_dragging
-            && fl_state.is_dragging) {
+            && fl_state.is_dragging
+            && fl_state.is_edit_mode) {
             auto comp = std::get<components::OComponent*>(fl_state.selected->first);
             const auto b = comp->get_bounds();
             const ::Vector2 pos = {
@@ -300,13 +310,15 @@ void draw()
                                 fl_state.graph_scene.get(),
                                 from,
                                 to);
-        if (c)
+        if (c) {
             fl_state.open_conn_bld = std::nullopt;
+            fl_state.selected = std::nullopt;
+        }
     }
     if (fl_state.selected) {
         selected_draw();
     }
-    if(fl_state.is_element_list_open)
+    if (fl_state.is_element_list_open)
         element_list_draw();
     // ::rlImGuiEnd();
     ImGui::Render();
