@@ -38,10 +38,8 @@ public:
     inline Actor() = default;
     inline ~Actor()
     {
-        //TODO: this manual destruction causes a segfault when an element has
-        //beed deleted from the graph
-        // if (m_couroutine)
-        //     m_couroutine.destroy();
+        if (m_couroutine)
+            m_couroutine.destroy();
     }
     inline Actor(const Actor&) = delete;
     inline Actor& operator=(const Actor&) = delete;
@@ -51,12 +49,13 @@ public:
     {
         other.m_couroutine = nullptr;
     }
-    inline Actor& operator=(const Actor&& other) noexcept
+    inline Actor& operator=(Actor&& other) noexcept
     {
         if (this != &other) {
             if (m_couroutine)
                 m_couroutine.destroy();
             this->m_couroutine = std::move(other.m_couroutine);
+            other.m_couroutine = nullptr;
         }
         return *this;
     }
