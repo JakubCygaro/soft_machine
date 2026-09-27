@@ -38,8 +38,10 @@ public:
     inline Actor() = default;
     inline ~Actor()
     {
-        if (m_couroutine)
-            m_couroutine.destroy();
+        //TODO: this manual destruction causes a segfault when an element has
+        //beed deleted from the graph
+        // if (m_couroutine)
+        //     m_couroutine.destroy();
     }
     inline Actor(const Actor&) = delete;
     inline Actor& operator=(const Actor&) = delete;

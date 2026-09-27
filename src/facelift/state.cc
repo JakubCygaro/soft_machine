@@ -210,6 +210,8 @@ void update()
         fl_state.selected = toggle(fl_state.is_edit_mode)
             ? fl_state.selected
             : std::nullopt;
+        if(!fl_state.selected)
+            fl_state.connect_to = nullptr;
     }
 }
 

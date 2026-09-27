@@ -44,7 +44,6 @@ private:
     struct Process {
         std::string name;
         actor::Actor actor;
-        actor::Actor::handle_t handle;
         Pollable* pollable;
         inline Process(
             std::string name,
@@ -52,7 +51,7 @@ private:
             Pollable* pollable)
             : name { name }
             , actor { std::move(actor) }
-            , handle { std::move(handle) }
+            // , handle { std::move(handle) }
             , pollable { pollable }
         {
         }
@@ -61,21 +60,24 @@ private:
         inline Process(Process&& o)
             : name { o.name }
             , actor { std::move(o.actor) }
-            , handle { std::move(handle) }
+            // , handle { std::move(handle) }
             , pollable { o.pollable }
         {
             o.pollable = nullptr;
-            o.handle = nullptr;
+            // o.handle = nullptr;
         }
         inline Process& operator=(Process&& o)
         {
             name = o.name;
             actor = std::move(o.actor);
-            handle = std::move(o.handle);
+            // handle = std::move(o.handle);
             pollable = o.pollable;
             o.pollable = nullptr;
-            o.handle = nullptr;
+            // o.handle = nullptr;
             return *this;
+        }
+        inline ~Process() {
+            pollable = nullptr;
         }
     };
 
@@ -213,6 +215,43 @@ public:
         register_actor(name, comp.get());
         return comp.get();
     }
+
+private:
+    inline void remove_connection(const std::string& name)
+    {
+        m_named_conns.erase(name);
+        m_conns.erase(
+            std::find_if(
+                m_conns.begin(),
+                m_conns.end(),
+                [&](auto& conn) {
+                    return conn->get_name() == name;
+                }));
+    }
+    inline void remove_component(const std::string& name)
+    {
+        auto comp_it = std::find_if(
+            m_comps.begin(),
+            m_comps.end(),
+            [&](auto& comp) {
+                return comp->get_name() == name;
+            });
+        std::shared_ptr<Comp> comp = *comp_it;
+        if (auto inc = get_incident_to(name); inc) {
+            for (auto* i : **inc) {
+                remove_connection(i->get_name());
+            }
+            m_incidents.erase(comp_it->get());
+            // m_incidents.erase(std::find(
+            //     m_incidents.begin(),
+            //     m_incidents.end(),
+            //     name));
+        }
+        m_comps.erase(comp_it);
+        m_named_comps.erase(name);
+    }
+
+public:
     inline void remove_element(const std::string& name)
     {
         auto found = std::find_if(
@@ -224,26 +263,10 @@ public:
         if (found != m_procs.end())
             m_procs.erase(found);
 
-        if (is_component(name)) {
-            m_named_comps.erase(name);
-            m_comps.erase(
-                std::find_if(
-                    m_comps.begin(),
-                    m_comps.end(),
-                    [&](auto& comp) {
-                        return comp->get_name() == name;
-                    }));
-        }
-        if (is_connector(name)) {
-            m_named_conns.erase(name);
-            m_conns.erase(
-                std::find_if(
-                    m_conns.begin(),
-                    m_conns.end(),
-                    [&](auto& conn) {
-                        return conn->get_name() == name;
-                    }));
-        }
+        if (is_component(name))
+            remove_component(name);
+        else
+            remove_connection(name);
     }
 
 private:
@@ -278,6 +301,7 @@ private:
                 conn = m_named_conns[ms.sender];
                 comp = m_named_comps[ms.recipent];
             }
+            if(!conn && !comp) continue;
             if (conn->get_end() != comp && conn->get_start() != comp) {
                 ms.sender_callback(
                     std::runtime_error("reciever is not connected to this element"));
