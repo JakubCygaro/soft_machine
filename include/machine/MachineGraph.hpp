@@ -207,6 +207,9 @@ public:
             comp = std::make_shared<T>();
         }
         const auto name = comp->get_name();
+        if(name.empty()){
+            throw std::runtime_error("attempted to create a component with no name");
+        }
         if (!m_named_comps.empty() && m_named_comps.contains(name)) {
             throw std::runtime_error("component already exists");
         }

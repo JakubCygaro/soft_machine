@@ -2,9 +2,12 @@
 #include "components/Passthrough.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/resources/Resources.hpp"
+#include <concepts>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace {
@@ -25,50 +28,78 @@ std::optional<int> try_parse_int(const std::string_view trimmed)
 }
 
 namespace facelift {
-std::unordered_map<std::string, comp_builder_fn>
-runtime_make_component_builders()
+bool BuilderBase::is_should_close() noexcept
 {
-    std::unordered_map<std::string, comp_builder_fn> ret { };
-    ret["memory"] = [](game::GraphScene* s) -> comp_builder_fn::result_type {
+    auto ret = should_close;
+    should_close = should_close ? false
+                                : should_close;
+    return ret;
+}
+void BuilderBase::set_should_close() noexcept
+{
+    should_close = true;
+}
+class MemoryBuilder : public ComponentBuilder<components::Memory> {
+public:
+    virtual const std::string& get_element_name() override
+    {
+        static std::string n = "memory";
+        return n;
+    }
+    comp_t*
+    display_builder(game::GraphScene* s) override
+    {
         bool open = true;
-        static bool is_ok;
-        if (ImGui::Begin("memory", &open)) {
+        if (ImGui::Begin(get_element_name().c_str(), &open)) {
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
             static char ints[128] = { };
             ImGui::InputText("Memset", ints, sizeof(ints));
             if (ImGui::Button("Create")) {
-                is_ok = false;
                 auto parse = common::trim(std::string(ints));
                 components::Memory::mem_t mem;
                 if (parse.empty()) {
                     mem = { };
-                    is_ok = true;
                 } else if (auto memset = components::Memory::parse_memset_from_text(
                                parse);
                     memset.isok()) {
                     mem = *memset;
-                    is_ok = true;
                 } else {
-                    is_ok = false;
+                    last_error = memset.unwrap_err();
                 }
-                if (!is_ok) {
-                    ImGui::TextColored({ 255, 0, 0, 255 }, "Invalid memset");
-                } else {
+                if (last_error) {
+                    ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
+                }
+                try {
                     auto o = s->create_component<components::Memory>(
                         std::string(name), std::move(mem));
                     ImGui::End();
-                    return std::make_pair(!open, o);
+                    last_error = std::nullopt;
+                    return o;
+                } catch (std::runtime_error& e) {
+                    last_error = std::move(e);
                 }
             }
         }
         ImGui::End();
-        return std::make_pair(!open, std::nullopt);
-    };
-
-    ret["button"] = [](game::GraphScene* s) -> comp_builder_fn::result_type {
+        if (!open)
+            set_should_close();
+        return nullptr;
+    }
+    virtual ~MemoryBuilder() = default;
+};
+class ButtonBuilder : public ComponentBuilder<components::Button> {
+public:
+    virtual const std::string& get_element_name() override
+    {
+        static std::string n = "button";
+        return n;
+    }
+    comp_t*
+    display_builder(game::GraphScene* s) override
+    {
         bool open = true;
-        if (ImGui::Begin("button", &open)) {
+        if (ImGui::Begin(get_element_name().c_str(), &open)) {
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
             static char val[128] = { };
@@ -82,74 +113,171 @@ runtime_make_component_builders()
                 } else {
                     bval = trimmed;
                 }
-                auto o = s->create_component<components::Button>(
-                    std::string(name), std::move(val));
+                if (last_error) {
+                    ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
+                }
+                try {
+                    auto o = s->create_component<components::Button>(
+                        std::string(name), std::move(val));
+                    ImGui::End();
+                    last_error = std::nullopt;
+                    return o;
+                } catch (std::runtime_error& e) {
+                    last_error = std::move(e);
+                }
                 ImGui::End();
-                return std::make_pair(!open, o);
             }
         }
         ImGui::End();
-        return std::make_pair(!open, std::nullopt);
-    };
-    ret["cpu"] = [](game::GraphScene* s) -> comp_builder_fn::result_type {
+        if (!open)
+            set_should_close();
+        return nullptr;
+    }
+    virtual ~ButtonBuilder() = default;
+};
+class CPUBuilder : public ComponentBuilder<components::CPU> {
+public:
+    virtual const std::string& get_element_name() override
+    {
+        static std::string n = "cpu";
+        return n;
+    }
+    comp_t*
+    display_builder(game::GraphScene* s) override
+    {
         bool open = true;
-        if (ImGui::Begin("cpu", &open)) {
+        if (ImGui::Begin(get_element_name().c_str(), &open)) {
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
+            if (last_error) {
+                ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
+            }
             if (ImGui::Button("Create")) {
-                auto o = s->create_component<components::CPU>(
-                    std::string(name), components::CPU::code_t { });
-                ImGui::End();
-                return std::make_pair(!open, o);
+                try {
+                    auto o = s->create_component<components::CPU>(
+                        std::string(name), components::CPU::code_t { });
+                    ImGui::End();
+                    last_error = { };
+                    return o;
+                } catch (std::runtime_error& e) {
+                    last_error = std::move(e);
+                }
             }
         }
         ImGui::End();
-        return std::make_pair(!open, std::nullopt);
-    };
-    ret["display"] = [](game::GraphScene* s) -> comp_builder_fn::result_type {
+        if (!open)
+            set_should_close();
+        return nullptr;
+    }
+    virtual ~CPUBuilder() = default;
+};
+class DisplayBuilder : public ComponentBuilder<components::Display> {
+public:
+    virtual const std::string& get_element_name() override
+    {
+        static std::string n = "display";
+        return n;
+    }
+    comp_t*
+    display_builder(game::GraphScene* s) override
+    {
         bool open = true;
-        if (ImGui::Begin("diplay", &open)) {
+        if (ImGui::Begin(get_element_name().c_str(), &open)) {
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
             static int font_sz = game::resources::default_node_font_size();
             ImGui::InputInt("Font size", &font_sz);
+            if (last_error) {
+                ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
+            }
             if (ImGui::Button("Create")) {
-                auto o = s->create_component<components::Display>(
-                    std::string(name), font_sz);
-                ImGui::End();
-                return std::make_pair(!open, o);
+                try {
+                    auto o = s->create_component<components::Display>(
+                        std::string(name), font_sz);
+                    ImGui::End();
+                    last_error = { };
+                    return o;
+                } catch (std::runtime_error& e) {
+                    last_error = std::move(e);
+                }
             }
         }
         ImGui::End();
-        return std::make_pair(!open, std::nullopt);
+        if (!open)
+            set_should_close();
+        return nullptr;
+    }
+    virtual ~DisplayBuilder() = default;
+};
+
+std::unordered_map<std::string, std::unique_ptr<RuntimeComponentBuilder>>
+runtime_make_component_builders()
+{
+    std::unordered_map<
+        std::string,
+        std::unique_ptr<RuntimeComponentBuilder>>
+        ret { };
+    const auto add_comp = [&]<std::derived_from<RuntimeComponentBuilder> T>() {
+        auto c = std::make_unique<T>();
+        ret[c->get_element_name()] = std::move(c);
     };
+    add_comp.operator()<MemoryBuilder>();
+    add_comp.operator()<ButtonBuilder>();
+    add_comp.operator()<CPUBuilder>();
+    add_comp.operator()<DisplayBuilder>();
     return ret;
 }
-std::unordered_map<std::string, conn_builder_fn>
-runtime_make_connection_builders()
-{
-    std::unordered_map<std::string, conn_builder_fn> ret { };
-    ret["passthrough"] = [](
-                             game::GraphScene* s,
-                             const std::string& f,
-                             const std::string& t)
-        -> conn_builder_fn::result_type {
+
+class PassthroughBuilder : public ConnectionBuilder<components::Passthrough> {
+public:
+    virtual const std::string& get_element_name() override
+    {
+        static std::string n = "display";
+        return n;
+    }
+    conn_t*
+    display_builder(game::GraphScene* s,
+        const std::string& f,
+        const std::string& t) override
+    {
         bool open = true;
-        if (ImGui::Begin("passthrough", &open)) {
+        if (ImGui::Begin(get_element_name().c_str(), &open)) {
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
             if (ImGui::Button("Connect")) {
-                auto o = s->create_connection<components::Passthrough>(
-                    std::string(name), f, t);
-                ImGui::End();
-                return std::make_pair(!open, o);
+                if (last_error) {
+                    ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
+                }
+                try {
+                    auto o = s->create_connection<components::Passthrough>(
+                        std::string(name),
+                        f,
+                        t);
+                    ImGui::End();
+                    return o;
+                } catch (std::runtime_error& e) {
+                    last_error = std::move(e);
+                }
             }
         }
         ImGui::End();
-        return std::make_pair(!open, nullptr);
+        if (!open)
+            set_should_close();
+        return nullptr;
+    }
+    virtual ~PassthroughBuilder() = default;
+};
+std::unordered_map<std::string, std::unique_ptr<RuntimeConnectionBuilder>>
+runtime_make_connection_builders()
+{
+    auto ret = std::unordered_map<
+        std::string,
+        std::unique_ptr<RuntimeConnectionBuilder>>();
+    const auto add_conn = [&]<std::derived_from<RuntimeConnectionBuilder> T>() {
+        auto c = std::make_unique<T>();
+        ret[c->get_element_name()] = std::move(c);
     };
-
+    add_conn.operator()<PassthroughBuilder>();
     return ret;
 }
-
 }

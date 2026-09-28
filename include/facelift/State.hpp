@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
+#include <memory>
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
@@ -11,8 +12,12 @@ using either_comp_or_conn = std::variant<
     components::OComponent*, components::OConnection*>;
 struct FaceliftState {
 
-    std::unordered_map<std::string, facelift::comp_builder_fn> comp_blds;
-    std::unordered_map<std::string, facelift::conn_builder_fn> conn_blds;
+    std::unordered_map<
+        std::string, std::unique_ptr<facelift::RuntimeComponentBuilder>>
+        comp_blds;
+    std::unordered_map<
+        std::string, std::unique_ptr<facelift::RuntimeConnectionBuilder>>
+        conn_blds;
     std::optional<std::string> open_comp_bld { };
     std::optional<std::string> open_conn_bld { };
 
@@ -24,7 +29,7 @@ struct FaceliftState {
     bool is_dragging = false;
     bool was_dragging = false;
     bool is_element_list_open = false;
-    //TODO: edit mode
+    // TODO: edit mode
     bool is_edit_mode = true;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;

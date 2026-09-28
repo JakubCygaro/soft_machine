@@ -210,7 +210,7 @@ void update()
         fl_state.selected = toggle(fl_state.is_edit_mode)
             ? fl_state.selected
             : std::nullopt;
-        if(!fl_state.selected)
+        if (!fl_state.selected)
             fl_state.connect_to = nullptr;
     }
 }
@@ -293,26 +293,25 @@ void draw()
     fl_state.graph_scene->draw();
     comp_builder_menu_draw();
     if (fl_state.open_comp_bld) {
-        auto [c, obj] = fl_state
-                            .comp_blds[*fl_state.open_comp_bld](
-                                fl_state.graph_scene.get());
-        if (c)
+        auto& bld = fl_state.comp_blds[*fl_state.open_comp_bld];
+        auto obj = bld->display_builder(
+            fl_state.graph_scene.get());
+        if (bld->is_should_close())
             fl_state.open_comp_bld = std::nullopt;
         if (obj) {
             fl_state.open_comp_bld = std::nullopt;
-            // fl_state.objects.push_back(*obj);
         }
     }
     if (fl_state.open_conn_bld) {
         auto& from = std::get<components::OComponent*>(fl_state.selected->first)
                          ->get_name();
         auto& to = fl_state.connect_to->get_name();
-        auto [c, obj] = fl_state
-                            .conn_blds[*fl_state.open_conn_bld](
-                                fl_state.graph_scene.get(),
-                                from,
-                                to);
-        if (c) {
+        auto& bld = fl_state.conn_blds[*fl_state.open_conn_bld];
+        auto obj = bld->display_builder(
+            fl_state.graph_scene.get(),
+            from,
+            to);
+        if (bld->is_should_close() || obj) {
             fl_state.open_conn_bld = std::nullopt;
             fl_state.selected = std::nullopt;
         }

@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include <array>
 #include <functional>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -23,11 +24,49 @@
 
 namespace facelift {
 
-using comp_builder_fn = std::function<std::pair<bool,
-    std::optional<components::OComponent*>>(game::GraphScene*)>;
-using conn_builder_fn = std::function<std::pair<bool,
-    std::optional<components::OConnection*>>(
-    game::GraphScene*, const std::string&, const std::string&)>;
+struct BuilderBase {
+protected:
+    std::optional<std::runtime_error> last_error { };
+    bool should_close { };
+
+public:
+    bool is_should_close() noexcept;
+    virtual const std::string& get_element_name() = 0;
+    virtual ~BuilderBase() = default;
+
+protected:
+    void set_should_close() noexcept;
+};
+
+struct RuntimeComponentBuilder : public BuilderBase {
+public:
+    virtual components::OComponent*
+    display_builder(game::GraphScene*) = 0;
+    virtual ~RuntimeComponentBuilder() = default;
+};
+template <std::derived_from<components::OComponent> Component>
+struct ComponentBuilder : public RuntimeComponentBuilder {
+    using comp_t = Component;
+    virtual ~ComponentBuilder() = default;
+};
+
+struct RuntimeConnectionBuilder : public BuilderBase {
+    virtual components::OConnection*
+    display_builder(game::GraphScene*, const std::string&, const std::string&) = 0;
+    virtual ~RuntimeConnectionBuilder() = default;
+};
+template <std::derived_from<components::OConnection> Connection>
+struct ConnectionBuilder : public RuntimeConnectionBuilder {
+    using conn_t = Connection;
+    virtual ~ConnectionBuilder() = default;
+    virtual const std::string& get_element_name() = 0;
+};
+
+// using comp_builder_fn = std::function<std::pair<bool,
+//     std::optional<components::OComponent*>>(game::GraphScene*)>;
+// using conn_builder_fn = std::function<std::pair<bool,
+//     std::optional<components::OConnection*>>(
+//     game::GraphScene*, const std::string&, const std::string&)>;
 
 #ifndef CLANGD_SKIP
 using namespace std::meta;
@@ -199,79 +238,12 @@ constexpr void make_from_params(
 };
 #endif
 
-inline std::unordered_map<std::string, comp_builder_fn>
-make_component_builders()
-{
-    auto ret = std::unordered_map<std::string, comp_builder_fn> { };
-#ifndef CLANGD_SKIP
-    // using namespace std::views;
-    // using namespace std::ranges::views;
-    // constexpr auto ctx = access_context::current();
-    // template for (constexpr auto c : std::define_static_array(get_components()))
-    // {
-    //     static constexpr auto iden = std::define_static_string(identifier_of(c));
-    //     ret[std::string(iden)] = [](game::GraphScene* s) -> bool {
-    //         using storage_t = typename Params<typename[:c:]>::storage_t;
-    //         static Params<typename[:c:]> params = Params<
-    //             typename[:c:]>::default_init_members();
-    //         auto& storage = params.data;
-    //         bool open = true;
-    //         if (ImGui::Begin(iden, &open)) {
-    //
-    //             template for (constexpr auto mem :
-    //                 std::define_static_array(
-    //                     nonstatic_data_members_of(dealias(^^storage_t), ctx)))
-    //             {
-    //                 static constexpr auto mem_iden = std::define_static_string(
-    //                     identifier_of(mem));
-    //                 // std::cout << display_string_of(dealias(^^storage_t)) << std::endl;
-    //                 if constexpr (type_of(mem) == str_buf_t_rfl) {
-    //                     ImGui::InputText(mem_iden,
-    //                         storage.[:mem:]
-    //                             .data(),
-    //                         storage.
-    //                                 [:mem:]
-    //                             .size());
-    //                 } else if constexpr (
-    //                     std::is_integral_v<typename[:type_of(mem):]>) {
-    //                     ImGui::InputInt(mem_iden,
-    //                         &storage.[:mem:]);
-    //                 } else if constexpr (type_of(mem) == ^^float) {
-    //                     ImGui::InputFloat(mem_iden,
-    //                         &storage.[:mem:]);
-    //                 } else if constexpr (type_of(mem) == ^^double) {
-    //                     ImGui::InputDouble(mem_iden,
-    //                         &storage.[:mem:]);
-    //                 } else {
-    //                     static_assert(false, "Unsupported constructor parameter type");
-    //                 }
-    //             }
-    //             template for (constexpr auto mem :
-    //                 std::define_static_array(
-    //                     nonstatic_data_members_of(dealias(^^storage_t), ctx)))
-    //             {
-    //                 constexpr auto dms = std::define_static_array(nonstatic_data_members_of(
-    //                     dealias(^^storage_t), ctx));
-    //                 constexpr auto n = dms.size();
-    //
-    //                 if (ImGui::Button("Create")) {
-    //                     auto st = storage_t(storage);
-    //                     make_from_params<typename[:dealias(c):], storage_t>(
-    //                         std::move(st), s, std::make_index_sequence<n> { });
-    //                 }
-    //                 // BECAUSE FUCK YOU
-    //                 break;
-    //             }
-    //         }
-    //         ImGui::End();
-    //         return !open;
-    //     };
-    // }
-#endif
-    return ret;
-}
-std::unordered_map<std::string, comp_builder_fn>
+std::unordered_map<std::string, std::unique_ptr<RuntimeComponentBuilder>>
 runtime_make_component_builders();
-std::unordered_map<std::string, conn_builder_fn>
+std::unordered_map<std::string, std::unique_ptr<RuntimeConnectionBuilder>>
 runtime_make_connection_builders();
+// std::unordered_map<std::string, comp_builder_fn>
+// runtime_make_component_builders();
+// std::unordered_map<std::string, conn_builder_fn>
+// runtime_make_connection_builders();
 }
