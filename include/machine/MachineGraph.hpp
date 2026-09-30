@@ -221,20 +221,22 @@ public:
     }
 
 private:
-    inline void remove_connection(const std::string& name)
+    inline void remove_connection(const std::string& name, bool skip_incident = false)
     {
         auto* conn = m_named_conns[name];
-        if (auto ai = get_incident_to(conn->get_start()); ai) {
-            incident_t* inc = *ai;
-            std::erase_if(*ai, [](auto* c) {
-                return c == c;
-            });
-        }
-        if (auto bi = get_incident_to(conn->get_end()); bi) {
-            incident_t* inc = *bi;
-            std::erase_if(*bi, [](auto* c) {
-                return c == c;
-            });
+        if(!skip_incident){
+            if (auto ai = get_incident_to(conn->get_start()); ai) {
+                incident_t* inc = *ai;
+                std::erase_if(*ai, [](auto* c) {
+                    return c == c;
+                });
+            }
+            if (auto bi = get_incident_to(conn->get_end()); bi) {
+                incident_t* inc = *bi;
+                std::erase_if(*bi, [](auto* c) {
+                    return c == c;
+                });
+            }
         }
         m_named_conns.erase(name);
         m_conns.erase(
@@ -256,7 +258,7 @@ private:
         std::shared_ptr<Comp> comp = *comp_it;
         if (auto inc = get_incident_to(name); inc) {
             for (auto* i : **inc) {
-                remove_connection(i->get_name());
+                remove_connection(i->get_name(), true);
             }
             m_incidents.erase(comp_it->get());
             // m_incidents.erase(std::find(
