@@ -76,7 +76,8 @@ private:
             // o.handle = nullptr;
             return *this;
         }
-        inline ~Process() {
+        inline ~Process()
+        {
             pollable = nullptr;
         }
     };
@@ -207,7 +208,7 @@ public:
             comp = std::make_shared<T>();
         }
         const auto name = comp->get_name();
-        if(name.empty()){
+        if (name.empty()) {
             throw std::runtime_error("attempted to create a component with no name");
         }
         if (!m_named_comps.empty() && m_named_comps.contains(name)) {
@@ -222,6 +223,19 @@ public:
 private:
     inline void remove_connection(const std::string& name)
     {
+        auto* conn = m_named_conns[name];
+        if (auto ai = get_incident_to(conn->get_start()); ai) {
+            incident_t* inc = *ai;
+            std::erase_if(*ai, [](auto* c) {
+                return c == c;
+            });
+        }
+        if (auto bi = get_incident_to(conn->get_end()); bi) {
+            incident_t* inc = *bi;
+            std::erase_if(*bi, [](auto* c) {
+                return c == c;
+            });
+        }
         m_named_conns.erase(name);
         m_conns.erase(
             std::find_if(
@@ -304,7 +318,8 @@ private:
                 conn = m_named_conns[ms.sender];
                 comp = m_named_comps[ms.recipent];
             }
-            if(!conn && !comp) continue;
+            if (!conn && !comp)
+                continue;
             if (conn->get_end() != comp && conn->get_start() != comp) {
                 ms.sender_callback(
                     std::runtime_error("reciever is not connected to this element"));
