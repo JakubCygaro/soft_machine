@@ -1,6 +1,7 @@
 #include "components/Button.hpp"
 #include "common/reflect/Enum.hpp"
 #include "game/Scene.hpp"
+#include <iostream>
 #include <raylib.h>
 #include <string>
 namespace components {
@@ -54,10 +55,12 @@ std::any Button::on_outcoming_connection(
 machine::actor::Actor Button::poll(machine::Mctx ctx)
 {
     while (1) {
+        std::cout << "button poll" << std::endl;
         co_await ctx.pause();
         if (this->m_d->set) {
             for (const auto& rc : this->m_d->recipents) {
                 auto msg = std::any(m_d->m_msg_value);
+                std::cout << "button send" << std::endl;
                 co_await ctx.send(rc, std::move(msg));
             }
             this->m_d->set = false;
