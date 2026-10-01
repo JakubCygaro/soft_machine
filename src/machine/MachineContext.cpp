@@ -20,4 +20,12 @@ MachineContext::Recv MachineContext::recv()
 {
     return Recv(this->m_sched, this->m_name_of_this);
 }
+MachineContext::SendRecv MachineContext::send_recv(std::string rcv, message_t&& msg)
+{
+    return SendRecv(this->m_sched, rcv, std::move(msg));
+}
+std::optional<message_t> MachineContext::try_recv()
+{
+    return this->m_sched->try_recv(m_name_of_this);
+}
 }

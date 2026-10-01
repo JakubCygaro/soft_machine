@@ -513,7 +513,6 @@ public:
         };
         proc->awaiting_msg = capture_msg;
         do_recv(who, proc);
-        proc->awaiting_msg = std::nullopt;
         return msg;
     }
 };

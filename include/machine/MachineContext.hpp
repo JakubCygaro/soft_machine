@@ -186,6 +186,82 @@ public:
         }
     };
     Recv recv();
+    struct SendRecv {
+        friend class MachineContext;
+
+    private:
+        shd* m_s { };
+        std::string m_reciever { };
+        std::string m_sender;
+        message_t m_msg;
+        Result<std::runtime_error, message_t> m_ret { Unit { } };
+        inline SendRecv(
+            shd* s,
+            std::string rcv,
+            message_t&& msg)
+            : m_s { s }
+            , m_reciever { rcv }
+            , m_msg { msg }
+            , m_ret { std::make_any<message_t>(nullptr) }
+        {
+        }
+        inline SendRecv(const SendRecv&) = delete;
+        inline SendRecv& operator=(const SendRecv&) = delete;
+        inline SendRecv(SendRecv&& o)
+            : m_s { o.m_s }
+            , m_reciever { o.m_reciever }
+            , m_msg { std::move(o.m_msg) }
+            , m_ret { std::move(o.m_ret) }
+        {
+            o.m_s = nullptr;
+            o.m_ret = { nullptr };
+            o.m_msg = nullptr;
+        }
+        inline SendRecv& operator=(SendRecv&& o)
+        {
+            m_s = o.m_s;
+            m_reciever = o.m_reciever;
+            m_ret = std::move(o.m_ret);
+            m_msg = std::move(o.m_msg);
+            o.m_s = nullptr;
+            o.m_ret = { nullptr };
+            o.m_msg = nullptr;
+            return *this;
+        }
+
+    public:
+        inline bool await_ready() { return false; }
+        inline void await_suspend(actor::Actor::handle_t h)
+        {
+            const auto on_recv = [h, this](std::string snd, message_t&& msg) {
+                this->m_ret = { std::move(msg) };
+                this->m_sender = snd;
+                h.resume();
+            };
+            const auto on_send = [&, h, this](auto err) {
+                if (err) {
+                    m_ret = decltype(m_ret)::err(std::move(*err));
+                    h.resume();
+                } else {
+                    m_s->recv(
+                        m_reciever,
+                        on_recv);
+                }
+            };
+            m_s->send(
+                m_sender,
+                m_reciever,
+                std::move(m_msg),
+                on_send);
+            m_msg = nullptr;
+        }
+        inline std::tuple<std::string, message_t> await_resume()
+        {
+            return std::make_tuple(m_sender, m_msg);
+        }
+    };
+    SendRecv send_recv(std::string rcv, message_t&& msg);
+    std::optional<message_t> try_recv();
 };
 using Mctx = MachineContext;
 }
