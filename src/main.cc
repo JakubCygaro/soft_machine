@@ -152,6 +152,7 @@ int main(void)
     // doc.save(std::cout);
     // std::cout << std::endl;
     auto scene = game::GraphScene(std::move(m), { 0, 0, 1000, 800 });
+    scene.set_focus(true);
     ::SetTraceLogLevel(LOG_ALL);
     while (!::WindowShouldClose()) {
         scene.update();

@@ -13,8 +13,8 @@ machine::actor::Actor Passthrough::poll(machine::Mctx ctx)
             co_await ctx.send(out, std::move(m));
         else if (s == out)
             co_await ctx.send(in, std::move(m));
-        m_color = ::BLACK;
         co_await ctx.pause();
+        m_color = ::BLACK;
     }
 }
 const char*
@@ -22,8 +22,4 @@ Passthrough::marshall_to_xml_name() const noexcept
 {
     return "passthrough";
 }
-// void Passthrough::marshall_to_xml(pugi::xml_node&) const noexcept
-// {
-//
-// }
 }

@@ -191,6 +191,11 @@ void update_objects()
         notify_element(fl_state.selected->first);
     }
     fl_state.was_dragging = fl_state.is_dragging;
+    // no focus on graph if edit mode and hit
+    fl_state.graph_scene
+        ->set_focus(
+            !(hit && fl_state.is_edit_mode)
+            || ImGui::GetIO().WantCaptureMouse);
 }
 void update()
 {

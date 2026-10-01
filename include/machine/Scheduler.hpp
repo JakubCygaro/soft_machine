@@ -22,6 +22,8 @@ public:
     virtual void recv(
         std::string who,
         recv_callback_t) = 0;
+    virtual std::optional<std::any> try_recv(
+        std::string who) = 0;
 };
 }
 

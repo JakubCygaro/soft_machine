@@ -11,6 +11,7 @@
 #include <format>
 #include <list>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -37,20 +38,21 @@ private:
         message_t payload;
         shed::send_callback_t sender_callback;
     };
-    std::deque<MessageSent> m_msgq { };
 
     std::unordered_map<std::string, shed::recv_callback_t> m_waiting { };
 
     struct Process {
-        std::string name;
+        // std::string name;
         actor::Actor actor;
         Pollable* pollable;
+        std::deque<MessageSent> msgq { };
+        std::optional<shed::recv_callback_t> awaiting_msg { };
         inline Process(
-            std::string name,
+            // std::string name,
             actor::Actor&& actor,
             Pollable* pollable)
-            : name { name }
-            , actor { std::move(actor) }
+            : // name { name }
+            actor { std::move(actor) }
             // , handle { std::move(handle) }
             , pollable { pollable }
         {
@@ -58,18 +60,22 @@ private:
         inline Process(const Process&) = delete;
         inline Process& operator=(const Process&) = delete;
         inline Process(Process&& o)
-            : name { o.name }
-            , actor { std::move(o.actor) }
+            // : name { o.name }
+            : actor { std::move(o.actor) }
             // , handle { std::move(handle) }
             , pollable { o.pollable }
+            , msgq { std::move(msgq) }
+            , awaiting_msg { std::move(awaiting_msg) }
         {
             o.pollable = nullptr;
             // o.handle = nullptr;
         }
         inline Process& operator=(Process&& o)
         {
-            name = o.name;
+            // name = o.name;
             actor = std::move(o.actor);
+            msgq = std::move(o.msgq);
+            awaiting_msg = std::move(o.awaiting_msg);
             // handle = std::move(o.handle);
             pollable = o.pollable;
             o.pollable = nullptr;
@@ -82,7 +88,7 @@ private:
         }
     };
 
-    std::deque<Process> m_procs { };
+    std::unordered_map<std::string, std::unique_ptr<Process>> m_procs { };
     std::deque<std::pair<const std::string, shed::pause_callback_t>> m_paused { };
 
 private:
@@ -101,7 +107,7 @@ public:
         , m_conns { std::move(o.m_conns) }
         , m_named_conns { std::move(o.m_named_conns) }
         , m_incidents { std::move(o.m_incidents) }
-        , m_msgq { std::move(o.m_msgq) }
+        // , m_msgq { std::move(o.m_msgq) }
         , m_waiting { std::move(o.m_waiting) }
         , m_procs { std::move(o.m_procs) }
         , m_paused { std::move(o.m_paused) }
@@ -113,7 +119,7 @@ public:
         m_named_comps = std::move(o.m_named_comps);
         m_conns = std::move(o.m_conns);
         m_named_conns = std::move(o.m_named_conns);
-        m_msgq = std::move(o.m_msgq);
+        // m_msgq = std::move(o.m_msgq);
         m_waiting = std::move(o.m_waiting);
         m_procs = std::move(o.m_procs);
         m_paused = std::move(o.m_paused);
@@ -131,11 +137,14 @@ private:
         using namespace std::placeholders;
         MachineContext mctx = MachineContext(with_name, this);
         auto act = pollable->poll(mctx);
-        this->m_procs.push_back(
-            Process(
+        auto proc = std::make_unique<Process>(std::move(act), pollable);
+        this->m_procs.emplace(
+            std::make_pair(
                 with_name,
-                std::move(act),
-                pollable));
+                std::move(proc)));
+        // this->m_procs[with_name] = Process(
+        //     std::move(act),
+        //     pollable);
     }
 
 public:
@@ -224,16 +233,22 @@ private:
     inline void remove_connection(const std::string& name, bool skip_incident = false)
     {
         auto* conn = m_named_conns[name];
-        if(!skip_incident){
-            if (auto ai = get_incident_to(conn->get_start()); ai) {
+        if (!skip_incident) {
+            if (auto ai = get_incident_to(conn
+                        ->get_start()
+                        ->get_name());
+                ai) {
                 incident_t* inc = *ai;
-                std::erase_if(*ai, [](auto* c) {
+                std::erase_if(*inc, [](auto* c) {
                     return c == c;
                 });
             }
-            if (auto bi = get_incident_to(conn->get_end()); bi) {
+            if (auto bi = get_incident_to(conn
+                        ->get_end()
+                        ->get_name());
+                bi) {
                 incident_t* inc = *bi;
-                std::erase_if(*bi, [](auto* c) {
+                std::erase_if(*inc, [](auto* c) {
                     return c == c;
                 });
             }
@@ -273,14 +288,8 @@ private:
 public:
     inline void remove_element(const std::string& name)
     {
-        auto found = std::find_if(
-            m_procs.begin(),
-            m_procs.end(),
-            [&](auto& proc) {
-                return proc.name == name;
-            });
-        if (found != m_procs.end())
-            m_procs.erase(found);
+        if (m_procs.contains(name))
+            m_procs.erase(name);
 
         if (is_component(name))
             remove_component(name);
@@ -291,34 +300,34 @@ public:
 private:
     inline void deliver_messages()
     {
-        for (auto i = m_msgq.size(); i > 0; i--) {
-            auto ms = std::move(m_msgq.front());
-            m_msgq.pop_front();
+        for (auto& [pn, proc] : m_procs) {
+            if (!proc->awaiting_msg)
+                continue;
+            if (proc->msgq.empty())
+                continue;
+            auto ms = std::move(proc->msgq.front());
+            proc->msgq.pop_front();
             if (!exists(ms.sender))
                 continue;
-            if (!m_waiting.contains(ms.recipent)) {
-                m_msgq.push_back(std::move(ms));
-                continue;
-            }
             // cannot send from comp to comp
-            if (is_component(ms.recipent) && is_component(ms.sender)) {
+            if (is_component(pn) && is_component(ms.sender)) {
                 ms.sender_callback(
                     std::runtime_error("attempted to message another component directly"));
                 continue;
             }
-            if (is_connector(ms.recipent) && is_connector(ms.sender)) {
+            if (is_connector(pn) && is_connector(ms.sender)) {
                 ms.sender_callback(
                     std::runtime_error("attempted to message another connector directly"));
                 continue;
             }
             Connection* conn { };
             Component* comp { };
-            if (is_connector(ms.recipent)) {
-                conn = m_named_conns[ms.recipent];
+            if (is_connector(pn)) {
+                conn = m_named_conns[pn];
                 comp = m_named_comps[ms.sender];
             } else {
                 conn = m_named_conns[ms.sender];
-                comp = m_named_comps[ms.recipent];
+                comp = m_named_comps[pn];
             }
             if (!conn && !comp)
                 continue;
@@ -327,8 +336,8 @@ private:
                     std::runtime_error("reciever is not connected to this element"));
                 continue;
             }
-            m_waiting[ms.recipent](ms.sender, std::move(ms.payload));
-            m_waiting.erase(ms.recipent);
+            proc->awaiting_msg->operator()(ms.sender, std::move(ms.payload));
+            proc->awaiting_msg = std::nullopt;
             ms.sender_callback(std::nullopt);
         }
     }
@@ -352,8 +361,8 @@ public:
     {
         static bool once;
         if (!once) {
-            for (auto& proc : m_procs) {
-                proc.actor.resume();
+            for (auto& [procn, proc] : m_procs) {
+                proc->actor.resume();
             }
             once = true;
             return;
@@ -489,18 +498,31 @@ public:
         message_t msg,
         shed::send_callback_t c)
     {
-        m_msgq.push_back(
-            MessageSent {
-                .sender = sender,
-                .recipent = recipent,
-                .payload = std::move(msg),
-                .sender_callback = c });
+        if (m_procs.contains(recipent)) {
+            auto& proc = m_procs[recipent];
+            proc->msgq.emplace_back(
+                sender,
+                recipent,
+                std::move(msg),
+                std::move(c));
+        }
     }
     inline virtual void recv(
         std::string who,
         shed::recv_callback_t c)
     {
-        m_waiting[who] = c;
+        m_procs[who]->awaiting_msg = c;
+    }
+    inline virtual std::optional<std::any> try_recv(
+        std::string who)
+    {
+        auto& proc = m_procs[who];
+        if (!proc->msgq.empty()) {
+            auto msg = std::move(proc->msgq.front());
+            proc->msgq.pop_front();
+            return msg;
+        }
+        return std::nullopt;
     }
 };
 }
