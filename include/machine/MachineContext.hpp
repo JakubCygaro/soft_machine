@@ -262,6 +262,79 @@ public:
     };
     SendRecv send_recv(std::string rcv, message_t&& msg);
     std::optional<message_t> try_recv();
+
+    struct Broadcast {
+        friend class MachineContext;
+
+    private:
+        shd* m_s { };
+        std::string m_sender { };
+        std::vector<std::string> m_recievers { };
+        message_t m_msg;
+        Result<std::vector<shed::broadcast_fail_t>, Unit> m_ret { Unit { } };
+        inline Broadcast(
+            shd* s,
+            std::string snd,
+            std::vector<std::string> rcv,
+            message_t&& msg)
+            : m_s { s }
+            , m_sender { snd }
+            , m_recievers { rcv }
+            , m_msg { msg }
+        {
+        }
+        inline Broadcast(const Broadcast&) = delete;
+        inline Broadcast& operator=(const Broadcast&) = delete;
+        inline Broadcast(Broadcast&& o)
+            : m_s { o.m_s }
+            , m_sender { o.m_sender }
+            , m_recievers { o.m_recievers }
+            , m_msg { std::move(o.m_msg) }
+            , m_ret { std::move(o.m_ret) }
+        {
+            o.m_s = nullptr;
+            o.m_msg = nullptr;
+        }
+        inline Broadcast& operator=(Broadcast&& o)
+        {
+            m_s = o.m_s;
+            m_sender = o.m_sender;
+            m_recievers = o.m_recievers;
+            m_msg = o.m_msg;
+            m_ret = std::move(o.m_ret);
+            o.m_s = nullptr;
+            o.m_msg = nullptr;
+            return *this;
+        }
+
+    public:
+        inline bool await_ready() { return false; }
+        inline void await_suspend(actor::Actor::handle_t h)
+        {
+            const auto on_broadcast = [h, this](
+                                          std::optional<
+                                              std::vector<
+                                                  shed::broadcast_fail_t>>&& bf) {
+                if (bf) {
+                    m_ret = decltype(m_ret)::err(std::move(*bf));
+                }
+                h.resume();
+            };
+            m_s->broadcast(
+                m_sender,
+                std::move(m_msg),
+                on_broadcast,
+                std::move(m_recievers));
+            m_msg = nullptr;
+        }
+        inline Result<std::vector<shed::broadcast_fail_t>, Unit> await_resume()
+        {
+            return m_ret;
+        }
+    };
+    Broadcast broadcast(
+        std::vector<std::string> rcv,
+        message_t&& msg);
 };
 using Mctx = MachineContext;
 }

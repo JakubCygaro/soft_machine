@@ -362,7 +362,7 @@ public:
         }
         for (auto& [pn, proc] : m_procs) {
             do_recv(pn, proc);
-            if(proc->paused){
+            if (proc->paused) {
                 auto call = std::move(*proc->paused);
                 proc->paused = std::nullopt;
                 call();
@@ -508,12 +508,44 @@ public:
     {
         auto& proc = m_procs[who];
         std::optional<std::any> msg;
-        auto capture_msg = [&](std::string, message_t&& m){
+        auto capture_msg = [&](std::string, message_t&& m) {
             msg = m;
         };
         proc->awaiting_msg = capture_msg;
         do_recv(who, proc);
         return msg;
+    }
+    inline virtual void broadcast(
+        std::string sender,
+        message_t&& msg,
+        shed::broadcast_callback_t clb,
+        std::vector<std::string>&& recipents)
+    {
+        std::optional<
+            std::vector<shed::broadcast_fail_t>>
+            fails;
+        for (const auto& proc_name : recipents) {
+            if (m_procs.contains(proc_name)) {
+                auto& proc = m_procs[proc_name];
+                proc->msgq.emplace_back(
+                    sender,
+                    proc_name,
+                    std::move(msg),
+                    std::move([] { }));
+            } else if (!fails) {
+                fails = std::vector<shed::broadcast_fail_t>();
+                fails->push_back(
+                    std::make_pair(
+                        proc_name,
+                        std::runtime_error("recipent does not exist")));
+            } else {
+                fails->push_back(
+                    std::make_pair(
+                        proc_name,
+                        std::runtime_error("recipent does not exist")));
+            }
+        }
+        clb(std::move(fails));
     }
 };
 }

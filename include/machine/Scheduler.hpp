@@ -9,6 +9,10 @@
 namespace machine::shed {
 using pause_callback_t = std::function<void()>;
 using send_callback_t = std::function<void(std::optional<std::runtime_error>)>;
+using broadcast_fail_t = std::pair<std::string, std::runtime_error>;
+using broadcast_callback_t = std::function<
+    void(std::optional<
+        std::vector<broadcast_fail_t>>&&)>;
 using recv_callback_t = std::function<void(std::string, message_t&&)>;
 class Scheduler {
 public:
@@ -18,6 +22,11 @@ public:
         std::string recipent,
         message_t,
         send_callback_t) = 0;
+    virtual void broadcast(
+        std::string sender,
+        message_t&&,
+        broadcast_callback_t,
+        std::vector<std::string>&& recipents) = 0;
     // the sender of the message and the message
     virtual void recv(
         std::string who,

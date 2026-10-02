@@ -28,4 +28,10 @@ std::optional<message_t> MachineContext::try_recv()
 {
     return this->m_sched->try_recv(m_name_of_this);
 }
+
+MachineContext::Broadcast MachineContext::broadcast(
+    std::vector<std::string> rcv, message_t&& msg)
+{
+    return Broadcast(m_sched, m_name_of_this, rcv, std::move(msg));
+}
 }
