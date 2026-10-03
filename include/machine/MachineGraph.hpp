@@ -531,7 +531,7 @@ public:
                     sender,
                     proc_name,
                     std::move(msg),
-                    std::move([] { }));
+                    [](auto) { });
             } else if (!fails) {
                 fails = std::vector<shed::broadcast_fail_t>();
                 fails->push_back(

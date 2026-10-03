@@ -1,4 +1,5 @@
 #pragma once
+#include "common/Result.hpp"
 #include "common/reflect/Enum.hpp"
 #include "game/Drawable.hpp"
 // #include "game/Xml.hpp"
@@ -88,6 +89,14 @@ enum class AttachPt {
     BC,
     BR
 };
+
+enum class ValueMsgKind {
+    String,
+    Number,
+};
+
+Result<std::runtime_error, std::any>
+parse_value_msg_kind(const ValueMsgKind& kind, const std::string& text);
 
 class OComponent : public machine::Component,
                    public game::Object,

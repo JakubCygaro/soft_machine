@@ -1,4 +1,5 @@
 #include "components/Clock.hpp"
+#include "common/Ray.hpp"
 #include "common/reflect/Enum.hpp"
 #include "game/resources/Resources.hpp"
 #include <raylib.h>
@@ -13,20 +14,54 @@ void Clock::draw()
         std::to_string(m_d->count_to).c_str(),
         m_d->font_size,
         default_font_spacing());
-    const auto center = get_center();
-    ::DrawRectangleRounded(
+    const auto counter_sz = ::MeasureTextEx(
+        get_node_font(),
+        std::to_string(m_d->counter).c_str(),
+        m_d->font_size,
+        default_font_spacing());
+    ::DrawRectangleRec(
         this->m_bounds,
+        BODY_COLOR);
+    auto half = ::Rectangle {
+        .x = m_bounds.x,
+        .y = m_bounds.y,
+        .width = m_bounds.x,
+        .height = m_bounds.y / 2.0f,
+    };
+    auto half_center = common::ray::rec_center(half);
+    ::DrawRectangleRounded(
+        half,
         0.2,
         10,
-        BODY_COLOR);
-    const ::Vector2 button_d = {
-        .x = m_bounds.width * .8f,
-        .y = m_bounds.height * .8f,
-    };
-    const ::Vector2 button_p = {
-        .x = center.x - button_d.x / 2.0f,
-        .y = center.y - button_d.y / 2.0f,
-    };
+        DISPLAY_COLOR);
+    ::DrawTextEx(
+        get_node_font(),
+        std::to_string(m_d->count_to).c_str(),
+        common::ray::text_centered_at(half_center, count_to_sz),
+        default_node_font_size(),
+        default_font_spacing(),
+        ::WHITE);
+    half.y += m_bounds.height - half.height;
+    ::DrawRectangleRounded(
+        half,
+        0.2,
+        10,
+        DISPLAY_COLOR);
+    ::DrawTextEx(
+        get_node_font(),
+        std::to_string(m_d->counter).c_str(),
+        common::ray::text_centered_at(half_center, counter_sz),
+        default_node_font_size(),
+        default_font_spacing(),
+        ::WHITE);
+    // const ::Vector2 button_d = {
+    //     .x = m_bounds.width * .8f,
+    //     .y = m_bounds.height * .8f,
+    // };
+    // const ::Vector2 button_p = {
+    //     .x = center.x - button_d.x / 2.0f,
+    //     .y = center.y - button_d.y / 2.0f,
+    // };
 }
 void Clock::update()
 {
@@ -61,8 +96,6 @@ machine::actor::Actor Clock::poll(machine::Mctx ctx)
         if (m_d->counter == m_d->counter) {
             auto m = machine::message_t(m_d->m_msg_value);
             co_await ctx.broadcast(m_d->recipents, std::move(m));
-            // for (const auto& r : m_d->recipents) {
-            // }
         }
         m_d->counter = std::clamp(
             m_d->counter++,
@@ -83,12 +116,12 @@ void Clock::marshall_to_xml(pugi::xml_node& self) const noexcept
     auto value = self.append_child("value");
     if (auto ss = std::any_cast<std::string>(&this->m_d->m_msg_value); ss) {
         value.append_attribute("kind")
-            .set_value(common::reflect::enum_to_string(MsgKind::String));
+            .set_value(common::reflect::enum_to_string(ValueMsgKind::String));
         value.text()
             .set(*ss);
     } else if (auto nn = std::any_cast<int>(&this->m_d->m_msg_value); nn) {
         value.append_attribute("kind")
-            .set_value(common::reflect::enum_to_string(MsgKind::Number));
+            .set_value(common::reflect::enum_to_string(ValueMsgKind::Number));
         value.text()
             .set(std::to_string(*nn));
     }

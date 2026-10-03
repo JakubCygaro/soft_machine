@@ -15,10 +15,6 @@ public:
     inline static const ::Color BUTTON_ACTIVE_COLOR = { 255, 0, 0, 255 };
 
 public:
-    enum class MsgKind {
-        String,
-        Number,
-    };
 
 private:
     struct data {

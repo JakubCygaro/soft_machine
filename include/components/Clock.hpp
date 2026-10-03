@@ -1,6 +1,5 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
-#include "facelift/Fl.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <raylib.h>
@@ -14,10 +13,6 @@ public:
     inline static const ::Color DISPLAY_COLOR = ::BLACK;
 
 public:
-    enum class MsgKind {
-        String,
-        Number,
-    };
 
 private:
     struct data {

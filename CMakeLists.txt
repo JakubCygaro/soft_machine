@@ -61,6 +61,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/components/Button.cc
     ${CMAKE_SOURCE_DIR}/src/components/Display.cc
     ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
+    ${CMAKE_SOURCE_DIR}/src/common/ray.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc
     ${CMAKE_SOURCE_DIR}/include/misc/cpp/imgui_stdlib.cpp
 )

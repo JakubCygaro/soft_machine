@@ -2,6 +2,7 @@
 #include "common/Result.hpp"
 #include "common/String.hpp"
 #include "components/Button.hpp"
+#include "components/Clock.hpp"
 #include "components/Cpu.hpp"
 #include "components/Display.hpp"
 #include "components/GameGraphElements.hpp"
@@ -9,6 +10,7 @@
 #include "components/Passthrough.hpp"
 #include "components/Repeater.hpp"
 #include "game/XmlMarshalling.hpp"
+#include "game/resources/Resources.hpp"
 #include <algorithm>
 #include <cctype>
 #include <charconv>
@@ -266,7 +268,7 @@ struct build<components::Button> {
             std::optional<pos_node> position;
             struct val_node {
                 struct attrs {
-                    components::Button::MsgKind kind;
+                    components::ValueMsgKind kind;
                 };
                 game::xml::Attribute<attrs> attrs;
                 std::string text;
@@ -278,26 +280,13 @@ struct build<components::Button> {
         } else {
             button = unm.unwrap();
         }
-        using enum components::Button::MsgKind;
         std::any msg;
-        switch (button.value.attrs->kind) {
-        case String: {
-            msg = common::trim(button.value.text);
-        } break;
-        case Number: {
-            auto trimmed = common::trim(button.value.text);
-            int out;
-            auto res = std::from_chars(
-                trimmed.data(),
-                trimmed.data() + trimmed.size(),
-                out,
-                10);
-            if (res.ec == std::errc::invalid_argument) {
-                return { std::runtime_error(
-                    std::format("Failed to parse button value node as a number")) };
-            }
-            msg = out;
-        } break;
+        if (auto parsed = components::parse_value_msg_kind(
+                button.value.attrs->kind, button.value.text);
+            parsed.iserr()) {
+            return { parsed.unwrap_err() };
+        } else {
+            msg = parsed.unwrap();
         }
         auto p = mg.create_component<components::Button>(
             button.attrs->name,
@@ -369,6 +358,54 @@ struct build<components::Repeater> {
             p->set_pos(repeater.position->to_vec2());
         }
         return Result<err_t, components::Repeater*>::ok(p);
+    }
+};
+template <>
+struct build<components::Clock> {
+    Result<err_t, components::Clock*>
+    operator()(graph_t& mg, pugi::xml_node& n) const noexcept
+    {
+        struct clock_node {
+            struct attrs {
+                std::string name;
+                unsigned int count_to;
+                std::optional<int> font_size;
+            };
+            struct val_node {
+                struct attrs {
+                    components::ValueMsgKind kind;
+                };
+                game::xml::Attribute<attrs> attrs;
+                std::string text;
+            } value;
+            game::xml::Attribute<attrs> attrs;
+            std::optional<pos_node> position;
+        };
+        clock_node button;
+        if (auto unm = game::xml::unmarshall_node<clock_node>(n); unm.iserr()) {
+            return { unm.unwrap_err() };
+        } else {
+            button = unm.unwrap();
+        }
+        std::any msg;
+        if (auto parsed = components::parse_value_msg_kind(
+                button.value.attrs->kind,
+                button.value.text);
+            parsed.iserr()) {
+            return { parsed.unwrap_err() };
+        } else {
+            msg = parsed.unwrap();
+        }
+        auto p = mg.create_component<components::Clock>(
+            button.attrs->name,
+            std::move(msg),
+            button.attrs->count_to,
+            button.attrs->font_size.value_or(
+                game::resources::default_node_font_size()));
+        if (button.position) {
+            p->set_pos(button.position->to_vec2());
+        }
+        return Result<err_t, components::Clock*>::ok(p);
     }
 };
 template <typename T>
