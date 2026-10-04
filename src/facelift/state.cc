@@ -109,15 +109,16 @@ void comp_builder_menu_draw()
 void conn_builder_menu_draw()
 {
     if (ImGui::Begin("Connection builder")) {
-        ImGui::BeginListBox("Connections");
-        for (const auto& [s, b] : fl_state.conn_blds) {
-            ImGui::PushID(s.c_str());
-            if (ImGui::Selectable(s.c_str())) {
-                fl_state.open_conn_bld = s;
+        if(ImGui::BeginListBox("Connections")){
+            for (const auto& [s, b] : fl_state.conn_blds) {
+                ImGui::PushID(s.c_str());
+                if (ImGui::Selectable(s.c_str())) {
+                    fl_state.open_conn_bld = s;
+                }
+                ImGui::PopID();
             }
-            ImGui::PopID();
+            ImGui::EndListBox();
         }
-        ImGui::EndListBox();
     }
     ImGui::End();
 }

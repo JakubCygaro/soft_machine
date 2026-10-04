@@ -30,7 +30,7 @@ std::optional<message_t> MachineContext::try_recv()
 }
 
 MachineContext::Broadcast MachineContext::broadcast(
-    std::vector<std::string> rcv, message_t&& msg)
+     message_t&&msg, std::optional<std::vector<std::string>> rcv)
 {
     return Broadcast(m_sched, m_name_of_this, rcv, std::move(msg));
 }

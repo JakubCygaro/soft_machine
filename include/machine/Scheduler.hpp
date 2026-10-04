@@ -24,9 +24,9 @@ public:
         send_callback_t) = 0;
     virtual void broadcast(
         std::string sender,
-        message_t&&,
-        broadcast_callback_t,
-        std::vector<std::string>&& recipents) = 0;
+        message_t&& msg,
+        shed::broadcast_callback_t clb,
+        std::optional<const std::vector<std::string>&> recipents) = 0;
     // the sender of the message and the message
     virtual void recv(
         std::string who,

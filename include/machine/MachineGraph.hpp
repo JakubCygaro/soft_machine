@@ -9,7 +9,6 @@
 #include <concepts>
 #include <deque>
 #include <format>
-#include <iostream>
 #include <list>
 #include <memory>
 #include <optional>
@@ -35,7 +34,6 @@ private:
 
     struct MessageSent {
         std::string sender;
-        std::string recipent;
         message_t payload;
         shed::send_callback_t sender_callback;
     };
@@ -479,7 +477,6 @@ public:
     inline virtual void pause(const std::string& name, shed::pause_callback_t clb)
     {
         // m_paused.push_back(std::make_pair(name, std::move(clb)));
-        std::cout << name << " marked as paused" << std::endl;
         m_procs[name]->paused = std::move(clb);
     }
     inline virtual void send(
@@ -492,7 +489,6 @@ public:
             auto& proc = m_procs[recipent];
             proc->msgq.emplace_back(
                 sender,
-                recipent,
                 std::move(msg),
                 std::move(c));
         }
@@ -519,17 +515,16 @@ public:
         std::string sender,
         message_t&& msg,
         shed::broadcast_callback_t clb,
-        std::vector<std::string>&& recipents)
+        std::optional<const std::vector<std::string>&> recipents)
     {
         std::optional<
             std::vector<shed::broadcast_fail_t>>
             fails;
-        for (const auto& proc_name : recipents) {
+        const auto deliver_to = [&](const std::string& proc_name) {
             if (m_procs.contains(proc_name)) {
                 auto& proc = m_procs[proc_name];
                 proc->msgq.emplace_back(
                     sender,
-                    proc_name,
                     std::move(msg),
                     [](auto) { });
             } else if (!fails) {
@@ -543,6 +538,18 @@ public:
                     std::make_pair(
                         proc_name,
                         std::runtime_error("recipent does not exist")));
+            }
+        };
+        if (recipents && !recipents->empty()) {
+            for (const auto& proc_name : *recipents) {
+                deliver_to(proc_name);
+            }
+        } else if (auto inc = get_incident_to(sender); inc && !(*inc)->empty()) {
+            using namespace std::views;
+            for (const auto& proc_name : **inc | transform([&](const auto* inc) {
+                     return inc->get_name();
+                 })) {
+                deliver_to(proc_name);
             }
         }
         clb(std::move(fails));

@@ -25,8 +25,8 @@ void Clock::draw()
     auto half = ::Rectangle {
         .x = m_bounds.x,
         .y = m_bounds.y,
-        .width = m_bounds.x,
-        .height = m_bounds.y / 2.0f,
+        .width = m_bounds.width,
+        .height = m_bounds.height / 2.0f,
     };
     auto half_center = common::ray::rec_center(half);
     ::DrawRectangleRounded(
@@ -42,6 +42,7 @@ void Clock::draw()
         default_font_spacing(),
         ::WHITE);
     half.y += m_bounds.height - half.height;
+    half_center = common::ray::rec_center(half);
     ::DrawRectangleRounded(
         half,
         0.2,
@@ -54,14 +55,6 @@ void Clock::draw()
         default_node_font_size(),
         default_font_spacing(),
         ::WHITE);
-    // const ::Vector2 button_d = {
-    //     .x = m_bounds.width * .8f,
-    //     .y = m_bounds.height * .8f,
-    // };
-    // const ::Vector2 button_p = {
-    //     .x = center.x - button_d.x / 2.0f,
-    //     .y = center.y - button_d.y / 2.0f,
-    // };
 }
 void Clock::update()
 {
@@ -81,26 +74,17 @@ void Clock::setup(Clock& self)
         .height = count_to_sz.y * 2.1f,
     };
 }
-std::any Clock::on_outcoming_connection(
-    std::string_view conn_name,
-    const machine::Connection*,
-    std::any)
-{
-    this->m_d->recipents.push_back(std::string(conn_name));
-    return nullptr;
-}
 machine::actor::Actor Clock::poll(machine::Mctx ctx)
 {
     while (1) {
         co_await ctx.pause();
-        if (m_d->counter == m_d->counter) {
+        if (++m_d->counter > m_d->count_to)
+            m_d->counter = 0;
+        if (m_d->counter == m_d->count_to) {
             auto m = machine::message_t(m_d->m_msg_value);
-            co_await ctx.broadcast(m_d->recipents, std::move(m));
+            co_await ctx.broadcast(std::move(m));
         }
-        m_d->counter = std::clamp(
-            m_d->counter++,
-            0u,
-            m_d->count_to);
+        std::flush(std::cout);
     }
 }
 const char*

@@ -13,7 +13,6 @@ public:
     inline static const ::Color DISPLAY_COLOR = ::BLACK;
 
 public:
-
 private:
     struct data {
         std::any m_msg_value;
@@ -55,10 +54,6 @@ public:
     virtual void update() override;
     static void setup(Clock& self);
 
-    virtual std::any on_outcoming_connection(
-        std::string_view,
-        const machine::Connection*,
-        std::any) override;
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
     virtual const char*

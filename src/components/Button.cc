@@ -81,12 +81,12 @@ void Button::marshall_to_xml(pugi::xml_node& self) const noexcept
     auto value = self.append_child("value");
     if (auto ss = std::any_cast<std::string>(&this->m_d->m_msg_value); ss) {
         value.append_attribute("kind")
-            .set_value(common::reflect::enum_to_string(MsgKind::String));
+            .set_value(common::reflect::enum_to_string(ValueMsgKind::String));
         value.text()
             .set(*ss);
     } else if (auto nn = std::any_cast<int>(&this->m_d->m_msg_value); nn) {
         value.append_attribute("kind")
-            .set_value(common::reflect::enum_to_string(MsgKind::Number));
+            .set_value(common::reflect::enum_to_string(ValueMsgKind::Number));
         value.text()
             .set(std::to_string(*nn));
     }

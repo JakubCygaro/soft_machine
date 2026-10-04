@@ -232,7 +232,7 @@ class PassthroughBuilder : public ConnectionBuilder<components::Passthrough> {
 public:
     virtual const std::string& get_element_name() override
     {
-        static std::string n = "display";
+        static std::string n = "passthrough";
         return n;
     }
     conn_t*

@@ -269,13 +269,13 @@ public:
     private:
         shd* m_s { };
         std::string m_sender { };
-        std::vector<std::string> m_recievers { };
+        std::optional<std::vector<std::string>> m_recievers { };
         message_t m_msg;
         Result<std::vector<shed::broadcast_fail_t>, Unit> m_ret { Unit { } };
         inline Broadcast(
             shd* s,
             std::string snd,
-            std::vector<std::string> rcv,
+            std::optional<std::vector<std::string>> rcv,
             message_t&& msg)
             : m_s { s }
             , m_sender { snd }
@@ -324,7 +324,8 @@ public:
                 m_sender,
                 std::move(m_msg),
                 on_broadcast,
-                std::move(m_recievers));
+                m_recievers);
+            m_recievers = std::nullopt;
             m_msg = nullptr;
         }
         inline Result<std::vector<shed::broadcast_fail_t>, Unit> await_resume()
@@ -333,8 +334,7 @@ public:
         }
     };
     Broadcast broadcast(
-        std::vector<std::string> rcv,
-        message_t&& msg);
+        message_t&& msg, std::optional<std::vector<std::string>> rcv = std::nullopt);
 };
 using Mctx = MachineContext;
 }
