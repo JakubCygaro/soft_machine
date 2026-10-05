@@ -89,6 +89,7 @@ private:
 
     std::unordered_map<std::string, std::unique_ptr<Process>> m_procs { };
     std::deque<std::pair<const std::string, shed::pause_callback_t>> m_paused { };
+    std::vector<actor::Actor*> m_initial_resume { };
 
 private:
     inline MachineGraph() { }
@@ -106,10 +107,10 @@ public:
         , m_conns { std::move(o.m_conns) }
         , m_named_conns { std::move(o.m_named_conns) }
         , m_incidents { std::move(o.m_incidents) }
-        // , m_msgq { std::move(o.m_msgq) }
         , m_waiting { std::move(o.m_waiting) }
         , m_procs { std::move(o.m_procs) }
         , m_paused { std::move(o.m_paused) }
+        , m_initial_resume { std::move(o.m_initial_resume) }
     {
     }
     inline MachineGraph& operator=(MachineGraph&& o)
@@ -118,11 +119,11 @@ public:
         m_named_comps = std::move(o.m_named_comps);
         m_conns = std::move(o.m_conns);
         m_named_conns = std::move(o.m_named_conns);
-        // m_msgq = std::move(o.m_msgq);
         m_waiting = std::move(o.m_waiting);
         m_procs = std::move(o.m_procs);
         m_paused = std::move(o.m_paused);
         m_incidents = std::move(o.m_incidents);
+        m_initial_resume = std::move(o.m_initial_resume);
         return *this;
     }
     inline virtual ~MachineGraph()
@@ -137,6 +138,7 @@ private:
         MachineContext mctx = MachineContext(with_name, this);
         auto act = pollable->poll(mctx);
         auto proc = std::make_unique<Process>(std::move(act), pollable);
+        m_initial_resume.push_back(&proc->actor);
         this->m_procs.emplace(
             std::make_pair(
                 with_name,
@@ -154,18 +156,18 @@ public:
         if (name.empty())
             throw std::runtime_error(
                 std::format("attempted to create connection with empty name"));
-        if (m_named_conns.contains(name)) {
+        if (is_connector(name)) {
             throw std::runtime_error(
                 std::format("'{}' connection already exists",
                     name));
         }
-        if (!m_named_comps.contains(from))
+        if (!is_component(from))
             throw std::runtime_error(
                 std::format("{} from component '{}' does not exist",
                     name, from));
-        if (!m_named_comps.contains(to))
+        if (!is_component(to))
             throw std::runtime_error(
-                std::format("{} from component '{}' does not exist",
+                std::format("{} to component '{}' does not exist",
                     name, to));
 
         auto* from_ptr = m_named_comps[from];
@@ -189,16 +191,15 @@ public:
         c2(
             to_ptr->on_incoming_connection(name, conn.get(), d2));
         m_named_conns[name] = conn.get();
-        if (!m_incidents.contains(from_ptr)) {
-            m_incidents[from_ptr] = { conn.get() };
-        } else {
-            m_incidents[from_ptr].push_back(conn.get());
-        }
-        if (!m_incidents.contains(to_ptr)) {
-            m_incidents[to_ptr] = { conn.get() };
-        } else {
-            m_incidents[to_ptr].push_back(conn.get());
-        }
+        const auto add_incident = [&](Comp* c) {
+            if (!m_incidents.contains(c)) {
+                m_incidents[c] = { conn.get() };
+            } else {
+                m_incidents[c].push_back(conn.get());
+            }
+        };
+        add_incident(to_ptr);
+        add_incident(from_ptr);
         m_conns.push_back(conn);
         register_actor(name, conn.get());
         return conn.get();
@@ -350,14 +351,6 @@ public:
 
     inline void poll_all()
     {
-        static bool once;
-        if (!once) {
-            for (auto& [procn, proc] : m_procs) {
-                proc->actor.resume();
-            }
-            once = true;
-            return;
-        }
         for (auto& [pn, proc] : m_procs) {
             do_recv(pn, proc);
             if (proc->paused) {
@@ -365,6 +358,12 @@ public:
                 proc->paused = std::nullopt;
                 call();
             }
+        }
+        if (!m_initial_resume.empty()) {
+            for (auto* actor : m_initial_resume) {
+                actor->resume();
+            }
+            m_initial_resume.clear();
         }
     }
     using incident_t = std::vector<Conn*>;
@@ -523,9 +522,10 @@ public:
         const auto deliver_to = [&](const std::string& proc_name) {
             if (m_procs.contains(proc_name)) {
                 auto& proc = m_procs[proc_name];
+                auto cpy_msg = message_t(msg);
                 proc->msgq.emplace_back(
                     sender,
-                    std::move(msg),
+                    std::move(cpy_msg),
                     [](auto) { });
             } else if (!fails) {
                 fails = std::vector<shed::broadcast_fail_t>();
