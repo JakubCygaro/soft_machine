@@ -7,6 +7,7 @@
 #include "machine/Scheduler.hpp"
 #include <algorithm>
 #include <concepts>
+#include <cstdint>
 #include <deque>
 #include <format>
 #include <list>
@@ -23,6 +24,8 @@ template <
     std::derived_from<Component> Comp,
     std::derived_from<Connection> Conn>
 class MachineGraph : public shed::Scheduler {
+private:
+    using proc_id_t = std::uint32_t;
 private:
     std::list<std::shared_ptr<Comp>> m_comps { };
     std::unordered_map<std::string, Comp*>
