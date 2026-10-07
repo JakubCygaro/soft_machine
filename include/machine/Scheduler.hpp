@@ -1,6 +1,7 @@
 #ifndef SCHEDULER_HPP
 #define SCHEDULER_HPP
 #include "machine/Message.hpp"
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <stdexcept>
@@ -16,23 +17,23 @@ using broadcast_callback_t = std::function<
 using recv_callback_t = std::function<void(std::string, message_t&&)>;
 class Scheduler {
 public:
-    virtual void pause(const std::string& name, pause_callback_t) = 0;
+    virtual void pause(const std::uint32_t& id, pause_callback_t) = 0;
     virtual void send(
-        std::string sender,
+        const std::uint32_t& sender,
         std::string recipent,
         message_t,
         send_callback_t) = 0;
     virtual void broadcast(
-        std::string sender,
+        const std::uint32_t& sender,
         message_t&& msg,
         shed::broadcast_callback_t clb,
         std::optional<const std::vector<std::string>&> recipents) = 0;
     // the sender of the message and the message
     virtual void recv(
-        std::string who,
+        const std::uint32_t& sender,
         recv_callback_t) = 0;
     virtual std::optional<message_t> try_recv(
-        std::string who) = 0;
+        const std::uint32_t& who) = 0;
 };
 }
 

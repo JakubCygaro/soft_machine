@@ -6,6 +6,7 @@
 #include "machine/Preamble.hpp"
 #include "machine/Scheduler.hpp"
 #include <any>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -22,10 +23,10 @@ class MachineContext {
     friend class MachineGraph;
 
 private:
-    std::string m_name_of_this { };
+    std::uint32_t m_id_of_this { };
     shed::Scheduler* m_sched { };
 
-    MachineContext(std::string name_of_this, shed::Scheduler* s);
+    MachineContext(std::uint32_t id_of_this, shed::Scheduler* s);
 
 public:
     struct Pause {
@@ -33,15 +34,15 @@ public:
 
     private:
         shd* m_s { };
-        std::string name;
-        inline Pause(shd* s, std::string name)
+        std::uint32_t name;
+        inline Pause(shd* s, std::uint32_t name)
             : m_s { s }
             , name { name }
         {
         }
         inline Pause(const Pause&) = delete;
         inline Pause& operator=(const Pause&) = delete;
-        inline Pause(Pause&& o, std::string name)
+        inline Pause(Pause&& o, std::uint32_t name)
             : m_s { o.m_s }
             , name { name }
         {
@@ -72,12 +73,13 @@ public:
 
     private:
         shd* m_s { };
-        std::string m_sender { }, m_reciever { };
+        std::uint32_t m_sender { };
+        std::string m_reciever { };
         message_t m_msg;
         Result<std::runtime_error, Unit> m_ret { Unit { } };
         inline Send(
             shd* s,
-            std::string snd,
+            std::uint32_t snd,
             std::string rcv,
             message_t&& msg)
             : m_s { s }
@@ -135,12 +137,12 @@ public:
 
     private:
         shd* m_s { };
-        std::string m_reciever { };
+        std::uint32_t m_reciever { };
         std::string m_sender;
         message_t m_msg;
         inline Recv(
             shd* s,
-            std::string rcv)
+            std::uint32_t rcv)
             : m_s { s }
             , m_reciever { rcv }
             , m_msg { std::make_any<message_t>(nullptr) }
@@ -191,16 +193,19 @@ public:
 
     private:
         shd* m_s { };
-        std::string m_reciever { };
-        std::string m_sender;
+        std::uint32_t m_sender_reciever { };
+        std::string m_recipent;
+        std::string m_responder;
         message_t m_msg;
         Result<std::runtime_error, message_t> m_ret { Unit { } };
         inline SendRecv(
             shd* s,
-            std::string rcv,
+            std::uint32_t rcv,
+            std::string recipent,
             message_t&& msg)
             : m_s { s }
-            , m_reciever { rcv }
+            , m_sender_reciever { rcv }
+            , m_recipent { recipent }
             , m_msg { msg }
             , m_ret { std::make_any<message_t>(nullptr) }
         {
@@ -209,7 +214,8 @@ public:
         inline SendRecv& operator=(const SendRecv&) = delete;
         inline SendRecv(SendRecv&& o)
             : m_s { o.m_s }
-            , m_reciever { o.m_reciever }
+            , m_sender_reciever { o.m_sender_reciever }
+            , m_recipent { std::move(o.m_recipent) }
             , m_msg { std::move(o.m_msg) }
             , m_ret { std::move(o.m_ret) }
         {
@@ -220,7 +226,8 @@ public:
         inline SendRecv& operator=(SendRecv&& o)
         {
             m_s = o.m_s;
-            m_reciever = o.m_reciever;
+            m_sender_reciever = o.m_sender_reciever;
+            m_recipent = o.m_recipent;
             m_ret = std::move(o.m_ret);
             m_msg = std::move(o.m_msg);
             o.m_s = nullptr;
@@ -235,7 +242,7 @@ public:
         {
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {
                 this->m_ret = { std::move(msg) };
-                this->m_sender = snd;
+                this->m_responder = snd;
                 h.resume();
             };
             const auto on_send = [&, h, this](auto err) {
@@ -244,23 +251,23 @@ public:
                     h.resume();
                 } else {
                     m_s->recv(
-                        m_reciever,
+                        m_sender_reciever,
                         on_recv);
                 }
             };
             m_s->send(
-                m_sender,
-                m_reciever,
+                m_sender_reciever,
+                m_recipent,
                 std::move(m_msg),
                 on_send);
             m_msg = nullptr;
         }
         inline std::tuple<std::string, message_t> await_resume()
         {
-            return std::make_tuple(m_sender, m_msg);
+            return std::make_tuple(m_responder, m_msg);
         }
     };
-    SendRecv send_recv(std::string rcv, message_t&& msg);
+    SendRecv send_recv(std::string recipent, message_t&& msg);
     std::optional<message_t> try_recv();
 
     struct Broadcast {
@@ -268,13 +275,13 @@ public:
 
     private:
         shd* m_s { };
-        std::string m_sender { };
+        std::uint32_t m_sender { };
         std::optional<std::vector<std::string>> m_recievers { };
         message_t m_msg;
         Result<std::vector<shed::broadcast_fail_t>, Unit> m_ret { Unit { } };
         inline Broadcast(
             shd* s,
-            std::string snd,
+            std::uint32_t snd,
             std::optional<std::vector<std::string>> rcv,
             message_t&& msg)
             : m_s { s }

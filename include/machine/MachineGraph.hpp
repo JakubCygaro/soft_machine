@@ -25,23 +25,24 @@ template <
     std::derived_from<Connection> Conn>
 class MachineGraph : public shed::Scheduler {
 private:
-    using proc_id_t = std::uint32_t;
+    using elem_id_t = std::uint32_t;
+
 private:
     std::list<std::shared_ptr<Comp>> m_comps { };
-    std::unordered_map<std::string, Comp*>
+    std::unordered_map<elem_id_t, Comp*>
         m_named_comps { };
     std::list<std::shared_ptr<Conn>> m_conns { };
-    std::unordered_map<std::string, Conn*>
+    std::unordered_map<elem_id_t, Conn*>
         m_named_conns { };
     std::unordered_map<Comp*, std::vector<Conn*>> m_incidents { };
 
     struct MessageSent {
-        std::string sender;
+        elem_id_t sender;
         message_t payload;
         shed::send_callback_t sender_callback;
     };
 
-    std::unordered_map<std::string, shed::recv_callback_t> m_waiting { };
+    std::unordered_map<elem_id_t, shed::recv_callback_t> m_waiting { };
 
     struct Process {
         // std::string name;
@@ -90,9 +91,10 @@ private:
         }
     };
 
-    std::unordered_map<std::string, std::unique_ptr<Process>> m_procs { };
-    std::deque<std::pair<const std::string, shed::pause_callback_t>> m_paused { };
+    std::unordered_map<elem_id_t, std::unique_ptr<Process>> m_procs { };
+    std::deque<std::pair<elem_id_t, shed::pause_callback_t>> m_paused { };
     std::vector<actor::Actor*> m_initial_resume { };
+    std::unordered_map<std::string, elem_id_t> m_named_elements { };
 
 private:
     inline MachineGraph() { }
@@ -135,16 +137,16 @@ public:
 
 private:
     template <std::derived_from<Pollable> T>
-    inline void register_actor(std::string with_name, T* pollable)
+    inline void register_actor(std::uint32_t with_id, T* pollable)
     {
         using namespace std::placeholders;
-        MachineContext mctx = MachineContext(with_name, this);
+        MachineContext mctx = MachineContext(with_id, this);
         auto act = pollable->poll(mctx);
         auto proc = std::make_unique<Process>(std::move(act), pollable);
         m_initial_resume.push_back(&proc->actor);
         this->m_procs.emplace(
             std::make_pair(
-                with_name,
+                with_id,
                 std::move(proc)));
     }
 
@@ -159,7 +161,7 @@ public:
         if (name.empty())
             throw std::runtime_error(
                 std::format("attempted to create connection with empty name"));
-        if (is_connector(name)) {
+        if (exists(name)) {
             throw std::runtime_error(
                 std::format("'{}' connection already exists",
                     name));
@@ -193,7 +195,9 @@ public:
         auto [d2, c2] = conn->on_connecting_to_end();
         c2(
             to_ptr->on_incoming_connection(name, conn.get(), d2));
-        m_named_conns[name] = conn.get();
+
+        auto id = static_cast<elem_id_t>(m_procs.size());
+        m_named_conns[id] = conn.get();
         const auto add_incident = [&](Comp* c) {
             if (!m_incidents.contains(c)) {
                 m_incidents[c] = { conn.get() };
@@ -204,7 +208,8 @@ public:
         add_incident(to_ptr);
         add_incident(from_ptr);
         m_conns.push_back(conn);
-        register_actor(name, conn.get());
+        m_named_elements[name] = id;
+        register_actor(id, conn.get());
         return conn.get();
     }
     template <std::derived_from<Comp> T, typename... Args>
@@ -220,19 +225,26 @@ public:
         if (name.empty()) {
             throw std::runtime_error("attempted to create a component with no name");
         }
-        if (!m_named_comps.empty() && m_named_comps.contains(name)) {
+        if (is_component(name)) {
             throw std::runtime_error("component already exists");
         }
-        m_named_comps[name] = comp.get();
+        auto id = static_cast<elem_id_t>(m_procs.size());
+        m_named_comps[id] = comp.get();
         m_comps.push_back(comp);
-        register_actor(name, comp.get());
+        register_actor(id, comp.get());
+        m_named_elements[name] = id;
         return comp.get();
     }
 
 private:
-    inline void remove_connection(const std::string& name, bool skip_incident = false)
+    inline elem_id_t name_to_id(std::string& name)
     {
-        auto* conn = m_named_conns[name];
+        return m_named_elements[name];
+    }
+    inline void remove_connection(
+        elem_id_t id, const std::string& name, bool skip_incident = false)
+    {
+        auto* conn = m_named_conns[id];
         if (!skip_incident) {
             if (auto ai = get_incident_to(conn
                         ->get_start()
@@ -253,7 +265,7 @@ private:
                 });
             }
         }
-        m_named_conns.erase(name);
+        m_named_conns.erase(id);
         m_conns.erase(
             std::find_if(
                 m_conns.begin(),
@@ -262,7 +274,7 @@ private:
                     return conn->get_name() == name;
                 }));
     }
-    inline void remove_component(const std::string& name)
+    inline void remove_component(elem_id_t id, const std::string& name)
     {
         auto comp_it = std::find_if(
             m_comps.begin(),
@@ -271,9 +283,10 @@ private:
                 return comp->get_name() == name;
             });
         std::shared_ptr<Comp> comp = *comp_it;
-        if (auto inc = get_incident_to(name); inc) {
+        if (auto inc = get_incident_to(id); inc) {
             for (auto* i : **inc) {
-                remove_connection(i->get_name(), true);
+                auto& name = i->get_name();
+                remove_connection(name_to_id(name), name, true);
             }
             m_incidents.erase(comp_it->get());
         }
@@ -284,13 +297,17 @@ private:
 public:
     inline void remove_element(const std::string& name)
     {
-        if (m_procs.contains(name))
-            m_procs.erase(name);
+        if (!exists(name))
+            return;
+        auto id = name_to_id(name);
+        if (m_procs.contains(id))
+            m_procs.erase(id);
 
-        if (is_component(name))
-            remove_component(name);
+        if (is_component(id))
+            remove_component(id, name);
         else
-            remove_connection(name);
+            remove_connection(id, name);
+        m_named_elements.erase(name);
     }
 
 private:
@@ -338,13 +355,25 @@ private:
     }
     inline bool exists(const std::string& n) const
     {
+        return m_named_elements.contains(n);
+    }
+    inline bool exists(const std::uint32_t& n) const
+    {
         return is_component(n) || is_connector(n);
     }
     inline bool is_connector(const std::string& n) const
     {
-        return m_named_conns.contains(n);
+        return exists(n) && m_named_conns.contains(m_named_elements.at(n));
     }
     inline bool is_component(const std::string& n) const
+    {
+        return exists(n) && m_named_comps.contains(m_named_elements.at(n));
+    }
+    inline bool is_connector(const std::uint32_t& n) const
+    {
+        return m_named_conns.contains(n);
+    }
+    inline bool is_component(const std::uint32_t& n) const
     {
         return m_named_comps.contains(n);
     }
@@ -373,10 +402,17 @@ public:
     inline std::optional<incident_t*>
     get_incident_to(const std::string& name)
     {
-        if (!this->m_named_comps.contains(name)) {
+        if (!is_component(name))
+            return std::nullopt;
+        return get_incident_to(m_named_conns.at(m_named_elements[name]));
+    }
+    inline std::optional<incident_t*>
+    get_incident_to(const elem_id_t& id)
+    {
+        if (!this->m_named_comps.contains(id)) {
             return std::nullopt;
         }
-        const auto ptr = this->m_named_comps.at(name);
+        const auto ptr = this->m_named_comps.at(id);
         if (!this->m_incidents.contains(ptr)) {
             return std::nullopt;
         }
