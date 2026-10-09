@@ -5,9 +5,16 @@
  it will notify all dependent components - basically a styling graph
 - [facelift] file saving, selection and loading at runtime
 - styling via LISP, possibly with topo-sort before styling execution
+```xml
 <element name="element">
     <style>
-        (set!-position-rel "element2" 'right 100)
+        <lisp>
+            (set!-position-rel "element2" 'right 100)
+            (set!-font "default")
+            (set!-font-size 24)
+            (set!-param "body-color" 'GREEN)
+        </lisp>
     </style>
 </element>
+```
 ?- refactor xml graph building to be generic over the builder

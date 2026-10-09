@@ -19,21 +19,21 @@ class Scheduler {
 public:
     virtual void pause(const std::uint32_t& id, pause_callback_t) = 0;
     virtual void send(
-        const std::uint32_t& sender,
+        const std::uint32_t& self,
         std::string recipent,
         message_t,
         send_callback_t) = 0;
     virtual void broadcast(
-        const std::uint32_t& sender,
+        const std::uint32_t& self,
         message_t&& msg,
         shed::broadcast_callback_t clb,
         std::optional<const std::vector<std::string>&> recipents) = 0;
     // the sender of the message and the message
     virtual void recv(
-        const std::uint32_t& sender,
+        const std::uint32_t& self,
         recv_callback_t) = 0;
     virtual std::optional<message_t> try_recv(
-        const std::uint32_t& who) = 0;
+        const std::uint32_t& self) = 0;
 };
 }
 

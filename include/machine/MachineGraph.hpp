@@ -30,10 +30,10 @@ private:
 private:
     std::list<std::shared_ptr<Comp>> m_comps { };
     std::unordered_map<elem_id_t, Comp*>
-        m_named_comps { };
+        m_comps_by_id { };
     std::list<std::shared_ptr<Conn>> m_conns { };
     std::unordered_map<elem_id_t, Conn*>
-        m_named_conns { };
+        m_conns_by_id { };
     std::unordered_map<Comp*, std::vector<Conn*>> m_incidents { };
 
     struct MessageSent {
@@ -95,6 +95,7 @@ private:
     std::deque<std::pair<elem_id_t, shed::pause_callback_t>> m_paused { };
     std::vector<actor::Actor*> m_initial_resume { };
     std::unordered_map<std::string, elem_id_t> m_named_elements { };
+    elem_id_t m_next_id { };
 
 private:
     inline MachineGraph() { }
@@ -108,27 +109,31 @@ public:
     MachineGraph& operator=(const MachineGraph&) = delete;
     inline MachineGraph(MachineGraph&& o)
         : m_comps { std::move(o.m_comps) }
-        , m_named_comps { std::move(o.m_named_comps) }
+        , m_comps_by_id { std::move(o.m_comps_by_id) }
         , m_conns { std::move(o.m_conns) }
-        , m_named_conns { std::move(o.m_named_conns) }
+        , m_conns_by_id { std::move(o.m_conns_by_id) }
         , m_incidents { std::move(o.m_incidents) }
         , m_waiting { std::move(o.m_waiting) }
         , m_procs { std::move(o.m_procs) }
         , m_paused { std::move(o.m_paused) }
         , m_initial_resume { std::move(o.m_initial_resume) }
+        , m_named_elements { std::move(m_named_elements) }
+        , m_next_id { std::move(m_next_id) }
     {
     }
     inline MachineGraph& operator=(MachineGraph&& o)
     {
         m_comps = std::move(o.m_comps);
-        m_named_comps = std::move(o.m_named_comps);
+        m_comps_by_id = std::move(o.m_comps_by_id);
         m_conns = std::move(o.m_conns);
-        m_named_conns = std::move(o.m_named_conns);
+        m_conns_by_id = std::move(o.m_conns_by_id);
         m_waiting = std::move(o.m_waiting);
         m_procs = std::move(o.m_procs);
         m_paused = std::move(o.m_paused);
         m_incidents = std::move(o.m_incidents);
         m_initial_resume = std::move(o.m_initial_resume);
+        m_named_elements = std::move(o.m_named_elements);
+        m_next_id = std::move(o.m_next_id);
         return *this;
     }
     inline virtual ~MachineGraph()
@@ -136,6 +141,14 @@ public:
     }
 
 private:
+    // TODO: make this non-exhaustible at some point
+    inline elem_id_t assign_id()
+    {
+        const auto id = m_next_id++;
+        if (m_next_id == 0)
+            throw std::runtime_error("machine graph element ID exhaustion");
+        return id;
+    }
     template <std::derived_from<Pollable> T>
     inline void register_actor(std::uint32_t with_id, T* pollable)
     {
@@ -175,8 +188,8 @@ public:
                 std::format("{} to component '{}' does not exist",
                     name, to));
 
-        auto* from_ptr = m_named_comps[from];
-        auto* to_ptr = m_named_comps[to];
+        auto* from_ptr = m_comps_by_id[from];
+        auto* to_ptr = m_comps_by_id[to];
         std::shared_ptr<T> conn = nullptr;
         if constexpr (sizeof...(ctor_args) > 0) {
             conn = std::make_shared<T>(
@@ -196,8 +209,8 @@ public:
         c2(
             to_ptr->on_incoming_connection(name, conn.get(), d2));
 
-        auto id = static_cast<elem_id_t>(m_procs.size());
-        m_named_conns[id] = conn.get();
+        auto id = assign_id();
+        m_conns_by_id[id] = conn.get();
         const auto add_incident = [&](Comp* c) {
             if (!m_incidents.contains(c)) {
                 m_incidents[c] = { conn.get() };
@@ -228,8 +241,8 @@ public:
         if (is_component(name)) {
             throw std::runtime_error("component already exists");
         }
-        auto id = static_cast<elem_id_t>(m_procs.size());
-        m_named_comps[id] = comp.get();
+        auto id = assign_id();
+        m_comps_by_id[id] = comp.get();
         m_comps.push_back(comp);
         register_actor(id, comp.get());
         m_named_elements[name] = id;
@@ -242,12 +255,12 @@ private:
         return m_named_elements[name];
     }
     inline void remove_connection(
-        elem_id_t id, const std::string& name, bool skip_incident = false)
+        elem_id_t id, bool skip_incident = false)
     {
-        auto* conn = m_named_conns[id];
+        auto* conn = m_conns_by_id[id];
         if (!skip_incident) {
-            if (auto ai = get_incident_to(conn
-                        ->get_start()
+            if (auto ai = get_incident_to(
+                    conn->get_start()
                         ->get_name());
                 ai) {
                 incident_t* inc = *ai;
@@ -265,33 +278,36 @@ private:
                 });
             }
         }
-        m_named_conns.erase(id);
+        m_conns_by_id.erase(id);
         m_conns.erase(
             std::find_if(
                 m_conns.begin(),
                 m_conns.end(),
-                [&](auto& conn) {
-                    return conn->get_name() == name;
+                [&](auto& c) {
+                    return c.get() == conn;
                 }));
     }
-    inline void remove_component(elem_id_t id, const std::string& name)
+    inline void remove_component(elem_id_t id)
     {
-        auto comp_it = std::find_if(
-            m_comps.begin(),
-            m_comps.end(),
-            [&](auto& comp) {
-                return comp->get_name() == name;
-            });
-        std::shared_ptr<Comp> comp = *comp_it;
+        // auto comp_it = std::find_if(
+        //     m_comps.begin(),
+        //     m_comps.end(),
+        //     [&](auto& comp) {
+        //         return comp->get_name() == name;
+        //     });
+        auto* comp = m_comps_by_id[id];
         if (auto inc = get_incident_to(id); inc) {
             for (auto* i : **inc) {
                 auto& name = i->get_name();
                 remove_connection(name_to_id(name), name, true);
             }
-            m_incidents.erase(comp_it->get());
+            m_incidents.erase(comp);
         }
-        m_comps.erase(comp_it);
-        m_named_comps.erase(name);
+        m_comps.erase(
+            m_comps.remove_if([](auto comp_ptr) {
+                return comp_ptr.get() == comp;
+            }));
+        m_comps_by_id.erase(id);
     }
 
 public:
@@ -304,14 +320,14 @@ public:
             m_procs.erase(id);
 
         if (is_component(id))
-            remove_component(id, name);
+            remove_component(id);
         else
-            remove_connection(id, name);
+            remove_connection(id);
         m_named_elements.erase(name);
     }
 
 private:
-    inline void do_recv(const std::string& pn, std::unique_ptr<Process>& proc)
+    inline void do_recv(elem_id_t pid, std::unique_ptr<Process>& proc)
     {
         if (!proc->awaiting_msg)
             return;
@@ -321,25 +337,26 @@ private:
         proc->msgq.pop_front();
         if (!exists(ms.sender))
             return;
+        const auto sender_id = ms.sender;
         // cannot send from comp to comp
-        if (is_component(pn) && is_component(ms.sender)) {
+        if (is_component(pid) && is_component(sender_id)) {
             ms.sender_callback(
                 std::runtime_error("attempted to message another component directly"));
             return;
         }
-        if (is_connector(pn) && is_connector(ms.sender)) {
+        if (is_connector(pid) && is_connector(sender_id)) {
             ms.sender_callback(
                 std::runtime_error("attempted to message another connector directly"));
             return;
         }
         Connection* conn { };
         Component* comp { };
-        if (is_connector(pn)) {
-            conn = m_named_conns[pn];
-            comp = m_named_comps[ms.sender];
+        if (is_connector(pid)) {
+            conn = m_conns_by_id[pid];
+            comp = m_comps_by_id[sender_id];
         } else {
-            conn = m_named_conns[ms.sender];
-            comp = m_named_comps[pn];
+            conn = m_conns_by_id[sender_id];
+            comp = m_comps_by_id[pid];
         }
         if (!conn && !comp)
             return;
@@ -350,8 +367,18 @@ private:
         }
         auto call = std::move(*proc->awaiting_msg);
         proc->awaiting_msg = std::nullopt;
-        call(ms.sender, std::move(ms.payload));
+        call(get_name_of(ms.sender), std::move(ms.payload));
         ms.sender_callback(std::nullopt);
+    }
+    inline std::optional<const std::string&> get_name_of(elem_id_t id)
+    {
+        if (is_connector(id)) {
+            return m_conns_by_id[id]->get_name();
+        } else if (is_component(id)) {
+            return m_comps_by_id[id]->get_name();
+        } else {
+            return std::nullopt;
+        }
     }
     inline bool exists(const std::string& n) const
     {
@@ -363,19 +390,19 @@ private:
     }
     inline bool is_connector(const std::string& n) const
     {
-        return exists(n) && m_named_conns.contains(m_named_elements.at(n));
+        return exists(n) && m_conns_by_id.contains(m_named_elements.at(n));
     }
     inline bool is_component(const std::string& n) const
     {
-        return exists(n) && m_named_comps.contains(m_named_elements.at(n));
+        return exists(n) && m_comps_by_id.contains(m_named_elements.at(n));
     }
     inline bool is_connector(const std::uint32_t& n) const
     {
-        return m_named_conns.contains(n);
+        return m_conns_by_id.contains(n);
     }
     inline bool is_component(const std::uint32_t& n) const
     {
-        return m_named_comps.contains(n);
+        return m_comps_by_id.contains(n);
     }
 
 public:
@@ -383,8 +410,8 @@ public:
 
     inline void poll_all()
     {
-        for (auto& [pn, proc] : m_procs) {
-            do_recv(pn, proc);
+        for (auto& [pid, proc] : m_procs) {
+            do_recv(pid, proc);
             if (proc->paused) {
                 auto call = std::move(*proc->paused);
                 proc->paused = std::nullopt;
@@ -404,15 +431,15 @@ public:
     {
         if (!is_component(name))
             return std::nullopt;
-        return get_incident_to(m_named_conns.at(m_named_elements[name]));
+        return get_incident_to(m_comps_by_id.at(m_named_elements[name]));
     }
     inline std::optional<incident_t*>
     get_incident_to(const elem_id_t& id)
     {
-        if (!this->m_named_comps.contains(id)) {
+        if (!is_component(id)) {
             return std::nullopt;
         }
-        const auto ptr = this->m_named_comps.at(id);
+        const auto* ptr = this->m_comps_by_id.at(id);
         if (!this->m_incidents.contains(ptr)) {
             return std::nullopt;
         }
@@ -426,7 +453,7 @@ public:
         const auto incident = get_incident_to(name);
         if (!incident.has_value())
             return std::nullopt;
-        const auto n = m_named_comps.at(name);
+        const auto n = m_comps_by_id.at(name);
         std::vector<const Component*> ret { };
         for (const auto i : **incident) {
             if (i->get_end() != n) {
@@ -468,15 +495,15 @@ public:
     using comp_or_conn_ptr_t = std::variant<Comp*, Conn*>;
     inline std::optional<Component*> query_component(const std::string& sv)
     {
-        if (this->m_named_comps.contains(sv)) {
-            return m_named_comps[sv];
+        if (is_component(sv)) {
+            return m_comps_by_id[name_to_id(sv)];
         }
         return std::nullopt;
     }
     inline std::optional<Connection*> query_connection(const std::string& sv)
     {
-        if (this->m_named_conns.contains(sv)) {
-            return m_named_conns[sv];
+        if (is_connector(sv)) {
+            return m_conns_by_id[name_to_id(sv)];
         }
         return std::nullopt;
     }
@@ -512,45 +539,45 @@ public:
 
     // As Scheduler
 public:
-    inline virtual void pause(const std::string& name, shed::pause_callback_t clb)
+    inline virtual void pause(const std::uint32_t& id, shed::pause_callback_t clb)
     {
         // m_paused.push_back(std::make_pair(name, std::move(clb)));
-        m_procs[name]->paused = std::move(clb);
+        m_procs[id]->paused = std::move(clb);
     }
     inline virtual void send(
-        std::string sender,
+        const std::uint32_t& sender,
         std::string recipent,
         message_t msg,
         shed::send_callback_t c)
     {
-        if (m_procs.contains(recipent)) {
-            auto& proc = m_procs[recipent];
+        if (exists(recipent) || !exists(sender)) {
+            auto& proc = m_procs[name_to_id(recipent)];
             proc->msgq.emplace_back(
-                sender,
+                *get_name_of(sender),
                 std::move(msg),
                 std::move(c));
         }
     }
     inline virtual void recv(
-        std::string who,
+        const std::uint32_t& self,
         shed::recv_callback_t c)
     {
-        m_procs[who]->awaiting_msg = c;
+        m_procs[self]->awaiting_msg = c;
     }
     inline virtual std::optional<std::any> try_recv(
-        std::string who)
+        const std::uint32_t& self)
     {
-        auto& proc = m_procs[who];
+        auto& proc = m_procs[self];
         std::optional<std::any> msg;
         auto capture_msg = [&](std::string, message_t&& m) {
             msg = m;
         };
         proc->awaiting_msg = capture_msg;
-        do_recv(who, proc);
+        do_recv(self, proc);
         return msg;
     }
     inline virtual void broadcast(
-        std::string sender,
+        const std::uint32_t& self,
         message_t&& msg,
         shed::broadcast_callback_t clb,
         std::optional<const std::vector<std::string>&> recipents)
@@ -559,11 +586,11 @@ public:
             std::vector<shed::broadcast_fail_t>>
             fails;
         const auto deliver_to = [&](const std::string& proc_name) {
-            if (m_procs.contains(proc_name)) {
-                auto& proc = m_procs[proc_name];
+            if (exists(proc_name)) {
+                auto& proc = m_procs[name_to_id(proc_name)];
                 auto cpy_msg = message_t(msg);
                 proc->msgq.emplace_back(
-                    sender,
+                    *get_name_of(self),
                     std::move(cpy_msg),
                     [](auto) { });
             } else if (!fails) {
@@ -583,7 +610,7 @@ public:
             for (const auto& proc_name : *recipents) {
                 deliver_to(proc_name);
             }
-        } else if (auto inc = get_incident_to(sender); inc && !(*inc)->empty()) {
+        } else if (auto inc = get_incident_to(self); inc && !(*inc)->empty()) {
             using namespace std::views;
             for (const auto& proc_name : **inc | transform([&](const auto* inc) {
                      return inc->get_name();
