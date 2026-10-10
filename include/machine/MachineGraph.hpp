@@ -188,8 +188,8 @@ public:
                 std::format("{} to component '{}' does not exist",
                     name, to));
 
-        auto* from_ptr = m_comps_by_id[from];
-        auto* to_ptr = m_comps_by_id[to];
+        auto* from_ptr = m_comps_by_id[name_to_id(from)];
+        auto* to_ptr = m_comps_by_id[name_to_id(to)];
         std::shared_ptr<T> conn = nullptr;
         if constexpr (sizeof...(ctor_args) > 0) {
             conn = std::make_shared<T>(
@@ -250,7 +250,7 @@ public:
     }
 
 private:
-    inline elem_id_t name_to_id(std::string& name)
+    inline elem_id_t name_to_id(const std::string& name)
     {
         return m_named_elements[name];
     }
@@ -299,14 +299,18 @@ private:
         if (auto inc = get_incident_to(id); inc) {
             for (auto* i : **inc) {
                 auto& name = i->get_name();
-                remove_connection(name_to_id(name), name, true);
+                auto iid = name_to_id(name);
+                remove_connection(iid, true);
             }
             m_incidents.erase(comp);
         }
-        m_comps.erase(
-            m_comps.remove_if([](auto comp_ptr) {
-                return comp_ptr.get() == comp;
-            }));
+        // m_comps.erase(
+        //     m_comps.remove_if([=](auto comp_ptr) {
+        //         return comp_ptr.get() == comp;
+        //     }));
+        m_comps.remove_if([=](auto comp_ptr) {
+            return comp_ptr.get() == comp;
+        });
         m_comps_by_id.erase(id);
     }
 
@@ -367,7 +371,7 @@ private:
         }
         auto call = std::move(*proc->awaiting_msg);
         proc->awaiting_msg = std::nullopt;
-        call(get_name_of(ms.sender), std::move(ms.payload));
+        call(*get_name_of(ms.sender), std::move(ms.payload));
         ms.sender_callback(std::nullopt);
     }
     inline std::optional<const std::string&> get_name_of(elem_id_t id)
@@ -427,24 +431,24 @@ public:
     }
     using incident_t = std::vector<Conn*>;
     inline std::optional<incident_t*>
-    get_incident_to(const std::string& name)
-    {
-        if (!is_component(name))
-            return std::nullopt;
-        return get_incident_to(m_comps_by_id.at(m_named_elements[name]));
-    }
-    inline std::optional<incident_t*>
     get_incident_to(const elem_id_t& id)
     {
         if (!is_component(id)) {
             return std::nullopt;
         }
-        const auto* ptr = this->m_comps_by_id.at(id);
+        Comp* ptr = this->m_comps_by_id[id];
         if (!this->m_incidents.contains(ptr)) {
             return std::nullopt;
         }
         const auto in = &this->m_incidents.at(ptr);
         return std::make_optional(in);
+    }
+    inline std::optional<incident_t*>
+    get_incident_to(const std::string& name)
+    {
+        if (!is_component(name))
+            return std::nullopt;
+        return get_incident_to(m_named_elements[name]);
     }
     using adjecent_t = std::vector<Comp*>;
     inline std::optional<adjecent_t>
@@ -553,7 +557,7 @@ public:
         if (exists(recipent) || !exists(sender)) {
             auto& proc = m_procs[name_to_id(recipent)];
             proc->msgq.emplace_back(
-                *get_name_of(sender),
+                sender,
                 std::move(msg),
                 std::move(c));
         }
@@ -587,10 +591,11 @@ public:
             fails;
         const auto deliver_to = [&](const std::string& proc_name) {
             if (exists(proc_name)) {
-                auto& proc = m_procs[name_to_id(proc_name)];
+                auto proc_id = name_to_id(proc_name);
+                auto& proc = m_procs.at(proc_id);
                 auto cpy_msg = message_t(msg);
                 proc->msgq.emplace_back(
-                    *get_name_of(self),
+                    self,
                     std::move(cpy_msg),
                     [](auto) { });
             } else if (!fails) {
