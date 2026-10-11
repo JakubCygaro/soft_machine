@@ -115,8 +115,16 @@ public:
 };
 int main(void)
 {
+    auto bld = game::StyleBuilder();
+    bld.with_font(::GetFontDefault())
+        .with_font_data(
+            { .size = 24,
+                .spacing = 10 });
+    auto def_style = std::move(bld)
+                         .build_style();
     auto m = std::unique_ptr<game::GraphScene::graph_t>(
-        game::GraphScene::graph_t::create());
+        game::GraphScene::graph_t::create(
+            std::make_shared<game::Style>(std::move(def_style))));
     std::string xml;
     std::ifstream ifs("./test.xml");
     std::stringstream buf;

@@ -1,6 +1,7 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
 #include "game/Drawable.hpp"
+#include "game/StylingGraph.hpp"
 #include "machine/MachineGraph.hpp"
 #include <cstdint>
 #include <raylib.h>
@@ -9,9 +10,7 @@
 namespace game {
 class GraphScene {
 public:
-    using graph_t = machine::MachineGraph<
-        components::OComponent,
-        components::OConnection>;
+    using graph_t = game::StylingGraph;
     GraphScene() = delete;
     GraphScene(const GraphScene&) = delete;
     GraphScene& operator=(const GraphScene&) = delete;

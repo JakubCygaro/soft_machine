@@ -3,6 +3,7 @@
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
 #include "game/Scene.hpp"
+#include "game/Styling.hpp"
 #include "game/Xml.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
@@ -109,7 +110,7 @@ void comp_builder_menu_draw()
 void conn_builder_menu_draw()
 {
     if (ImGui::Begin("Connection builder")) {
-        if(ImGui::BeginListBox("Connections")){
+        if (ImGui::BeginListBox("Connections")) {
             for (const auto& [s, b] : fl_state.conn_blds) {
                 ImGui::PushID(s.c_str());
                 if (ImGui::Selectable(s.c_str())) {
@@ -353,9 +354,17 @@ void init(const std::vector<std::string>& args)
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();
+    auto bld = game::StyleBuilder();
+    bld.with_font(::GetFontDefault())
+        .with_font_data(
+            { .size = 24,
+                .spacing = 10 });
+    auto def_style = std::move(bld)
+                         .build_style();
 
     auto mg = std::unique_ptr<game::GraphScene::graph_t>(
-        game::GraphScene::graph_t::create());
+        game::GraphScene::graph_t::create(
+            std::make_shared<game::Style>(std::move(def_style))));
     if (args.size() == 1) {
         std::string xml;
         std::ifstream ifs(args[0]);

@@ -141,4 +141,7 @@ auto Style::get_dependencies() -> const std::vector<std::string>&
 {
     return dependencies;
 }
+Stylable::~Stylable()
+{
+}
 }
