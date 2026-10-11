@@ -1,3 +1,27 @@
+?- graph subsystems
+```cpp
+
+template<class Graph>
+class StylingSystem {
+
+};
+
+class GameGraph : 
+    public MachineGraph<OComponent, OConnection>,
+    public StylingSystem<MachineGraph<OComponent, OConnection>>
+{
+
+};
+
+template<class Subsystem>
+auto add_subsystem() -> void {
+    auto sub = std::make_unique<Subsystem>(*this);
+    m_subsystems.push_back(sub);
+}
+graph.add_subsystem<Subsystem>();
+
+
+```
 - add styling, Object would need to take in a Styling shared pointer that provides
  information on styling details such as the font size and stuff.
  there probably needs to be an external StylingManager or whatever that keeps track

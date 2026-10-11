@@ -11,7 +11,7 @@ struct Editable {
     /// handler for when the object is notified that something has changed
     inline virtual void on_notified() { };
 };
-class Object : public Editable {
+class Object : public Editable, public Stylable {
 private:
     std::shared_ptr<Style> m_styling;
 
@@ -30,6 +30,8 @@ public:
     {
         m_styling = s;
     }
+    // styling
+    inline virtual void set_pos(const ::Vector2&) { };
 
 protected:
     inline virtual const std::shared_ptr<Style>& get_style()

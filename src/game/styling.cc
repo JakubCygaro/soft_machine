@@ -94,6 +94,9 @@ Style::Style(Style&& o)
     : custom_parameters { std::move(o.custom_parameters) }
     , m_font { o.m_font }
     , m_fontd { o.m_fontd }
+    , dependencies { std::move(o.dependencies) }
+    , m_position { std::move(o.m_position) }
+    , m_rel_pos { std::move(o.m_rel_pos) }
 {
 }
 Style& Style::operator=(Style&& o)
@@ -101,6 +104,9 @@ Style& Style::operator=(Style&& o)
     custom_parameters = std::move(o.custom_parameters);
     m_font = o.m_font;
     m_fontd = o.m_fontd;
+    dependencies = std::move(o.dependencies);
+    m_position = std::move(o.m_position);
+    m_rel_pos = std::move(o.m_rel_pos);
     return *this;
 }
 Style::~Style()
@@ -115,6 +121,10 @@ const FontData& Style::get_font_data() const
 {
     return m_fontd;
 }
+const ::Vector2& Style::get_position() const
+{
+    return m_position;
+}
 std::optional<const StylingParameter&>
 Style::get_styling_param(const std::string& name) const
 {
@@ -122,5 +132,13 @@ Style::get_styling_param(const std::string& name) const
         return { custom_parameters.at(name) };
     }
     return std::nullopt;
+}
+auto Style::style(Stylable* stylable) -> void
+{
+    stylable->set_pos(m_position);
+}
+auto Style::get_dependencies() -> const std::vector<std::string>&
+{
+    return dependencies;
 }
 }

@@ -24,8 +24,10 @@ template <
     std::derived_from<Component> Comp,
     std::derived_from<Connection> Conn>
 class MachineGraph : public shed::Scheduler {
-private:
+public:
     using elem_id_t = std::uint32_t;
+    using comp_t = Comp;
+    using conn_t = Conn;
 
 private:
     std::list<std::shared_ptr<Comp>> m_comps { };
@@ -36,14 +38,17 @@ private:
         m_conns_by_id { };
     std::unordered_map<Comp*, std::vector<Conn*>> m_incidents { };
 
+protected:
     struct MessageSent {
         elem_id_t sender;
         message_t payload;
         shed::send_callback_t sender_callback;
     };
 
+private:
     std::unordered_map<elem_id_t, shed::recv_callback_t> m_waiting { };
 
+protected:
     struct Process {
         // std::string name;
         actor::Actor actor;
@@ -91,13 +96,14 @@ private:
         }
     };
 
+private:
     std::unordered_map<elem_id_t, std::unique_ptr<Process>> m_procs { };
     std::deque<std::pair<elem_id_t, shed::pause_callback_t>> m_paused { };
     std::vector<actor::Actor*> m_initial_resume { };
     std::unordered_map<std::string, elem_id_t> m_named_elements { };
     elem_id_t m_next_id { };
 
-private:
+protected:
     inline MachineGraph() { }
 
 public:
@@ -149,6 +155,9 @@ private:
             throw std::runtime_error("machine graph element ID exhaustion");
         return id;
     }
+
+protected:
+private:
     template <std::derived_from<Pollable> T>
     inline void register_actor(std::uint32_t with_id, T* pollable)
     {
@@ -162,6 +171,10 @@ private:
                 with_id,
                 std::move(proc)));
     }
+
+protected:
+    virtual inline void on_create_connection(elem_id_t, Conn*) { }
+    virtual inline void on_create_component(elem_id_t, Comp*) { }
 
 public:
     template <std::derived_from<Conn> T, typename... Args>
@@ -223,8 +236,10 @@ public:
         m_conns.push_back(conn);
         m_named_elements[name] = id;
         register_actor(id, conn.get());
+        on_create_connection(id, conn.get());
         return conn.get();
     }
+
     template <std::derived_from<Comp> T, typename... Args>
     inline T* create_component(Args&&... ctor_args)
     {
@@ -246,14 +261,17 @@ public:
         m_comps.push_back(comp);
         register_actor(id, comp.get());
         m_named_elements[name] = id;
+        on_create_component(id, comp.get());
         return comp.get();
     }
 
-private:
+protected:
     inline elem_id_t name_to_id(const std::string& name)
     {
         return m_named_elements[name];
     }
+
+private:
     inline void remove_connection(
         elem_id_t id, bool skip_incident = false)
     {
@@ -289,12 +307,6 @@ private:
     }
     inline void remove_component(elem_id_t id)
     {
-        // auto comp_it = std::find_if(
-        //     m_comps.begin(),
-        //     m_comps.end(),
-        //     [&](auto& comp) {
-        //         return comp->get_name() == name;
-        //     });
         auto* comp = m_comps_by_id[id];
         if (auto inc = get_incident_to(id); inc) {
             for (auto* i : **inc) {
@@ -304,14 +316,52 @@ private:
             }
             m_incidents.erase(comp);
         }
-        // m_comps.erase(
-        //     m_comps.remove_if([=](auto comp_ptr) {
-        //         return comp_ptr.get() == comp;
-        //     }));
         m_comps.remove_if([=](auto comp_ptr) {
             return comp_ptr.get() == comp;
         });
         m_comps_by_id.erase(id);
+    }
+
+protected:
+    inline Comp* get_component(elem_id_t id)
+    {
+        return m_comps_by_id[id];
+    }
+    inline Conn* get_connection(elem_id_t id)
+    {
+        return m_conns_by_id[id];
+    }
+    inline bool process_exists(elem_id_t id)
+    {
+        return m_procs.contains(id);
+    }
+    inline const std::unique_ptr<Process>& get_process(elem_id_t id)
+    {
+        return m_procs[id];
+    }
+    // called when an element is to be removed but before any actual removal has occured
+    inline virtual void on_removing_element(
+        const std::string& name,
+        const elem_id_t& id)
+    {
+        (void)name;
+        (void)id;
+    }
+    inline void remove_element(const elem_id_t& id)
+    {
+        if (!exists(id))
+            return;
+        std::string name = get_name_of(id);
+        on_removing_element(name, id);
+        if (m_procs.contains(id))
+            m_procs.erase(id);
+
+        if (is_component(id)) {
+            remove_component(id);
+        } else {
+            remove_connection(id);
+        }
+        m_named_elements.erase(name);
     }
 
 public:
@@ -320,6 +370,7 @@ public:
         if (!exists(name))
             return;
         auto id = name_to_id(name);
+        on_removing_element(name, id);
         if (m_procs.contains(id))
             m_procs.erase(id);
 
@@ -374,6 +425,8 @@ private:
         call(*get_name_of(ms.sender), std::move(ms.payload));
         ms.sender_callback(std::nullopt);
     }
+
+protected:
     inline std::optional<const std::string&> get_name_of(elem_id_t id)
     {
         if (is_connector(id)) {
@@ -388,7 +441,7 @@ private:
     {
         return m_named_elements.contains(n);
     }
-    inline bool exists(const std::uint32_t& n) const
+    inline bool exists(const elem_id_t& n) const
     {
         return is_component(n) || is_connector(n);
     }
@@ -400,13 +453,30 @@ private:
     {
         return exists(n) && m_comps_by_id.contains(m_named_elements.at(n));
     }
-    inline bool is_connector(const std::uint32_t& n) const
+    inline bool is_connector(const elem_id_t& n) const
     {
         return m_conns_by_id.contains(n);
     }
-    inline bool is_component(const std::uint32_t& n) const
+    inline bool is_component(const elem_id_t& n) const
     {
         return m_comps_by_id.contains(n);
+    }
+    template <typename T>
+    inline auto get_element_as(const elem_id_t& id) -> T*
+    {
+        if (is_component(id)) {
+            if constexpr (std::derived_from<Comp, T>) {
+                return static_cast<T*>(m_comps_by_id[id]);
+            } else {
+                return dynamic_cast<T*>(m_comps_by_id[id]);
+            }
+        } else {
+            if constexpr (std::derived_from<Conn, T>) {
+                return static_cast<T*>(m_conns_by_id[id]);
+            } else {
+                return dynamic_cast<T*>(m_conns_by_id[id]);
+            }
+        }
     }
 
 public:
@@ -496,15 +566,21 @@ public:
     {
         return this->m_conns.end();
     }
+    inline std::optional<elem_id_t> query_component_id(const std::string& sv)
+    {
+        return exists(sv)
+            ? name_to_id(sv)
+            : std::nullopt;
+    }
     using comp_or_conn_ptr_t = std::variant<Comp*, Conn*>;
-    inline std::optional<Component*> query_component(const std::string& sv)
+    inline std::optional<Comp*> query_component(const std::string& sv)
     {
         if (is_component(sv)) {
             return m_comps_by_id[name_to_id(sv)];
         }
         return std::nullopt;
     }
-    inline std::optional<Connection*> query_connection(const std::string& sv)
+    inline std::optional<Conn*> query_connection(const std::string& sv)
     {
         if (is_connector(sv)) {
             return m_conns_by_id[name_to_id(sv)];

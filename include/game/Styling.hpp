@@ -1,7 +1,6 @@
 #pragma once
 
 #include "game/XmlMarshalling.hpp"
-#include <list>
 #include <memory>
 #include <optional>
 #include <raylib.h>
@@ -103,6 +102,7 @@ public:
 
     // used to apply the styling on a Stylable object
     auto style(Stylable*) -> void;
+    auto get_dependencies() -> const std::vector<std::string>&;
 };
 
 class StyleBuilder {
@@ -121,19 +121,6 @@ public:
     StyleBuilder& with_font_data(FontData);
     StyleBuilder& with_custom_param(const std::string&, StylingParameter&&);
     Style build_style() &&;
-};
-
-class StylingGraph {
-private:
-    using styles_list_t = std::list<Style::shared_ptr_t>;
-    styles_list_t m_styles { };
-    std::unordered_map<std::string, styles_list_t::value_type*> m_dependencies { };
-    // TODO:dependents list
-    std::unordered_map<std::string, styles_list_t::value_type*> m_dependents { };
-
-public:
-    auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
-    auto notify_for(const std::string&) -> void;
 };
 
 }
