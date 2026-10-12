@@ -137,7 +137,7 @@ public:
     {
         return ::Vector2 { .x = m_bounds.x, .y = m_bounds.y };
     }
-    virtual inline void set_pos(::Vector2 p)
+    virtual inline void set_pos(const ::Vector2& p) override
     {
         this->m_bounds.x = p.x;
         this->m_bounds.y = p.y;
