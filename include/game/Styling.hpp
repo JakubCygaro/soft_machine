@@ -69,7 +69,7 @@ public:
     };
 
 public:
-    Result<std::runtime_error, Style> from_xml(pugi::xml_node&);
+    static Result<std::runtime_error, Style> from_xml(pugi::xml_node&);
     Style(Style&) = delete;
     Style& operator=(Style&) = delete;
     Style(Style&&);

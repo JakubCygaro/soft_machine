@@ -9,6 +9,8 @@
 #include "components/Memory.hpp"
 #include "components/Passthrough.hpp"
 #include "components/Repeater.hpp"
+#include "game/Preamble.hpp"
+#include "game/StylingGraph.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include <algorithm>
@@ -29,7 +31,7 @@
 namespace {
 using err_t = std::runtime_error;
 using ret_t = unit_result_t<err_t>;
-using graph_t = machine::MachineGraph<components::OComponent, components::OConnection>;
+using graph_t = game::graph_t;
 
 std::optional<::Vector2>
 get_position_node(pugi::xml_node& n)
@@ -392,17 +394,23 @@ ret_t build_from_xml_node(graph_t& mg, pugi::xml_node& n)
                 if (check) {
                     constexpr auto id = std::meta::display_string_of(mem_de);
                     constexpr auto log = std::define_static_string(id);
-                    ::TraceLog(::LOG_DEBUG, "Building graph element: '");
-                    ::TraceLog(::LOG_DEBUG, log);
-                    ::TraceLog(::LOG_DEBUG, "'\n");
                     auto res = build<typename[:mem_de:]>()(mg, n);
                     if (res.iserr())
                         return { res.unwrap_err() };
-                    auto comp = res.unwrap();
+                    auto elem = res.unwrap();
                     if constexpr (
                         std::derived_from<components::OComponent, typename[:mem_de:]>) {
                         if (auto pos = get_position_node(n); pos) {
-                            comp->set_pos(*pos);
+                            elem->set_pos(*pos);
+                        }
+                    }
+                    if (auto stc = n.child("style"); stc) {
+                        if (auto st = game::Style::from_xml(n); st.iserr()) {
+                            return { st.unwrap_err() };
+                        } else {
+                            auto style = std::make_shared<game::Style>(
+                                st.unwrap());
+                            mg.register_style(elem->get_name(), style);
                         }
                     }
                 }
