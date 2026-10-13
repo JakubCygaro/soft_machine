@@ -11,6 +11,7 @@ namespace game {
 struct Stylable {
     virtual ~Stylable();
     virtual void set_pos(const ::Vector2&) = 0;
+    virtual void set_size(const ::Vector2&) = 0;
 };
 
 struct FontData {

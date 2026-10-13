@@ -37,6 +37,9 @@ protected:
         const std::string& name,
         const elem_id_t& id) override;
 
+private:
+    auto style_notify_for(const elem_id_t&) -> void;
+
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;

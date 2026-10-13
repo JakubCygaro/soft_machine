@@ -32,6 +32,7 @@ public:
     }
     // styling
     inline virtual void set_pos(const ::Vector2&) { };
+    inline virtual void set_size(const ::Vector2&) { };
 
 protected:
     inline virtual const std::shared_ptr<Style>& get_style()

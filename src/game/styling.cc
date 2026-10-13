@@ -79,6 +79,7 @@ Style::from_xml(pugi::xml_node& node)
             .y = apos.attrs->y
         };
     }
+    //TODO: actual font loading but that comes much later
     style.m_font = ::GetFontDefault();
     style.m_fontd = FontData {
         .size = xml.font.attrs->size,
@@ -163,6 +164,7 @@ Style::get_styling_param(const std::string& name) const
 auto Style::style(Stylable* stylable) -> void
 {
     stylable->set_pos(m_position);
+    stylable->set_size(m_size);
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {

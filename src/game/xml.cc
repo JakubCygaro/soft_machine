@@ -1,6 +1,5 @@
 #include "game/Xml.hpp"
 #include "common/Result.hpp"
-#include "common/String.hpp"
 #include "components/Button.hpp"
 #include "components/Clock.hpp"
 #include "components/Cpu.hpp"
@@ -131,7 +130,6 @@ struct build<components::CPU> {
                     return { unit() };
                 }
             } code;
-            std::optional<pos_node> position;
         };
         cpu_node cpu;
         if (auto unm = game::xml::unmarshall_node<cpu_node>(n); unm.iserr()) {
@@ -149,9 +147,6 @@ struct build<components::CPU> {
         auto p = mg.create_component<components::CPU>(
             cpu.attrs->name,
             std::move(inst));
-        if (cpu.position) {
-            p->set_pos(cpu.position->to_vec2());
-        }
         return { p };
     }
 };
@@ -179,7 +174,6 @@ struct build<components::Memory> {
             components::Memory::Layout layout;
         };
         game::xml::Attribute<mem_attr> attrs;
-        std::optional<pos_node> position;
     };
     Result<err_t, components::Memory*>
     operator()(graph_t& mg, pugi::xml_node& n) const noexcept
@@ -194,9 +188,6 @@ struct build<components::Memory> {
             mem_n.attrs->name,
             std::move(mem_n.memset.mem));
         p->set_layout(mem_n.attrs->layout);
-        if (mem_n.position) {
-            p->set_pos(mem_n.position->to_vec2());
-        }
         return { p };
     }
 };
@@ -210,8 +201,6 @@ struct build<components::Button> {
                 std::string name;
             };
             game::xml::Attribute<attrs> attrs;
-            game::xml::Attribute<size_attr> sz;
-            std::optional<pos_node> position;
             struct val_node {
                 struct attrs {
                     components::ValueMsgKind kind;
@@ -237,10 +226,6 @@ struct build<components::Button> {
         auto p = mg.create_component<components::Button>(
             button.attrs->name,
             std::move(msg));
-        p->set_size(button.sz->to_vec2());
-        if (button.position) {
-            p->set_pos(button.position->to_vec2());
-        }
         return Result<err_t, components::Button*>::ok(p);
     }
 };
@@ -255,8 +240,6 @@ struct build<components::Display> {
                 float font_size;
             };
             game::xml::Attribute<attrs> attrs;
-            game::xml::Attribute<size_attr> sz;
-            std::optional<pos_node> position;
         };
         display_node display;
         if (auto unm = game::xml::unmarshall_node<display_node>(n); unm.iserr()) {
@@ -267,10 +250,6 @@ struct build<components::Display> {
         auto p = mg.create_component<components::Display>(
             display.attrs->name,
             display.attrs->font_size);
-        p->set_size(display.sz->to_vec2());
-        if (display.position) {
-            p->set_pos(display.position->to_vec2());
-        }
         return Result<err_t, components::Display*>::ok(p);
     }
 };
@@ -286,8 +265,6 @@ struct build<components::Repeater> {
                 std::optional<unsigned int> max_out;
             };
             game::xml::Attribute<attrs> attrs;
-            game::xml::Attribute<size_attr> sz;
-            std::optional<pos_node> position;
         };
         repeater_node repeater;
         if (auto unm = game::xml::unmarshall_node<repeater_node>(n); unm.iserr()) {
@@ -299,10 +276,6 @@ struct build<components::Repeater> {
             repeater.attrs->name,
             repeater.attrs->max_in,
             repeater.attrs->max_out);
-        p->set_size(repeater.sz->to_vec2());
-        if (repeater.position) {
-            p->set_pos(repeater.position->to_vec2());
-        }
         return Result<err_t, components::Repeater*>::ok(p);
     }
 };

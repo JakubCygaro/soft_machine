@@ -63,13 +63,11 @@ auto StylingGraph::register_style(
         auto dep_id = name_to_id(dep);
         m_dependent[id].push_back(dep_id);
     }
+    style_notify_for(id);
 }
 auto StylingGraph::style_notify_for(
-    const std::string& name) -> void
+    const elem_id_t& id) -> void
 {
-    if (!exists(name))
-        return;
-    auto id = name_to_id(name);
     if (!m_styles.contains(id))
         return;
     std::set<elem_id_t> cycle_hash { id };
@@ -98,5 +96,13 @@ auto StylingGraph::style_notify_for(
         notify_queue.pop();
         m_styles[nid]->style(get_element_as<Stylable>(nid));
     }
+}
+auto StylingGraph::style_notify_for(
+    const std::string& name) -> void
+{
+    if (!exists(name))
+        return;
+    const auto id = name_to_id(name);
+    style_notify_for(id);
 }
 }
