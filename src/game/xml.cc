@@ -393,7 +393,7 @@ ret_t build_from_xml_node(graph_t& mg, pugi::xml_node& n)
                     });
                 if (check) {
                     constexpr auto id = std::meta::display_string_of(mem_de);
-                    constexpr auto log = std::define_static_string(id);
+                    // constexpr auto log = std::define_static_string(id);
                     auto res = build<typename[:mem_de:]>()(mg, n);
                     if (res.iserr())
                         return { res.unwrap_err() };

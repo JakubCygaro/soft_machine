@@ -58,6 +58,27 @@ Style::from_xml(pugi::xml_node& node)
     } else {
         xml = unm.unwrap();
     }
+    using xml_node_t = Style::xml_node_rep;
+    if (auto sch = node.child("size"); sch) {
+        auto unm = xml::unmarshall_node<xml_node_t::size_node>(sch);
+        if (unm.iserr())
+            return { unm.unwrap_err() };
+        auto sz = unm.unwrap();
+        style.m_size = ::Vector2 {
+            .x = sz.width,
+            .y = sz.height
+        };
+    }
+    if (auto apch = node.child("abs-pos"); apch) {
+        auto unm = xml::unmarshall_node<xml_node_t::abs_pos_node>(apch);
+        if (unm.iserr())
+            return { unm.unwrap_err() };
+        auto apos = unm.unwrap();
+        style.m_size = ::Vector2 {
+            .x = apos.x,
+            .y = apos.y
+        };
+    }
     style.m_font = ::GetFontDefault();
     style.m_fontd = FontData {
         .size = xml.font.attrs->size,
@@ -97,6 +118,7 @@ Style::Style(Style&& o)
     , dependencies { std::move(o.dependencies) }
     , m_position { std::move(o.m_position) }
     , m_rel_pos { std::move(o.m_rel_pos) }
+    , m_size { std::move(o.m_size) }
 {
 }
 Style& Style::operator=(Style&& o)
@@ -107,6 +129,7 @@ Style& Style::operator=(Style&& o)
     dependencies = std::move(o.dependencies);
     m_position = std::move(o.m_position);
     m_rel_pos = std::move(o.m_rel_pos);
+    m_size = std::move(o.m_size);
     return *this;
 }
 Style::~Style()
@@ -124,6 +147,10 @@ const FontData& Style::get_font_data() const
 const ::Vector2& Style::get_position() const
 {
     return m_position;
+}
+const ::Vector2& Style::get_size() const
+{
+    return m_size;
 }
 std::optional<const StylingParameter&>
 Style::get_styling_param(const std::string& name) const
