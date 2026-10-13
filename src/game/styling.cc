@@ -65,8 +65,8 @@ Style::from_xml(pugi::xml_node& node)
             return { unm.unwrap_err() };
         auto sz = unm.unwrap();
         style.m_size = ::Vector2 {
-            .x = sz.width,
-            .y = sz.height
+            .x = sz.attrs->width,
+            .y = sz.attrs->height
         };
     }
     if (auto apch = node.child("abs-pos"); apch) {
@@ -75,8 +75,8 @@ Style::from_xml(pugi::xml_node& node)
             return { unm.unwrap_err() };
         auto apos = unm.unwrap();
         style.m_size = ::Vector2 {
-            .x = apos.x,
-            .y = apos.y
+            .x = apos.attrs->x,
+            .y = apos.attrs->y
         };
     }
     style.m_font = ::GetFontDefault();

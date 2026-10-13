@@ -68,10 +68,16 @@ public:
                 -> Result<std::runtime_error, Unit>;
         } custom;
         struct abs_pos_node {
-            float x { }, y { };
+            struct attrs {
+                float x { }, y { };
+            };
+            xml::Attribute<attrs> attrs;
         };
         struct size_node {
-            float width { }, height { };
+            struct attrs {
+                float width { }, height { };
+            };
+            xml::Attribute<attrs> attrs;
         };
     };
 
