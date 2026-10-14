@@ -3,8 +3,9 @@
 #include "common/String.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
-#include <print>
 #include <raylib.h>
+#include <type_traits>
+#include <variant>
 
 namespace game {
 namespace {
@@ -80,7 +81,7 @@ Style::from_xml(pugi::xml_node& node)
             .y = apos.attrs->y
         };
     }
-    //TODO: actual font loading but that comes much later
+    // TODO: actual font loading but that comes much later
     style.m_font = ::GetFontDefault();
     style.m_fontd = FontData {
         .size = xml.font.attrs->size,
@@ -115,6 +116,7 @@ auto Style::xml_node_rep::custom_node::unmarshall_self(const pugi::xml_node& n)
 }
 Style::Style(Style&& o)
     : custom_parameters { std::move(o.custom_parameters) }
+    , m_font_name { std::move(o.m_font_name) }
     , m_font { o.m_font }
     , m_fontd { o.m_fontd }
     , dependencies { std::move(o.dependencies) }
@@ -127,6 +129,7 @@ Style& Style::operator=(Style&& o)
 {
     custom_parameters = std::move(o.custom_parameters);
     m_font = o.m_font;
+    m_font_name = std::move(o.m_font_name);
     m_fontd = o.m_fontd;
     dependencies = std::move(o.dependencies);
     m_position = std::move(o.m_position);
@@ -164,13 +167,44 @@ Style::get_styling_param(const std::string& name) const
 }
 auto Style::style(Stylable* stylable) -> void
 {
-    std::println("Style: x: {} y: {} w: {} h: {}", m_position.x, m_position.y, m_size.x, m_size.y);
     stylable->set_pos(m_position);
     stylable->set_size(m_size);
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {
     return dependencies;
+}
+const char*
+Style::marshall_to_xml_name() const noexcept
+{
+    return "style";
+}
+void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
+{
+    auto font = self.append_child("font");
+    font.attribute("size") = m_fontd.size;
+    font.attribute("spacing") = m_fontd.spacing;
+    font.set_value(m_font_name);
+    auto abs_pos = self.append_child("abs-pos");
+    abs_pos.attribute("x") = m_position.x;
+    abs_pos.attribute("y") = m_position.y;
+    auto size = self.append_child("size");
+    size.attribute("width") = m_position.x;
+    size.attribute("height") = m_position.y;
+    auto custom = self.append_child("custom");
+    for (auto& [k, v] : custom_parameters) {
+        auto param = custom.append_child("param");
+        param.attribute("key") = k;
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::shared_ptr<AsStylingParameter>>) {
+                param.attribute("value") = arg->to_value_string();
+            } else {
+                param.attribute("value") = arg;
+            }
+        },
+            v);
+    }
 }
 Stylable::~Stylable()
 {

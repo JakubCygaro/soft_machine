@@ -119,7 +119,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             }
             return { std::runtime_error(
                 std::format(
-                    "While parsing {} : in node named '{}', attribute '{}' not found",
+                    "While unmarshalling {} : in node named '{}', attribute '{}' not found",
                     type_name,
                     n.name(),
                     member_ident)) };
@@ -131,7 +131,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             if (!as_str) {
                 return { std::runtime_error(
                     std::format(
-                        "While parsing {}: attribute '{}' is not a string",
+                        "While unmarshalling {}: attribute '{}' is not a string",
                         type_name,
                         member_ident)) };
             }
@@ -139,7 +139,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
                 !en.has_value() && !is_optional) {
                 return { std::runtime_error(
                     std::format(
-                        "While parsing {}: attribute '{}' of disallowed value '{}'",
+                        "While unmarshalling {}: attribute '{}' of disallowed value '{}'",
                         type_name,
                         member_ident,
                         as_str)) };
@@ -159,7 +159,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             if (as_str) {
                 return { std::runtime_error(
                     std::format(
-                        "While parsing {}: attribute '{}' is not a string",
+                        "While unmarshalling {}: attribute '{}' is not a string",
                         type_name,
                         member_ident)) };
             }
@@ -178,7 +178,7 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             } else {
                 return { std::runtime_error(
                     std::format(
-                        "While parsing {}: attribute '{}' is not a boolean",
+                        "While unmarshalling {}: attribute '{}' is not a boolean",
                         type_name,
                         member_ident)) };
             }
@@ -270,7 +270,7 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
                 return {
                     std::runtime_error(
                         std::format(
-                            "While parsing '{}': member '{}' not present in xml.",
+                            "While unmarshalling '{}': member '{}' not present in xml.",
                             type_name,
                             member_ident))
                 };

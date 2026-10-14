@@ -24,6 +24,7 @@ struct RelativePos {
 
 struct AsStylingParameter {
     virtual ~AsStylingParameter();
+    virtual std::string to_value_string() = 0;
 };
 
 using StylingParameter = std::variant<
@@ -42,6 +43,7 @@ private:
     friend class StyleBuilder;
     using custom_parameters_t = std::unordered_map<std::string, StylingParameter>;
     custom_parameters_t custom_parameters { };
+    std::string m_font_name;
     ::Font m_font;
     FontData m_fontd;
     std::vector<std::string> dependencies { };
@@ -118,6 +120,11 @@ public:
     // used to apply the styling on a Stylable object
     auto style(Stylable*) -> void;
     auto get_dependencies() -> const std::vector<std::string>&;
+
+    const char*
+    marshall_to_xml_name() const noexcept;
+    void
+    marshall_to_xml(pugi::xml_node&) const noexcept;
 };
 
 class StyleBuilder {
