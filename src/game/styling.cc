@@ -38,10 +38,10 @@ namespace {
 }
 using font_node_t = Style::xml_node_rep::font_node;
 Result<std::runtime_error, font_node_t>
-font_node_t::parse_xml(const char* text)
+font_node_t::parse_xml(pugi::xml_text txt)
 {
     font_node_t n { };
-    n.font_name = std::string(text);
+    n.font_name = std::string(txt.as_string());
     return { n };
 }
 
@@ -53,14 +53,14 @@ Style::from_xml(pugi::xml_node& node)
 {
     Style style { };
     xml_node_rep xml;
-    if (auto unm = xml::unmarshall_node<xml_node_rep>(node); unm.iserr()) {
+    auto font = node.child("font");
+    if (auto unm = xml::unmarshall_node<xml_node_rep::font_node>(font); unm.iserr()) {
         return { unm.unwrap_err() };
     } else {
-        xml = unm.unwrap();
+        xml.font = unm.unwrap();
     }
-    using xml_node_t = Style::xml_node_rep;
     if (auto sch = node.child("size"); sch) {
-        auto unm = xml::unmarshall_node<xml_node_t::size_node>(sch);
+        auto unm = xml::unmarshall_node<xml_node_rep::size_node>(sch);
         if (unm.iserr())
             return { unm.unwrap_err() };
         auto sz = unm.unwrap();
@@ -70,7 +70,7 @@ Style::from_xml(pugi::xml_node& node)
         };
     }
     if (auto apch = node.child("abs-pos"); apch) {
-        auto unm = xml::unmarshall_node<xml_node_t::abs_pos_node>(apch);
+        auto unm = xml::unmarshall_node<xml_node_rep::abs_pos_node>(apch);
         if (unm.iserr())
             return { unm.unwrap_err() };
         auto apos = unm.unwrap();

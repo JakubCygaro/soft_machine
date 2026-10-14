@@ -116,9 +116,13 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
                 ret.[:member:] = std::nullopt;
                 continue;
             }
+            constexpr auto type_name = std::meta::display_string_of(^^T);
             return { std::runtime_error(
                 std::format(
-                    "{} attribute '{}' not found", n.name(), member_ident)) };
+                    "While parsing {} : in node named '{}', attribute '{}' not found",
+                    type_name,
+                    n.name(),
+                    member_ident)) };
         }
         if constexpr (std::is_same_v<member_type, std::string>) {
             ret.[:member:] = attr.as_string();
@@ -256,9 +260,13 @@ Result<std::runtime_error, T> unmarshall_node(pugi::xml_node& n)
                 return child.name() == member_ident;
             });
             if (!ch && !is_optional) {
+                constexpr auto type_name = std::meta::display_string_of(^^T);
                 return {
                     std::runtime_error(
-                        std::format("member {} not present in xml", member_ident))
+                        std::format(
+                            "While parsing '{}': member '{}' not present in xml.",
+                            type_name,
+                            member_ident))
                 };
             } else if (auto unm = unmarshall_node<stripped_member_type>(ch);
                 unm.isok()) {

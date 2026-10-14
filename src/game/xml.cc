@@ -237,7 +237,6 @@ struct build<components::Display> {
         struct display_node {
             struct attrs {
                 std::string name;
-                float font_size;
             };
             game::xml::Attribute<attrs> attrs;
         };
@@ -249,7 +248,7 @@ struct build<components::Display> {
         }
         auto p = mg.create_component<components::Display>(
             display.attrs->name,
-            display.attrs->font_size);
+            game::resources::default_node_font_size());
         return Result<err_t, components::Display*>::ok(p);
     }
 };
@@ -288,7 +287,6 @@ struct build<components::Clock> {
             struct attrs {
                 std::string name;
                 unsigned int count_to;
-                std::optional<int> font_size;
             };
             struct val_node {
                 struct attrs {
@@ -298,32 +296,27 @@ struct build<components::Clock> {
                 std::string text;
             } value;
             game::xml::Attribute<attrs> attrs;
-            std::optional<pos_node> position;
         };
-        clock_node button;
+        clock_node clock;
         if (auto unm = game::xml::unmarshall_node<clock_node>(n); unm.iserr()) {
             return { unm.unwrap_err() };
         } else {
-            button = unm.unwrap();
+            clock = unm.unwrap();
         }
         std::any msg;
         if (auto parsed = components::parse_value_msg_kind(
-                button.value.attrs->kind,
-                button.value.text);
+                clock.value.attrs->kind,
+                clock.value.text);
             parsed.iserr()) {
             return { parsed.unwrap_err() };
         } else {
             msg = parsed.unwrap();
         }
         auto p = mg.create_component<components::Clock>(
-            button.attrs->name,
+            clock.attrs->name,
             std::move(msg),
-            button.attrs->count_to,
-            button.attrs->font_size.value_or(
-                game::resources::default_node_font_size()));
-        if (button.position) {
-            p->set_pos(button.position->to_vec2());
-        }
+            clock.attrs->count_to,
+            game::resources::default_node_font_size());
         return Result<err_t, components::Clock*>::ok(p);
     }
 };
@@ -378,7 +371,7 @@ ret_t build_from_xml_node(graph_t& mg, pugi::xml_node& n)
                         }
                     }
                     if (auto stc = n.child("style"); stc) {
-                        if (auto st = game::Style::from_xml(n); st.iserr()) {
+                        if (auto st = game::Style::from_xml(stc); st.iserr()) {
                             return { st.unwrap_err() };
                         } else {
                             auto style = std::make_shared<game::Style>(

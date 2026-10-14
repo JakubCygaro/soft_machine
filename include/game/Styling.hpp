@@ -58,7 +58,7 @@ public:
                 std::optional<int> spacing;
             };
             static Result<std::runtime_error, font_node>
-            parse_xml(const char*);
+            parse_xml(pugi::xml_text txt);
 
             std::string font_name;
             xml::Attribute<attrs> attrs;
