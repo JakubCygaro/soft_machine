@@ -216,6 +216,10 @@ public:
     {
         append_position_node(self, get_pos());
         self.append_attribute("name").set_value(get_name());
+        if (auto s = get_style(); s) {
+            auto style = self.append_child(s->marshall_to_xml_name());
+            s->marshall_to_xml(style);
+        }
     }
     inline virtual bool draw_edit_window() override
     {
@@ -342,6 +346,10 @@ public:
             .set_value(out);
         to.append_attribute("at")
             .set_value(common::reflect::enum_to_string(m_end_ap));
+        if (auto s = get_style(); s) {
+            auto style = self.append_child(s->marshall_to_xml_name());
+            s->marshall_to_xml(style);
+        }
     }
     inline virtual bool draw_edit_window() override
     {

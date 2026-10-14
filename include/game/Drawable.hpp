@@ -39,5 +39,9 @@ protected:
     {
         return m_styling;
     };
+    inline virtual const std::shared_ptr<Style>& get_style() const
+    {
+        return m_styling;
+    };
 };
 }
