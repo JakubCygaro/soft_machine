@@ -3,6 +3,7 @@
 #include "common/String.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
+#include <print>
 #include <raylib.h>
 
 namespace game {
@@ -74,7 +75,7 @@ Style::from_xml(pugi::xml_node& node)
         if (unm.iserr())
             return { unm.unwrap_err() };
         auto apos = unm.unwrap();
-        style.m_size = ::Vector2 {
+        style.m_position = ::Vector2 {
             .x = apos.attrs->x,
             .y = apos.attrs->y
         };
@@ -163,6 +164,7 @@ Style::get_styling_param(const std::string& name) const
 }
 auto Style::style(Stylable* stylable) -> void
 {
+    std::println("Style: x: {} y: {} w: {} h: {}", m_position.x, m_position.y, m_size.x, m_size.y);
     stylable->set_pos(m_position);
     stylable->set_size(m_size);
 }

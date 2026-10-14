@@ -1,4 +1,5 @@
 #include "components/Display.hpp"
+#include "common/Ray.hpp"
 #include "components/GameGraphElements.hpp"
 #include <string>
 
@@ -28,25 +29,23 @@ void Display::draw()
             .height = screen_d.y,
         },
         SCREEN_COLOR);
-    const ::Vector2 val_p = {
-        .x = center.x - m_d->val_dims.x / 2.0f,
-        .y = center.y - m_d->val_dims.y / 2.0f,
-    };
     using namespace game::resources;
     if (m_d->val) {
-        // ::BeginScissorMode(
-        //     screen_p.x,
-        //     screen_p.y,
-        //     screen_d.x,
-        //     screen_d.y);
+        const auto& fd = get_style()->get_font_data();
+        const auto txt_pos = common::ray::text_centered_at(
+            common::ray::rec_center(m_bounds),
+            ::MeasureTextEx(
+                get_style()->get_font(),
+                m_d->val_rep.c_str(),
+                fd.size,
+                fd.spacing));
         ::DrawTextEx(
-            get_node_font(),
+            get_style()->get_font(),
             m_d->val_rep.c_str(),
-            val_p,
-            m_d->font_size,
-            default_font_spacing(),
+            txt_pos,
+            fd.size,
+            fd.spacing,
             ::WHITE);
-        // ::EndScissorMode();
     }
 }
 void Display::update()
@@ -65,20 +64,10 @@ machine::actor::Actor Display::poll(machine::Mctx ctx)
         }
         if (m_d->val) {
             m_d->val_rep = std::to_string(*m_d->val);
-            m_d->val_dims = ::MeasureTextEx(
-                get_node_font(),
-                m_d->val_rep.c_str(),
-                m_d->font_size,
-                default_font_spacing());
         }
     }
 }
 
-void Display::set_size(const ::Vector2& sz)
-{
-    m_bounds.width = sz.x;
-    m_bounds.height = sz.y;
-}
 const char*
 Display::marshall_to_xml_name() const noexcept
 {

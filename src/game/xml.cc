@@ -247,8 +247,7 @@ struct build<components::Display> {
             display = unm.unwrap();
         }
         auto p = mg.create_component<components::Display>(
-            display.attrs->name,
-            game::resources::default_node_font_size());
+            display.attrs->name);
         return Result<err_t, components::Display*>::ok(p);
     }
 };

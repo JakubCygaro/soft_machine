@@ -110,13 +110,13 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             && std::meta::template_of(std::meta::type_of(member)) == ^^std::optional;
         using member_type = typename strip_optional<typename[:type_of(member):]>::type;
         constexpr std::string_view member_ident = std::meta::identifier_of(member);
+        constexpr auto type_name = std::meta::display_string_of(^^T);
         auto attr = n.attribute(member_ident);
         if (attr.empty()) {
             if constexpr (is_optional) {
                 ret.[:member:] = std::nullopt;
                 continue;
             }
-            constexpr auto type_name = std::meta::display_string_of(^^T);
             return { std::runtime_error(
                 std::format(
                     "While parsing {} : in node named '{}', attribute '{}' not found",
@@ -131,13 +131,16 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             if (!as_str) {
                 return { std::runtime_error(
                     std::format(
-                        "Attribute '{}' not a string", member_ident)) };
+                        "While parsing {}: attribute '{}' is not a string",
+                        type_name,
+                        member_ident)) };
             }
             if (auto en = enum_from_string<member_type>(as_str);
                 !en.has_value() && !is_optional) {
                 return { std::runtime_error(
                     std::format(
-                        "Attribute '{}' of disallowed value '{}'",
+                        "While parsing {}: attribute '{}' of disallowed value '{}'",
+                        type_name,
                         member_ident,
                         as_str)) };
             } else if (en.has_value()) {
@@ -156,7 +159,9 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             if (as_str) {
                 return { std::runtime_error(
                     std::format(
-                        "Attribute '{}' not a string", member_ident)) };
+                        "While parsing {}: attribute '{}' is not a string",
+                        type_name,
+                        member_ident)) };
             }
             const auto is_true = std::ranges::equal(as_str, "true",
                 [](const auto& a, const auto& b) {
@@ -173,8 +178,9 @@ Result<std::runtime_error, T> unmarshall_attributes(const pugi::xml_node& n)
             } else {
                 return { std::runtime_error(
                     std::format(
-                        "Attribute '{}' value is not a valid boolean",
-                        as_str)) };
+                        "While parsing {}: attribute '{}' is not a boolean",
+                        type_name,
+                        member_ident)) };
             }
         } else if constexpr (ParsableFromXml<member_type, const char*>) {
             const char* str = attr.as_string();

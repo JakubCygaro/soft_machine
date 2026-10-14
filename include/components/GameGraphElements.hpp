@@ -142,6 +142,11 @@ public:
         this->m_bounds.x = p.x;
         this->m_bounds.y = p.y;
     }
+    inline virtual void set_size(const ::Vector2& s) override
+    {
+        m_bounds.width = s.x;
+        m_bounds.height = s.y;
+    };
     inline ::Vector2 get_size() const
     {
         return ::Vector2 { .x = m_bounds.width, .y = m_bounds.height };

@@ -17,28 +17,22 @@ private:
     struct data {
         std::optional<int> val { std::nullopt };
         std::string val_rep { };
-        ::Vector2 val_dims { };
-        float font_size { };
     };
     AutoMoveD<data> m_d { };
 
 public:
     inline Display(
-        std::string name,
-        int font_size)
+        std::string name)
         : components::OComponent(name)
         , m_d { { } }
     {
-        m_d->font_size = font_size;
     }
     ANNOTATE(fl::use_ctor)
     inline Display(
-        fl::string_param_t name,
-        int font_size)
+        fl::string_param_t name)
         : components::OComponent(std::string(name.data()))
         , m_d { { } }
     {
-        m_d->font_size = font_size;
     }
     Display(const Display&) = delete;
     Display& operator=(const Display&) = delete;
@@ -59,7 +53,7 @@ public:
     virtual void update() override;
     virtual machine::actor::Actor poll(machine::Mctx) override;
 
-    virtual void set_size(const ::Vector2&);
+    // virtual void set_size(const ::Vector2&);
     virtual const char*
     marshall_to_xml_name() const noexcept override;
     virtual void

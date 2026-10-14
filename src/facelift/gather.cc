@@ -185,14 +185,14 @@ public:
             static char name[128] = { };
             ImGui::InputText("Name", name, sizeof(name));
             static int font_sz = game::resources::default_node_font_size();
-            ImGui::InputInt("Font size", &font_sz);
+            // ImGui::InputInt("Font size", &font_sz);
             if (last_error) {
                 ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_error->what());
             }
             if (ImGui::Button("Create")) {
                 try {
                     auto o = s->create_component<components::Display>(
-                        std::string(name), font_sz);
+                        std::string(name));
                     ImGui::End();
                     last_error = { };
                     return o;
