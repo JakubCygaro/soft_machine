@@ -56,7 +56,13 @@ Style::from_xml(pugi::xml_node& node)
     Style style { };
     xml_node_rep xml;
     auto font = node.child("font");
-    if (auto unm = xml::unmarshall_node<xml_node_rep::font_node>(font); unm.iserr()) {
+    if (!font) {
+        xml.font.font_name = "default";
+        xml.font.attrs->size = game::resources::default_node_font_size();
+        xml.font.attrs->spacing = game::resources::default_font_spacing();
+    } else if (auto unm = xml::unmarshall_node<xml_node_rep::font_node>(
+                   font);
+        unm.iserr()) {
         return { unm.unwrap_err() };
     } else {
         xml.font = unm.unwrap();

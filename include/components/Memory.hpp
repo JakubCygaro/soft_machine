@@ -3,6 +3,7 @@
 #include "components/GameGraphElements.hpp"
 #include "components/msg/Message.hpp"
 #include "facelift/Fl.hpp"
+#include "game/Styling.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <array>
@@ -221,6 +222,15 @@ public:
             ret.push_back(std::get<int>(res));
         }
         return { ret };
+    }
+
+    inline virtual void set_size(const ::Vector2& sz) override {
+        OComponent::set_size(sz);
+        setup(*this);
+    }
+    inline virtual void set_styling(game::Style::shared_ptr_t s) override {
+        OComponent::set_styling(s);
+        setup(*this);
     }
 
 private:
