@@ -33,10 +33,12 @@ StylingGraph* StylingGraph::create(Style::shared_ptr_t default_style)
 void StylingGraph::on_create_connection(elem_id_t, conn_t* conn)
 {
     conn->set_styling(m_default_style);
+    m_default_style->style(conn);
 }
 void StylingGraph::on_create_component(elem_id_t, comp_t* comp)
 {
     comp->set_styling(m_default_style);
+    m_default_style->style(comp);
 }
 void StylingGraph::on_removing_element(
     const std::string& name,
