@@ -1,32 +1,7 @@
-?- graph subsystems
-```cpp
-
-template<class Graph>
-class StylingSystem {
-
-};
-
-class GameGraph : 
-    public MachineGraph<OComponent, OConnection>,
-    public StylingSystem<MachineGraph<OComponent, OConnection>>
-{
-
-};
-
-template<class Subsystem>
-auto add_subsystem() -> void {
-    auto sub = std::make_unique<Subsystem>(*this);
-    m_subsystems.push_back(sub);
-}
-graph.add_subsystem<Subsystem>();
-
-
-```
-- add styling, Object would need to take in a Styling shared pointer that provides
- information on styling details such as the font size and stuff.
- there probably needs to be an external StylingManager or whatever that keeps track
- of what styling is dependent on what other styling and in case something changes
- it will notify all dependent components - basically a styling graph
+- change drawing code to be dependent upon style
+- fix a bug with passthrough connection drawing being bugged on startup
+- fix a bug with CPU changing size and not highlighting all instructions for some
+ reason
 - [facelift] file saving, selection and loading at runtime
 - styling via LISP, possibly with topo-sort before styling execution
 ```xml
@@ -41,4 +16,3 @@ graph.add_subsystem<Subsystem>();
     </style>
 </element>
 ```
-?- refactor xml graph building to be generic over the builder

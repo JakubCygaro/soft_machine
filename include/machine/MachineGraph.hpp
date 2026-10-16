@@ -215,12 +215,6 @@ public:
         } else {
             conn = std::make_shared<T>(name, from_ptr, to_ptr, from, to);
         }
-        auto [d1, c1] = conn->on_connecting_to_start();
-        c1(
-            from_ptr->on_outcoming_connection(name, conn.get(), d1));
-        auto [d2, c2] = conn->on_connecting_to_end();
-        c2(
-            to_ptr->on_incoming_connection(name, conn.get(), d2));
 
         auto id = assign_id();
         m_conns_by_id[id] = conn.get();
@@ -237,6 +231,12 @@ public:
         m_named_elements[name] = id;
         register_actor(id, conn.get());
         on_create_connection(id, conn.get());
+        auto [d1, c1] = conn->on_connecting_to_start();
+        c1(
+            from_ptr->on_outcoming_connection(name, conn.get(), d1));
+        auto [d2, c2] = conn->on_connecting_to_end();
+        c2(
+            to_ptr->on_incoming_connection(name, conn.get(), d2));
         return conn.get();
     }
 

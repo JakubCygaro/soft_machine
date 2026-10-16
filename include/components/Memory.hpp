@@ -112,7 +112,7 @@ public:
         : components::OComponent(name)
         , m_mem(std::move(mem))
     {
-        setup(*this);
+        // setup(*this);
     }
     ANNOTATE(fl::use_ctor)
     inline Memory(
@@ -120,7 +120,7 @@ public:
         : components::OComponent(std::string(name.data(), name.size()))
         , m_mem({ 1, 2, 3, 4 })
     {
-        setup(*this);
+        // setup(*this);
     }
     Memory(const Memory&) = delete;
     Memory& operator=(const Memory&) = delete;
@@ -235,7 +235,7 @@ public:
 
 private:
     static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
-    setup_mem(const mem_t&);
+    setup_mem(Memory& self, const mem_t&);
     static void setup(Memory&);
 };
 }

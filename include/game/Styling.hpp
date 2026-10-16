@@ -47,9 +47,9 @@ private:
     ::Font m_font;
     FontData m_fontd;
     std::vector<std::string> dependencies { };
-    ::Vector2 m_position { };
+    std::optional<::Vector2> m_position { };
     std::optional<RelativePos> m_rel_pos;
-    ::Vector2 m_size { };
+    std::optional<::Vector2> m_size { };
     Style();
 
 public:
@@ -94,8 +94,8 @@ public:
 
     const ::Font& get_font() const;
     const FontData& get_font_data() const;
-    const ::Vector2& get_position() const;
-    const ::Vector2& get_size() const;
+    std::optional<const ::Vector2&> get_position() const;
+    std::optional<const ::Vector2&> get_size() const;
 
     std::optional<const StylingParameter&> get_styling_param(const std::string&) const;
     template <class T>

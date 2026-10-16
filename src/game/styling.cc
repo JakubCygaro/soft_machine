@@ -155,11 +155,11 @@ const FontData& Style::get_font_data() const
 {
     return m_fontd;
 }
-const ::Vector2& Style::get_position() const
+std::optional<const ::Vector2&> Style::get_position() const
 {
     return m_position;
 }
-const ::Vector2& Style::get_size() const
+std::optional<const ::Vector2&> Style::get_size() const
 {
     return m_size;
 }
@@ -173,8 +173,10 @@ Style::get_styling_param(const std::string& name) const
 }
 auto Style::style(Stylable* stylable) -> void
 {
-    stylable->set_pos(m_position);
-    stylable->set_size(m_size);
+    if (m_position)
+        stylable->set_pos(*m_position);
+    if (m_size)
+        stylable->set_size(*m_size);
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {
@@ -191,12 +193,16 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
     font.attribute("size") = m_fontd.size;
     font.attribute("spacing") = m_fontd.spacing;
     font.set_value(m_font_name);
-    auto abs_pos = self.append_child("abs-pos");
-    abs_pos.attribute("x") = m_position.x;
-    abs_pos.attribute("y") = m_position.y;
-    auto size = self.append_child("size");
-    size.attribute("width") = m_position.x;
-    size.attribute("height") = m_position.y;
+    if (m_position) {
+        auto abs_pos = self.append_child("abs-pos");
+        abs_pos.attribute("x") = m_position->x;
+        abs_pos.attribute("y") = m_position->y;
+    }
+    if (m_size) {
+        auto size = self.append_child("size");
+        size.attribute("width") = m_position->x;
+        size.attribute("height") = m_position->y;
+    }
     auto custom = self.append_child("custom");
     for (auto& [k, v] : custom_parameters) {
         auto param = custom.append_child("param");

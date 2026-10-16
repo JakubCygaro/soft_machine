@@ -3,7 +3,7 @@
 #include "facelift/Fl.hpp"
 
 namespace components {
-class ANNOTATE(fl::component) Passthrough : public components::OConnection {
+class Passthrough : public components::OConnection {
 private:
     ::Color m_color { ::BLACK };
 

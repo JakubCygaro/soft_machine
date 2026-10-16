@@ -12,7 +12,7 @@
 #include <stdexcept>
 
 namespace components {
-class ANNOTATE(fl::component) CPU : public components::OComponent {
+class CPU : public components::OComponent {
 public:
     struct Register {
         int idx { };

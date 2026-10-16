@@ -16,6 +16,7 @@ StylingGraph::StylingGraph(StylingGraph&& o)
     , m_styles { std::move(o.m_styles) }
     , m_dependent { std::move(o.m_dependent) }
     , m_default_style { std::move(o.m_default_style) }
+    , m_notify_queue_cache { std::move(o.m_notify_queue_cache) }
 {
 }
 StylingGraph& StylingGraph::operator=(StylingGraph&& o)
@@ -24,6 +25,7 @@ StylingGraph& StylingGraph::operator=(StylingGraph&& o)
     m_styles = std::move(o.m_styles);
     m_dependent = std::move(o.m_dependent);
     m_default_style = std::move(o.m_default_style);
+    m_notify_queue_cache = std::move(o.m_notify_queue_cache);
     return *this;
 }
 StylingGraph* StylingGraph::create(Style::shared_ptr_t default_style)
@@ -39,6 +41,18 @@ void StylingGraph::on_create_component(elem_id_t, comp_t* comp)
 {
     comp->set_styling(m_default_style);
     m_default_style->style(comp);
+}
+auto StylingGraph::notify_incident_of_component(const elem_id_t& id) -> void
+{
+    const auto* elem_p = get_component(id);
+    if (auto inc = get_incident_to(id); inc) {
+        for (auto* conn : **inc) {
+            conn->on_component_changed(
+                elem_p == conn->get_end()
+                    ? components::OConnection::Attachment::End
+                    : components::OConnection::Attachment::Start);
+        }
+    }
 }
 void StylingGraph::on_removing_element(
     const std::string& name,
@@ -67,11 +81,10 @@ auto StylingGraph::register_style(
     }
     style_notify_for(id);
 }
-auto StylingGraph::style_notify_for(
-    const elem_id_t& id) -> void
+
+auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
+    -> std::optional<const std::queue<elem_id_t>&>
 {
-    if (!m_styles.contains(id))
-        return;
     std::set<elem_id_t> cycle_hash { id };
     std::queue<elem_id_t> notify_queue { };
     notify_queue.push(id);
@@ -85,7 +98,7 @@ auto StylingGraph::style_notify_for(
         auto did = dependents.front();
         dependents.pop();
         if (cycle_hash.contains(did))
-            return;
+            return std::nullopt;
         else
             cycle_hash.insert(did);
         for (auto& d2 : m_dependent[did]) {
@@ -93,11 +106,32 @@ auto StylingGraph::style_notify_for(
         }
         notify_queue.push(did);
     }
+    if (m_notify_queue_cache.size() >= 16) {
+        auto first = m_notify_queue_cache.begin()->first;
+        m_notify_queue_cache.erase(first);
+    }
+    m_notify_queue_cache[id] = std::move(notify_queue);
+    return m_notify_queue_cache.at(id);
+}
+auto StylingGraph::style_notify_for(
+    const elem_id_t& id) -> void
+{
+    if (!m_styles.contains(id))
+        return;
+    auto notify_queue_opt = m_notify_queue_cache.contains(id)
+        ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
+        : build_notify_queue_for(id);
+    if (!notify_queue_opt.has_value())
+        return;
+    auto notify_queue = std::queue(*notify_queue_opt);
+
     while (!notify_queue.empty()) {
         auto nid = notify_queue.front();
         notify_queue.pop();
         m_styles[nid]->style(get_element_as<Stylable>(nid));
     }
+    if (is_component(id))
+        notify_incident_of_component(id);
 }
 auto StylingGraph::style_notify_for(
     const std::string& name) -> void

@@ -235,6 +235,12 @@ public:
 class OConnection : public machine::Connection,
                     public game::Object,
                     public game::xml::MarshallToXml {
+public:
+    enum class Attachment {
+        End,
+        Start
+    };
+
 protected:
     ::Vector2 m_start_pos { },
         m_end_pos { };
@@ -316,11 +322,24 @@ public:
     inline virtual ::Vector2 get_end_pos()
     {
         return m_end_pos;
-    };
+    }
     inline virtual ::Vector2 get_end_pos() const
     {
         return m_end_pos;
-    };
+    }
+    // called by the graph when either the from or the end component
+    // has changed in a relevant way
+    inline virtual void on_component_changed(const Attachment& a)
+    {
+        switch (a) {
+        case Attachment::Start:
+            set_from_attp(this->m_start_ap);
+            break;
+        case Attachment::End:
+            set_to_attp(this->m_end_ap);
+            break;
+        }
+    }
     inline virtual bool check_point_collision(const ::Vector2& point) const override
     {
         return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 5);
@@ -357,8 +376,8 @@ public:
     }
     inline virtual void on_notified() override
     {
-        set_from_attp(m_start_ap);
-        set_to_attp(m_end_ap);
+        on_component_changed(Attachment::Start);
+        on_component_changed(Attachment::End);
     };
 };
 }

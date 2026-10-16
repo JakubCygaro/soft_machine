@@ -4,6 +4,7 @@
 #include <game/Styling.hpp>
 #include <list>
 #include <memory>
+#include <queue>
 #include <raylib.h>
 #include <string>
 #include <unordered_map>
@@ -19,6 +20,7 @@ private:
     std::unordered_map<elem_id_t, Style::shared_ptr_t> m_styles { };
     std::unordered_map<elem_id_t, std::vector<elem_id_t>> m_dependent { };
     Style::shared_ptr_t m_default_style;
+    std::unordered_map<elem_id_t, std::queue<elem_id_t>> m_notify_queue_cache { };
 
 protected:
     StylingGraph(Style::shared_ptr_t default_style);
@@ -39,7 +41,9 @@ protected:
 
 private:
     auto style_notify_for(const elem_id_t&) -> void;
-
+    auto build_notify_queue_for(const elem_id_t&) -> std::optional<
+        const std::queue<elem_id_t>&>;
+    auto notify_incident_of_component(const elem_id_t&) -> void;
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;

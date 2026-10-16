@@ -24,6 +24,8 @@ namespace {
 }
 void Memory::draw()
 {
+    const auto style = get_style();
+    const auto& fontd = style->get_font_data();
     const auto center = ::Vector2Add(
         ::Vector2Scale(
             { m_bounds.width, m_bounds.height },
@@ -35,7 +37,7 @@ void Memory::draw()
         10,
         BODY_COLOR);
 
-    const auto draw_cell_at = [this](
+    const auto draw_cell_at = [&, this](
                                   const ::Vector2& pos,
                                   const std::string& integer,
                                   const ::Vector2& cell_dims) {
@@ -67,11 +69,11 @@ void Memory::draw()
             },
             1.0, DATA_COLOR);
         ::DrawTextEx(
-            get_node_font(),
+            style->get_font(),
             integer.c_str(),
             int_pos,
-            default_node_font_size(),
-            default_font_spacing(),
+            fontd.size,
+            fontd.spacing,
             DATA_COLOR);
     };
 
@@ -134,11 +136,11 @@ void Memory::draw()
                     },
                     1.0, DATA_COLOR);
                 ::DrawTextEx(
-                    get_node_font(),
+                    style->get_font(),
                     std::get<std::string>(*s++).c_str(),
                     int_pos,
-                    default_node_font_size(),
-                    default_font_spacing(),
+                    fontd.size,
+                    fontd.spacing,
                     DATA_COLOR);
             }
         }
@@ -173,27 +175,28 @@ void Memory::draw()
     } break;
     }
     ::DrawTextEx(
-        get_node_font(),
+        style->get_font(),
         get_name().c_str(),
         { center.x - m_name_sz.x / 2, m_bounds.y },
-        default_node_font_size(),
-        default_font_spacing(),
+        fontd.size,
+        fontd.spacing,
         DATA_COLOR);
 }
 void Memory::update()
 {
 }
 std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
-Memory::setup_mem(const mem_t& mem)
+Memory::setup_mem(Memory& self, const mem_t& mem)
 {
     std::vector<Memory::cell_str_dim> out { };
     ::Vector2 sz = { };
+    const auto style = self.get_style();
     const auto measure_sz = [&](const std::string& s) {
         auto m = ::MeasureTextEx(
-            get_node_font(),
+            style->get_font(),
             s.c_str(),
-            default_node_font_size(),
-            default_font_spacing());
+            style->get_font_data().size,
+            style->get_font_data().spacing);
         sz.x = std::max(m.x * 2.2f, sz.x);
         sz.y = std::max(m.y * 2.2f, sz.y);
         out.push_back({ s, m });
@@ -205,15 +208,17 @@ Memory::setup_mem(const mem_t& mem)
 }
 void Memory::setup(Memory& self)
 {
-    auto [cell, ints] = setup_mem(self.m_mem);
-    constexpr const auto def = game::resources::get_default_node_size();
+    auto [cell, ints] = setup_mem(self, self.m_mem);
+    const auto style = self.get_style();
+    const auto def = style->get_size()
+                         .value_or({ });
     self.m_mem_sz = cell;
     self.m_cell_sz = cell;
     self.m_name_sz = ::MeasureTextEx(
-        get_node_font(),
+        style->get_font(),
         self.get_name().c_str(),
-        default_node_font_size(),
-        default_font_spacing());
+        style->get_font_data().size,
+        style->get_font_data().spacing);
     switch (self.m_lay) {
     case Memory::Layout::Square: {
         const auto side = calc_square_side(ints.size());
