@@ -9,6 +9,7 @@
 #include <cstring>
 #include <format>
 #include <iostream>
+#include <print>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -277,6 +278,25 @@ void CPU::setup_bounds(CPU& self)
     };
 }
 machine::actor::Actor
+CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
+{
+    while (1) {
+        std::println("FUCK 1");
+        auto [s, m] = co_await ctx.recv();
+        std::println("FUCK 2");
+        if (s != i->attrs->on)
+            continue;
+        if (auto as_int = std::any_cast<int>(&m); !as_int)
+            continue;
+        else {
+            m_regs[i->attrs->into.idx] = *as_int;
+            m_reg_draw_data[i->attrs->into.idx].marked = true;
+            break;
+        }
+    }
+    co_return;
+}
+machine::actor::Actor
 CPU::poll(machine::Mctx ctx)
 {
     while (1) {
@@ -287,18 +307,9 @@ CPU::poll(machine::Mctx ctx)
         const auto* inst = m_code[m_pc].get();
 
         if (auto i = dynamic_cast<const InstWait*>(inst)) {
-            while (1) {
-                auto [s, m] = co_await ctx.recv();
-                if (s != i->attrs->on)
-                    continue;
-                if (auto as_int = std::any_cast<int>(&m); !as_int)
-                    continue;
-                else {
-                    m_regs[i->attrs->into.idx] = *as_int;
-                    m_reg_draw_data[i->attrs->into.idx].marked = true;
-                    break;
-                }
-            }
+            auto w = this->exec_wait(ctx, i);
+            co_await w;
+            std::println("FUCK 3");
         }
         if (auto i = dynamic_cast<const InstLoad*>(inst)) {
             while (1) {

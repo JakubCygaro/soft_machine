@@ -1,6 +1,7 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
 #include <coroutine>
+#include <print>
 #include <utility>
 namespace machine::actor {
 struct Actor {
@@ -15,10 +16,6 @@ public:
             return { };
         }
         inline static std::suspend_always final_suspend() noexcept
-        {
-            return { };
-        }
-        inline std::suspend_always yield_value() noexcept
         {
             return { };
         }
@@ -69,15 +66,18 @@ public:
     }
     inline bool await_ready()
     {
-        return true;
+        std::println("Actor await_ready");
+        return false;
     }
     inline bool await_suspend(handle_t h)
     {
+        std::println("Actor await_suspend");
         (void)h;
         return false;
     }
     inline bool await_resume()
     {
+        std::println("Actor await_resume");
         return resume();
     }
 

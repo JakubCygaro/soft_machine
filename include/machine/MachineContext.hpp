@@ -170,6 +170,9 @@ public:
 
     public:
         inline bool await_ready() { return false; }
+        //TODO:
+        // this falls through, and so it resumes the caller of
+        // whatever coroutine co_await'ed recv()
         inline void await_suspend(actor::Actor::handle_t h)
         {
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {

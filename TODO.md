@@ -1,5 +1,5 @@
+- solve that whole Task/Actor thing with nested coroutines
 - change drawing code to be dependent upon style
-- fix a bug with passthrough connection drawing being bugged on startup
 - fix a bug with CPU changing size and not highlighting all instructions for some
  reason
 - [facelift] file saving, selection and loading at runtime

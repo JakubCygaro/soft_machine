@@ -13,6 +13,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <print>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -642,6 +643,7 @@ public:
         const std::uint32_t& self,
         shed::recv_callback_t c)
     {
+        std::println("{} called recv", *get_name_of(self));
         m_procs[self]->awaiting_msg = c;
     }
     inline virtual std::optional<std::any> try_recv(
