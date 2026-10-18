@@ -284,6 +284,7 @@ CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
         std::println("FUCK 1");
         auto [s, m] = co_await ctx.recv();
         std::println("FUCK 2");
+        std::println("s: {}", s);
         if (s != i->attrs->on)
             continue;
         if (auto as_int = std::any_cast<int>(&m); !as_int)
@@ -294,11 +295,13 @@ CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
             break;
         }
     }
+    std::println("exec_wait returning");
     co_return;
 }
 machine::actor::Actor
 CPU::poll(machine::Mctx ctx)
 {
+    std::println("CPU enter");
     while (1) {
         if (m_code.empty()) {
             co_await ctx.pause();
@@ -307,7 +310,9 @@ CPU::poll(machine::Mctx ctx)
         const auto* inst = m_code[m_pc].get();
 
         if (auto i = dynamic_cast<const InstWait*>(inst)) {
-            auto w = this->exec_wait(ctx, i);
+            std::println("CPU calling exec_wait");
+            auto w = exec_wait(ctx, i);
+            std::println("CPU awaiting exec_wait");
             co_await w;
             std::println("FUCK 3");
         }
@@ -380,6 +385,7 @@ CPU::poll(machine::Mctx ctx)
         if (m_pc >= static_cast<int>(m_code.size()))
             m_pc = 0;
         setup_pc(*this);
+        std::println("CPU pausing after cycle");
         co_await ctx.pause();
         unmark_all();
     }

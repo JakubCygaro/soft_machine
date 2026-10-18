@@ -52,17 +52,17 @@ private:
 protected:
     struct Process {
         // std::string name;
-        actor::Actor actor;
+        std::optional<actor::Actor> actor;
         Pollable* pollable;
         std::deque<MessageSent> msgq { };
         std::optional<shed::recv_callback_t> awaiting_msg { };
         std::optional<shed::pause_callback_t> paused { };
         inline Process(
             // std::string name,
-            actor::Actor&& actor,
+            
             Pollable* pollable)
             : // name { name }
-            actor { std::move(actor) }
+            actor {}
             // , handle { std::move(handle) }
             , pollable { pollable }
         {
@@ -164,13 +164,16 @@ private:
     {
         using namespace std::placeholders;
         MachineContext mctx = MachineContext(with_id, this);
-        auto act = pollable->poll(mctx);
-        auto proc = std::make_unique<Process>(std::move(act), pollable);
-        m_initial_resume.push_back(&proc->actor);
+        std::println("poll on {}", *get_name_of(with_id));
+        auto proc = std::make_unique<Process>(pollable);
         this->m_procs.emplace(
             std::make_pair(
                 with_id,
                 std::move(proc)));
+        auto& proc_ref = m_procs.at(with_id);
+        auto act = pollable->poll(mctx);
+        proc_ref->actor = std::move(act);
+        // m_initial_resume.push_back(&(proc_ref->actor.value()));
     }
 
 protected:
@@ -495,6 +498,7 @@ public:
         }
         if (!m_initial_resume.empty()) {
             for (auto* actor : m_initial_resume) {
+                std::println("initial resume...");
                 actor->resume();
             }
             m_initial_resume.clear();
