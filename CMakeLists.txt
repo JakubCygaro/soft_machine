@@ -60,6 +60,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/game/styling_graph.cc
     ${CMAKE_SOURCE_DIR}/src/components/Passthrough.cc
     ${CMAKE_SOURCE_DIR}/src/components/Memory.cc
+    ${CMAKE_SOURCE_DIR}/src/components/Memory_mem.cc
     ${CMAKE_SOURCE_DIR}/src/components/Cpu.cc
     ${CMAKE_SOURCE_DIR}/src/components/CpuInst.cc
     ${CMAKE_SOURCE_DIR}/src/components/Button.cc
