@@ -1,7 +1,7 @@
 #ifndef MACHINE_CONTEXT_HPP
 #define MACHINE_CONTEXT_HPP
 #include "common/Result.hpp"
-#include "machine/Actor.hpp"
+#include <coroutine>
 #include "machine/Message.hpp"
 #include "machine/Preamble.hpp"
 #include "machine/Scheduler.hpp"
@@ -121,7 +121,6 @@ public:
                 if (err)
                     m_ret = decltype(m_ret)::err(std::move(*err));
                 h.resume();
-                // m_s->pause(h);
             };
             m_s->send(
                 m_sender,
@@ -174,9 +173,6 @@ public:
             std::println("Recv await_ready");
             return false;
         }
-        //TODO:
-        // this falls through, and so it resumes the caller of
-        // whatever coroutine co_await'ed recv()
         inline void await_suspend(std::coroutine_handle<> h)
         {
             std::println("Recv await_suspend {}", h.address());
@@ -186,7 +182,6 @@ public:
                 h.resume();
                 std::println("Rect await_suspend resumer fallthrough {}",
                         h.address());
-                // m_s->pause(h);
             };
             m_s->recv(
                 m_reciever,
