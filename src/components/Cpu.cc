@@ -1,15 +1,12 @@
 #include "components/Cpu.hpp"
 #include "components/CpuInst.hpp"
 #include "components/Memory.hpp"
-#include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include <algorithm>
 #include <concepts>
 #include <cstring>
 #include <format>
-#include <iostream>
-#include <print>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -281,10 +278,7 @@ machine::actor::Actor<void>
 CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
 {
     while (1) {
-        std::println("FUCK 1");
         auto [s, m] = co_await ctx.recv();
-        std::println("FUCK 2");
-        std::println("s: {}", s);
         if (s != i->attrs->on)
             continue;
         if (auto as_int = std::any_cast<int>(&m); !as_int)
@@ -295,78 +289,83 @@ CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
             break;
         }
     }
-    std::println("exec_wait returning");
     co_return;
 }
 machine::actor::Actor<void>
+CPU::exec_load(machine::Mctx& ctx, const InstLoad* i)
+{
+    while (1) {
+        auto s = co_await ctx.send(
+            i->attrs->from,
+            components::mem::MemoryRead(i->attrs->at));
+        if (s.iserr())
+            continue;
+        break;
+    }
+    while (1) {
+        auto [s, m] = co_await ctx.recv();
+        if (s != i->attrs->from)
+            continue;
+        if (auto mem_fail = std::any_cast<mem::MemoryFail>(&m)) {
+            // TODO: memory read failure handling
+            (void)mem_fail;
+        }
+        if (auto mem_succ = std::any_cast<mem::MemoryResponse>(&m)) {
+            m_regs[i->attrs->into.idx] = mem_succ->val;
+            m_reg_draw_data[i->attrs->into.idx].marked = true;
+            break;
+        }
+    }
+    co_return;
+}
+machine::actor::Actor<void>
+CPU::exec_if(machine::Mctx&, const InstIf* i)
+{
+    const auto& a = reg(i->attrs->a);
+    const auto& b = reg(i->attrs->b);
+    bool res = false;
+    switch (i->attrs->op) {
+    case InstIf::Op::L:
+        res = a < b;
+        break;
+    case InstIf::Op::LE:
+        res = a <= b;
+        break;
+    case InstIf::Op::E:
+        res = a == b;
+        break;
+    case InstIf::Op::NE:
+        res = a != b;
+        break;
+    case InstIf::Op::G:
+        res = a > b;
+        break;
+    case InstIf::Op::GE:
+        res = a >= b;
+        break;
+    }
+    if (res)
+        m_pc = i->attrs->jmpto - 1;
+    co_return;
+}
+
+machine::actor::Actor<void>
 CPU::poll(machine::Mctx ctx)
 {
-    std::println("CPU enter");
     while (1) {
         if (m_code.empty()) {
             co_await ctx.pause();
             continue;
         }
         const auto* inst = m_code[m_pc].get();
-
         if (auto i = dynamic_cast<const InstWait*>(inst)) {
-            std::println("CPU calling exec_wait");
-            auto w = exec_wait(ctx, i);
-            std::println("CPU awaiting exec_wait");
-            co_await w;
-            std::println("FUCK 3");
+            co_await exec_wait(ctx, i);
         }
         if (auto i = dynamic_cast<const InstLoad*>(inst)) {
-            while (1) {
-                auto s = co_await ctx.send(
-                    i->attrs->from,
-                    components::mem::MemoryRead(i->attrs->at));
-                if (s.iserr())
-                    continue;
-                break;
-            }
-            while (1) {
-                auto [s, m] = co_await ctx.recv();
-                if (s != i->attrs->from)
-                    continue;
-                if (auto mem_fail = std::any_cast<mem::MemoryFail>(&m)) {
-                    // TODO: memory read failure handling
-                    (void)mem_fail;
-                }
-                if (auto mem_succ = std::any_cast<mem::MemoryResponse>(&m)) {
-                    m_regs[i->attrs->into.idx] = mem_succ->val;
-                    m_reg_draw_data[i->attrs->into.idx].marked = true;
-                    break;
-                }
-            }
+            co_await exec_load(ctx, i);
         }
         if (auto i = dynamic_cast<const InstIf*>(inst)) {
-            const auto& a = reg(i->attrs->a);
-            const auto& b = reg(i->attrs->b);
-            std::cout << "a: " << a << " b: " << b << std::endl;
-            bool res = false;
-            switch (i->attrs->op) {
-            case InstIf::Op::L:
-                res = a < b;
-                break;
-            case InstIf::Op::LE:
-                res = a <= b;
-                break;
-            case InstIf::Op::E:
-                res = a == b;
-                break;
-            case InstIf::Op::NE:
-                res = a != b;
-                break;
-            case InstIf::Op::G:
-                res = a > b;
-                break;
-            case InstIf::Op::GE:
-                res = a >= b;
-                break;
-            }
-            if (res)
-                m_pc = i->attrs->jmpto - 1;
+            co_await exec_if(ctx, i);
         }
         if (auto i = dynamic_cast<const InstMovi*>(inst)) {
             reg(i->attrs->into) = i->attrs->ival;
@@ -385,7 +384,6 @@ CPU::poll(machine::Mctx ctx)
         if (m_pc >= static_cast<int>(m_code.size()))
             m_pc = 0;
         setup_pc(*this);
-        std::println("CPU pausing after cycle");
         co_await ctx.pause();
         unmark_all();
     }

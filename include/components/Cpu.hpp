@@ -1,9 +1,8 @@
 #pragma once
 #include "common/Result.hpp"
+#include "components/CpuInstPrelude.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/Fl.hpp"
-#include "components/CpuInstPrelude.hpp"
-#include "machine/Task.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
@@ -146,6 +145,8 @@ private:
     void unmark_all(void);
     int& reg(const Register&);
     machine::actor::Actor<void> exec_wait(machine::Mctx&, const InstWait*);
+    machine::actor::Actor<void> exec_load(machine::Mctx&, const InstLoad*);
+    machine::actor::Actor<void> exec_if(machine::Mctx&, const InstIf*);
 
 protected:
 };

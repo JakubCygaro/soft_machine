@@ -1,77 +1,68 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
 #include <coroutine>
-#include <print>
+#include <exception>
+#include <optional>
 #include <utility>
 namespace machine::actor {
 
-template <class PromiseType>
 struct promise_base {
 
 protected:
-    std::coroutine_handle<PromiseType> m_continuation = nullptr;
+    std::coroutine_handle<> m_continuation = nullptr;
+    std::exception_ptr m_exception = nullptr;
 
 public:
-    inline void set_continuation(std::coroutine_handle<PromiseType>&& cont)
+    inline void set_continuation(std::coroutine_handle<>&& cont) noexcept
     {
         m_continuation = cont;
     };
+    inline void unhandled_exception() noexcept
+    {
+        m_exception = std::current_exception();
+    }
+    inline const std::exception_ptr& exception() const noexcept
+    {
+        return m_exception;
+    }
 };
 template <class T>
 struct Actor {
     struct Promise;
     using CoroutineHandle = std::coroutine_handle<Promise>;
-    struct Promise : public promise_base<Promise> {
+    struct Promise : public promise_base {
         std::optional<T> m_return_value { };
-        inline Actor get_return_object()
+        inline Actor get_return_object() noexcept
         {
             auto h = CoroutineHandle::from_promise(*this);
-            std::println("get_return_object {}", h.address());
             return Actor { h };
         }
-        inline std::suspend_never initial_suspend() noexcept
+        inline std::suspend_never initial_suspend() const noexcept
         {
-            std::println("promise initial_suspend {}",
-                CoroutineHandle::from_promise(*this).address());
             return { };
         }
         struct final_awaiter {
-            CoroutineHandle continuation = nullptr;
-            inline bool await_ready() const noexcept
+            static inline bool await_ready() noexcept
             {
-                std::println("final_suspend await_ready");
                 return false;
             }
             inline std::coroutine_handle<>
             await_suspend(CoroutineHandle h) const noexcept
             {
-                std::println("final_suspend await_suspend {}", h.address());
                 if (auto continuation = h.promise().m_continuation; continuation)
                     return continuation;
                 else
                     return std::noop_coroutine();
             }
-
-            inline void await_resume() const noexcept
-            {
-                std::println("final_suspend await_resume");
-            }
+            static inline void await_resume() noexcept { }
         };
-        inline final_awaiter final_suspend() noexcept
+        static inline final_awaiter final_suspend() noexcept
         {
-            std::println("promise final_suspend {}",
-                CoroutineHandle::from_promise(*this).address());
             return { };
-        }
-        [[noreturn]]
-        inline static void unhandled_exception()
-        {
-            throw;
         }
         inline void return_value(T&& val) noexcept
         {
             this->m_return_value = std::move(val);
-            std::println("promise return_value");
         }
     };
     using promise_type = Promise;
@@ -103,27 +94,21 @@ struct Actor {
         }
         return *this;
     }
-    inline bool await_ready()
+    static inline bool await_ready() noexcept { return false; }
+    inline bool await_suspend(std::coroutine_handle<> continuation) noexcept
     {
-        std::println("Actor await_ready m_cor: {}",
-            m_couroutine.address());
-        return false;
-    }
-    inline bool await_suspend(handle_t continuation)
-    {
-        std::println("Actor await_suspend m_cor: {} continuation: {}",
-            m_couroutine.address(),
-            continuation.address());
-        m_couroutine.promise().set_continuation(std::move(continuation));
+        m_couroutine
+            .promise()
+            .set_continuation(std::move(continuation));
         return true;
     }
-    inline T await_resume()
+    inline T await_resume() const
     {
-        std::println("Actor await_resume m_cor: {}",
-            m_couroutine.address());
+        if (auto ex = m_couroutine.promise().exception(); ex) {
+            std::rethrow_exception(ex);
+        }
         return *m_couroutine.promise().m_return_value;
     }
-    // manual resume done by schedulers and other non-coroutines
     inline void manual_resume()
     {
         if (m_couroutine && !m_couroutine.done()) {
@@ -138,55 +123,27 @@ template <>
 struct Actor<void> {
     struct Promise;
     using CoroutineHandle = std::coroutine_handle<Promise>;
-    struct Promise : public promise_base<Promise> {
-        inline Actor get_return_object()
+    struct Promise : public promise_base {
+        inline Actor get_return_object() noexcept
         {
             auto h = CoroutineHandle::from_promise(*this);
-            std::println("get_return_object {}", h.address());
             return Actor { h };
         }
-        inline std::suspend_never initial_suspend() noexcept
-        {
-            std::println("promise initial_suspend {}",
-                CoroutineHandle::from_promise(*this).address());
-            return { };
-        }
+        static inline std::suspend_never initial_suspend() noexcept { return { }; }
         struct final_awaiter {
-            CoroutineHandle continuation = nullptr;
-            inline bool await_ready() const noexcept
+            static inline bool await_ready() noexcept { return false; }
+            inline std::coroutine_handle<>
+            await_suspend(CoroutineHandle h) const noexcept
             {
-                std::println("final_suspend await_ready");
-                return false;
-            }
-            inline std::coroutine_handle<> await_suspend(CoroutineHandle h) const noexcept
-            {
-                std::println("final_suspend await_suspend {}", h.address());
                 if (auto continuation = h.promise().m_continuation; continuation)
                     return continuation;
                 else
                     return std::noop_coroutine();
             }
-
-            inline void await_resume() const noexcept
-            {
-                std::println("final_suspend await_resume");
-            }
+            static inline void await_resume() noexcept { }
         };
-        inline final_awaiter final_suspend() noexcept
-        {
-            std::println("promise final_suspend {}",
-                CoroutineHandle::from_promise(*this).address());
-            return { };
-        }
-        [[noreturn]]
-        inline static void unhandled_exception()
-        {
-            throw;
-        }
-        inline static void return_void() noexcept
-        {
-            std::println("promise return_void");
-        }
+        static inline final_awaiter final_suspend() noexcept { return { }; }
+        inline static void return_void() noexcept { }
     };
     using promise_type = Promise;
     using handle_t = CoroutineHandle;
@@ -217,24 +174,17 @@ struct Actor<void> {
         }
         return *this;
     }
-    inline bool await_ready()
+    static inline bool await_ready() noexcept { return false; }
+    inline bool await_suspend(std::coroutine_handle<> continuation) noexcept
     {
-        std::println("Actor await_ready m_cor: {}",
-            m_couroutine.address());
-        return false;
-    }
-    inline bool await_suspend(handle_t continuation)
-    {
-        std::println("Actor await_suspend m_cor: {} continuation: {}",
-            m_couroutine.address(),
-            continuation.address());
         m_couroutine.promise().set_continuation(std::move(continuation));
         return true;
     }
-    inline void await_resume()
+    inline void await_resume() const
     {
-        std::println("Actor await_resume m_cor: {}",
-            m_couroutine.address());
+        if (auto ex = m_couroutine.promise().exception(); ex) {
+            std::rethrow_exception(ex);
+        }
     }
     // manual resume done by schedulers and other non-coroutines
     inline void manual_resume()
