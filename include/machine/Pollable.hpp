@@ -5,7 +5,7 @@
 namespace machine{
     class Pollable {
     public:
-        virtual actor::Actor poll(MachineContext) = 0;
+        virtual actor::Actor<void> poll(MachineContext) = 0;
     };
 }
 #endif

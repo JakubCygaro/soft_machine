@@ -15,7 +15,7 @@ void Repeater::draw()
 void Repeater::update()
 {
 }
-machine::actor::Actor Repeater::poll(machine::Mctx ctx)
+machine::actor::Actor<void> Repeater::poll(machine::Mctx ctx)
 {
     while (1) {
         const auto [s, m] = co_await ctx.recv();

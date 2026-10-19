@@ -149,7 +149,7 @@ public:
 
     virtual void draw() override;
     virtual void update() override;
-    virtual machine::actor::Actor poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
     virtual auto mem() -> mem_t&;
     virtual auto mem() const -> const mem_t&;

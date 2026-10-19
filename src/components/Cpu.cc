@@ -277,7 +277,7 @@ void CPU::setup_bounds(CPU& self)
             * 1.2f,
     };
 }
-machine::actor::Actor
+machine::actor::Actor<void>
 CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
 {
     while (1) {
@@ -298,7 +298,7 @@ CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
     std::println("exec_wait returning");
     co_return;
 }
-machine::actor::Actor
+machine::actor::Actor<void>
 CPU::poll(machine::Mctx ctx)
 {
     std::println("CPU enter");

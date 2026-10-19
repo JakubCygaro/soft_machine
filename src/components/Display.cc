@@ -51,7 +51,7 @@ void Display::draw()
 void Display::update()
 {
 }
-machine::actor::Actor Display::poll(machine::Mctx ctx)
+machine::actor::Actor<void> Display::poll(machine::Mctx ctx)
 {
     using namespace game::resources;
     while (1) {

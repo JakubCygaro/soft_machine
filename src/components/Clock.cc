@@ -74,7 +74,7 @@ void Clock::setup(Clock& self)
         .height = count_to_sz.y * 2.1f,
     };
 }
-machine::actor::Actor Clock::poll(machine::Mctx ctx)
+machine::actor::Actor<void> Clock::poll(machine::Mctx ctx)
 {
     while (1) {
         co_await ctx.pause();

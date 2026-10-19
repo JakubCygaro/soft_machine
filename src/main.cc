@@ -50,7 +50,7 @@ public:
             5,
             ::BLACK);
     }
-    virtual machine::actor::Actor
+    virtual machine::actor::Actor<void>
     poll(machine::Mctx ctx) override
     {
         std::flush(std::cout);
@@ -97,7 +97,7 @@ public:
             5,
             ::BLACK);
     }
-    virtual machine::actor::Actor
+    virtual machine::actor::Actor<void>
     poll(machine::Mctx ctx) override
     {
         std::println("{} entered", this->get_name());

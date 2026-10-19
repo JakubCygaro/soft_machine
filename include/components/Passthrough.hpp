@@ -44,7 +44,7 @@ public:
     }
     inline virtual ~Passthrough() { }
     virtual void draw() override;
-    virtual machine::actor::Actor poll(machine::Mctx ctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx ctx) override;
 
     virtual const char*
     marshall_to_xml_name() const noexcept override;

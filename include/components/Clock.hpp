@@ -54,7 +54,7 @@ public:
     virtual void update() override;
     static void setup(Clock& self);
 
-    virtual machine::actor::Actor poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
     virtual const char*
     marshall_to_xml_name() const noexcept override;

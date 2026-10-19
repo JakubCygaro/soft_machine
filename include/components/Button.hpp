@@ -74,9 +74,9 @@ public:
         std::string_view,
         const machine::Connection*,
         std::any) override;
-    virtual machine::actor::Actor poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
-    virtual void set_size(const ::Vector2&);
+    virtual void set_size(const ::Vector2&) override;
 
     virtual const char*
     marshall_to_xml_name() const noexcept override;

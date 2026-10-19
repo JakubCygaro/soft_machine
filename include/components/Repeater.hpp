@@ -54,9 +54,9 @@ public:
 
     virtual void draw() override;
     virtual void update() override;
-    virtual machine::actor::Actor poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
-    virtual void set_size(const ::Vector2&);
+    virtual void set_size(const ::Vector2&) override;
 
     virtual std::any on_incoming_connection(
         std::string_view,

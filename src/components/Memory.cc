@@ -236,7 +236,7 @@ void Memory::setup(Memory& self)
     }
     self.m_mem_strs = ints;
 }
-machine::actor::Actor Memory::poll(machine::Mctx ctx)
+machine::actor::Actor<void> Memory::poll(machine::Mctx ctx)
 {
     while (true) {
         auto [s, m] = co_await ctx.recv();

@@ -131,7 +131,7 @@ public:
     virtual void draw() override;
     virtual void update() override;
 
-    virtual machine::actor::Actor poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
     inline virtual const char*
     marshall_to_xml_name() const noexcept override;
@@ -145,7 +145,7 @@ private:
     static void setup_bounds(CPU& self);
     void unmark_all(void);
     int& reg(const Register&);
-    machine::actor::Actor exec_wait(machine::Mctx&, const InstWait*);
+    machine::actor::Actor<void> exec_wait(machine::Mctx&, const InstWait*);
 
 protected:
 };

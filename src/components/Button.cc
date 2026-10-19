@@ -51,7 +51,7 @@ std::any Button::on_outcoming_connection(
     this->m_d->recipents.push_back(std::string(conn_name));
     return nullptr;
 }
-machine::actor::Actor Button::poll(machine::Mctx ctx)
+machine::actor::Actor<void> Button::poll(machine::Mctx ctx)
 {
     while (1) {
         co_await ctx.pause();

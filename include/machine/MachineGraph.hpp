@@ -50,7 +50,7 @@ private:
 
 protected:
     struct Process {
-        std::optional<actor::Actor> actor;
+        std::optional<actor::Actor<void>> actor;
         Pollable* pollable;
         std::deque<MessageSent> msgq { };
         std::optional<shed::recv_callback_t> awaiting_msg { };
@@ -477,7 +477,7 @@ protected:
     }
 
 public:
-    using ahandle_t = machine::actor::Actor::handle_t;
+    using ahandle_t = machine::actor::Actor<void>::handle_t;
 
     inline void poll_all()
     {

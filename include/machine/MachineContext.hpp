@@ -59,7 +59,7 @@ public:
 
     public:
         inline bool await_ready() { return false; }
-        inline void await_suspend(actor::Actor::handle_t h)
+        inline void await_suspend(actor::Actor<>::handle_t h)
         {
             this->m_s->pause(name, [=]() {
                 h.resume();
@@ -115,7 +115,7 @@ public:
 
     public:
         inline bool await_ready() { return false; }
-        inline void await_suspend(actor::Actor::handle_t h)
+        inline void await_suspend(actor::Actor<>::handle_t h)
         {
             const auto on_send = [h, this](auto err) {
                 if (err)
@@ -177,7 +177,7 @@ public:
         //TODO:
         // this falls through, and so it resumes the caller of
         // whatever coroutine co_await'ed recv()
-        inline void await_suspend(actor::Actor::handle_t h)
+        inline void await_suspend(actor::Actor<>::handle_t h)
         {
             std::println("Recv await_suspend {}", h.address());
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {
@@ -249,7 +249,7 @@ public:
 
     public:
         inline bool await_ready() { return false; }
-        inline void await_suspend(actor::Actor::handle_t h)
+        inline void await_suspend(actor::Actor<>::handle_t h)
         {
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {
                 this->m_ret = { std::move(msg) };
@@ -327,7 +327,7 @@ public:
 
     public:
         inline bool await_ready() { return false; }
-        inline void await_suspend(actor::Actor::handle_t h)
+        inline void await_suspend(actor::Actor<>::handle_t h)
         {
             const auto on_broadcast = [h, this](
                                           std::optional<
