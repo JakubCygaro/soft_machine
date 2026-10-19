@@ -5,24 +5,24 @@
 #include <utility>
 namespace machine::actor {
 
-template <class T = void>
+template <class PromiseType>
+struct promise_base {
+
+protected:
+    std::coroutine_handle<PromiseType> m_continuation = nullptr;
+
+public:
+    inline void set_continuation(std::coroutine_handle<PromiseType>&& cont)
+    {
+        m_continuation = cont;
+    };
+};
+template <class T>
 struct Actor {
     struct Promise;
     using CoroutineHandle = std::coroutine_handle<Promise>;
-    struct promise_base {
-        friend Actor;
-
-    protected:
-        CoroutineHandle m_continuation = nullptr;
+    struct Promise : public promise_base<Promise> {
         std::optional<T> m_return_value { };
-
-    public:
-        inline void set_continuation(CoroutineHandle&& cont)
-        {
-            m_continuation = cont;
-        };
-    };
-    struct Promise : public promise_base {
         inline Actor get_return_object()
         {
             auto h = CoroutineHandle::from_promise(*this);
@@ -138,17 +138,7 @@ template <>
 struct Actor<void> {
     struct Promise;
     using CoroutineHandle = std::coroutine_handle<Promise>;
-    struct promise_base {
-    protected:
-        CoroutineHandle m_continuation = nullptr;
-
-    public:
-        inline void set_continuation(CoroutineHandle&& cont)
-        {
-            m_continuation = cont;
-        };
-    };
-    struct Promise : public promise_base {
+    struct Promise : public promise_base<Promise> {
         inline Actor get_return_object()
         {
             auto h = CoroutineHandle::from_promise(*this);
