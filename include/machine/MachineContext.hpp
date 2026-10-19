@@ -1,13 +1,12 @@
 #ifndef MACHINE_CONTEXT_HPP
 #define MACHINE_CONTEXT_HPP
 #include "common/Result.hpp"
-#include <coroutine>
 #include "machine/Message.hpp"
 #include "machine/Preamble.hpp"
 #include "machine/Scheduler.hpp"
 #include <any>
+#include <coroutine>
 #include <cstdint>
-#include <print>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -169,19 +168,16 @@ public:
         }
 
     public:
-        inline bool await_ready() { 
-            std::println("Recv await_ready");
+        inline bool await_ready()
+        {
             return false;
         }
         inline void await_suspend(std::coroutine_handle<> h)
         {
-            std::println("Recv await_suspend {}", h.address());
             const auto on_recv = [h, this](std::string snd, message_t&& msg) {
                 this->m_msg = std::move(msg);
                 this->m_sender = snd;
                 h.resume();
-                std::println("Rect await_suspend resumer fallthrough {}",
-                        h.address());
             };
             m_s->recv(
                 m_reciever,
@@ -189,7 +185,6 @@ public:
         }
         inline std::tuple<std::string, message_t> await_resume()
         {
-            std::println("Recv await_resume");
             return std::make_tuple(m_sender, m_msg);
         }
     };
