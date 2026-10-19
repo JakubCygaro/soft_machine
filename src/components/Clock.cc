@@ -5,6 +5,30 @@
 #include <raylib.h>
 #include <string>
 namespace components {
+Clock::Clock(
+    std::string name,
+    std::any&& msg_value,
+    unsigned int count_to,
+    int font_size)
+    : components::OComponent(name)
+    , m_d { { msg_value, count_to } }
+{
+    this->m_d->font_size = font_size;
+}
+Clock::Clock(Clock&& o)
+    : components::OComponent(std::move(o))
+    , m_d { std::move(o.m_d) }
+{
+}
+Clock& Clock::operator=(Clock&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_d = std::move(o.m_d);
+    return *this;
+}
+Clock::~Clock() { };
 
 void Clock::draw()
 {

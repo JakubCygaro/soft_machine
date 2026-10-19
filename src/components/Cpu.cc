@@ -12,7 +12,75 @@
 #include <string>
 #include <sys/types.h>
 namespace components {
-namespace {
+Result<std::runtime_error, CPU::Register> CPU::Register::parse_xml(const char* str)
+{
+    if (std::strlen(str) != 2
+        || (str[0] != 'R' && str[0] != 'r')
+        || !std::isdigit(str[1])
+        || (str[1] - '0') >= static_cast<int>(CPU::REG_COUNT)) {
+        return {
+            std::runtime_error(std::format("{} not a valid register", str))
+        };
+    }
+    return {
+        Register { str[1] - '0' }
+    };
+};
+std::string CPU::Register::to_string() const noexcept
+{
+    return std::format("R{}", idx);
+}
+
+CPU::CPU(
+    std::string name,
+    code_t&& code)
+    : components::OComponent(name)
+    , m_code { std::move(code) }
+{
+    setup(*this);
+}
+CPU::CPU(
+    fl::string_param_t name)
+    : components::OComponent(std::string(name.data()))
+    , m_code { }
+{
+    setup(*this);
+}
+CPU::CPU(CPU&& o)
+    : components::OComponent(std::move(o))
+    , m_code { std::move(o.m_code) }
+    , m_regs { std::move(o.m_regs) }
+    , m_inst_draw { std::move(o.m_inst_draw) }
+    , m_max_inst_dims { std::move(o.m_max_inst_dims) }
+    , m_name_sz { std::move(o.m_name_sz) }
+    , m_pc { std::move(o.m_pc) }
+    , m_max_reg_dims { std::move(o.m_max_reg_dims) }
+    , m_reg_draw_data { std::move(o.m_reg_draw_data) }
+    , m_pc_draw_data { std::move(o.m_pc_draw_data) }
+    , m_inst_dims_y_acc { std::move(o.m_inst_dims_y_acc) }
+{
+}
+CPU& CPU::operator=(CPU&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_code = std::move(o.m_code);
+    m_regs = std::move(o.m_regs);
+    m_inst_draw = std::move(o.m_inst_draw);
+    m_max_inst_dims = std::move(o.m_max_inst_dims);
+    m_name_sz = std::move(o.m_name_sz);
+    m_pc = std::move(o.m_pc);
+    m_reg_draw_data = std::move(o.m_reg_draw_data);
+    m_pc_draw_data = std::move(o.m_pc_draw_data);
+    m_inst_dims_y_acc = std::move(o.m_inst_dims_y_acc);
+    return *this;
+}
+CPU::~CPU() { };
+
+CPU::code_t& CPU::code()
+{
+    return m_code;
 }
 
 Result<std::runtime_error, CPU::Instruction*>

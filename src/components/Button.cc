@@ -4,6 +4,45 @@
 #include <raylib.h>
 #include <string>
 namespace components {
+Button::Button(
+    std::string name,
+    std::any&& msg_value)
+    : components::OComponent(name)
+    , m_d { { msg_value } }
+{
+}
+Button::Button(
+    fl::string_param_t name,
+    fl::string_param_t msg_value)
+    : components::OComponent(std::string(name.data(), name.size()))
+    , m_d { { nullptr } }
+{
+    int out { };
+    auto res = std::from_chars(
+        msg_value.data(),
+        msg_value.data() + msg_value.size(),
+        out,
+        10);
+    if (res.ec == std::errc::invalid_argument) {
+        m_d->m_msg_value = std::string(name.data(), name.size());
+    } else {
+        m_d->m_msg_value = out;
+    }
+}
+Button::Button(Button&& o)
+    : components::OComponent(std::move(o))
+    , m_d { std::move(o.m_d) }
+{
+}
+Button& Button::operator=(Button&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_d = std::move(o.m_d);
+    return *this;
+}
+Button::~Button() { };
 
 void Button::draw()
 {

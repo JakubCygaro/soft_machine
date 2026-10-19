@@ -1,6 +1,7 @@
 #include "components/Memory.hpp"
 #include "common/reflect/Enum.hpp"
 #include "game/resources/Resources.hpp"
+#include "common/String.hpp"
 #include <algorithm>
 #include <any>
 #include <cmath>
@@ -11,6 +12,45 @@
 using namespace game::resources;
 
 namespace components {
+Memory::Memory(
+    std::string name,
+    mem_t&& mem)
+    : components::OComponent(name)
+    , m_mem(std::move(mem))
+{
+    // setup(*this);
+}
+Memory::Memory(
+    fl::string_param_t name)
+    : components::OComponent(std::string(name.data(), name.size()))
+    , m_mem({ 1, 2, 3, 4 })
+{
+    // setup(*this);
+}
+Memory::Memory(Memory&& o)
+    : components::OComponent(std::move(o))
+    , m_mem { std::move(o.m_mem) }
+    , m_mem_strs { std::move(o.m_mem_strs) }
+    , m_mem_sz { o.m_mem_sz }
+    , m_name_sz { o.m_name_sz }
+    , m_lay { o.m_lay }
+    , m_cell_sz { o.m_cell_sz }
+{
+}
+Memory& Memory::operator=(Memory&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_mem = std::move(o.m_mem);
+    m_mem_strs = std::move(o.m_mem_strs);
+    m_mem_sz = o.m_mem_sz;
+    m_name_sz = o.m_name_sz;
+    m_lay = o.m_lay;
+    m_cell_sz = o.m_cell_sz;
+    return *this;
+}
+Memory::~Memory() { };
 namespace {
     auto calc_square_side(size_t cell_count) -> size_t
     {
@@ -264,6 +304,12 @@ auto Memory::mem() const -> const mem_t&
 {
     return m_mem;
 }
+auto Memory::set_layout(Layout l) -> void
+{
+    m_lay = l;
+    setup(*this);
+}
+auto Memory::get_layout() const -> Layout { return m_lay; }
 const char*
 Memory::marshall_to_xml_name() const noexcept
 {
@@ -291,5 +337,74 @@ void Memory::marshall_to_xml(pugi::xml_node& self) const noexcept
                 memset_str.push_back(' ');
         });
     memset.text().set(memset_str);
+}
+Result<std::runtime_error, Memory::mem_t>
+Memory::parse_memset_from_text(const std::string& txt) noexcept
+{
+    const auto parse_int =
+        [](std::string& slice) -> Result<std::runtime_error, int> {
+        int out;
+        auto trimmed = common::trim(slice);
+        auto res = std::from_chars(
+            trimmed.data(),
+            trimmed.data() + trimmed.size(),
+            out,
+            10);
+        if (res.ec == std::errc::invalid_argument) {
+            return { std::runtime_error(
+                std::format("failed to parse '{}' as integer", slice)) };
+        }
+        return { out };
+    };
+    auto s = txt.c_str();
+    if (!s)
+        return { std::runtime_error("empty memset node") };
+    components::Memory::mem_t ret { };
+    auto str = common::trim(std::string(s));
+    str.erase(std::remove_if(
+                  str.begin(),
+                  str.end(),
+                  [](auto c) {
+                      return std::isspace(c) && c != ' ';
+                  }),
+        str.end());
+    size_t pos = str.find(' ');
+    size_t init_pos = 0;
+
+    while (pos != std::string::npos) {
+        auto i = common::trim(str.substr(init_pos, pos - init_pos));
+        if (!i.empty()) {
+            auto res = parse_int(i);
+            if (res.iserr())
+                return { res.unwrap_err() };
+            ret.push_back(std::get<int>(res));
+        }
+        init_pos = pos + 1;
+        pos = str.find(' ', init_pos);
+    }
+    auto i = common::trim(str.substr(
+        init_pos,
+        std::min(
+            pos,
+            str.size())
+            - init_pos + 1));
+    if (!i.empty()) {
+        auto res = parse_int(i);
+        if (res.iserr())
+            return { res.unwrap_err() };
+        ret.push_back(std::get<int>(res));
+    }
+    return { ret };
+}
+
+void Memory::set_size(const ::Vector2& sz)
+{
+    OComponent::set_size(sz);
+    setup(*this);
+}
+void Memory::set_styling(game::Style::shared_ptr_t s)
+{
+    OComponent::set_styling(s);
+    setup(*this);
 }
 }

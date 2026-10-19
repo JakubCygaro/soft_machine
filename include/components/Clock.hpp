@@ -1,4 +1,5 @@
 #pragma once
+#include "components/AutoMoveD.hpp"
 #include "components/GameGraphElements.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
@@ -25,34 +26,19 @@ private:
     AutoMoveD<data> m_d { };
 
 public:
-    inline Clock(
+    Clock(
         std::string name,
         std::any&& msg_value,
         unsigned int count_to,
-        int font_size)
-        : components::OComponent(name)
-        , m_d { { msg_value, count_to } }
-    {
-        this->m_d->font_size = font_size;
-    }
+        int font_size);
     Clock(const Clock&) = delete;
     Clock& operator=(const Clock&) = delete;
-    inline Clock(Clock&& o)
-        : components::OComponent(std::move(o))
-        , m_d { std::move(o.m_d) }
-    {
-    }
-    inline Clock& operator=(Clock&& o)
-    {
-        components::OComponent::operator=(std::move(o));
-        m_d = std::move(o.m_d);
-        return *this;
-    }
-    inline virtual ~Clock() { };
+    Clock(Clock&& o);
+    Clock& operator=(Clock&& o);
+    virtual ~Clock();
 
     virtual void draw() override;
     virtual void update() override;
-    static void setup(Clock& self);
 
     virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
@@ -60,5 +46,8 @@ public:
     marshall_to_xml_name() const noexcept override;
     virtual void
     marshall_to_xml(pugi::xml_node&) const noexcept override;
+
+private:
+    static void setup(Clock& self);
 };
 }

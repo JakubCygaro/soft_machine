@@ -1,12 +1,12 @@
 #pragma once
+#include "components/AutoMoveD.hpp"
 #include "components/GameGraphElements.hpp"
 #include "components/Memory.hpp"
 #include "facelift/Fl.hpp"
-#include "game/resources/Resources.hpp"
 
 namespace components {
 
-class ANNOTATE(fl::component) Display : public components::OComponent {
+class Display : public components::OComponent {
 public:
     using display_msg_t = mem::MemoryWrite;
 
@@ -21,33 +21,13 @@ private:
     AutoMoveD<data> m_d { };
 
 public:
-    inline Display(
-        std::string name)
-        : components::OComponent(name)
-        , m_d { { } }
-    {
-    }
-    ANNOTATE(fl::use_ctor)
-    inline Display(
-        fl::string_param_t name)
-        : components::OComponent(std::string(name.data()))
-        , m_d { { } }
-    {
-    }
+    Display(std::string name);
+    Display(fl::string_param_t name);
     Display(const Display&) = delete;
     Display& operator=(const Display&) = delete;
-    inline Display(Display&& o)
-        : components::OComponent(std::move(o))
-        , m_d { std::move(o.m_d) }
-    {
-    }
-    inline Display& operator=(Display&& o)
-    {
-        components::OComponent::operator=(std::move(o));
-        m_d = std::move(o.m_d);
-        return *this;
-    }
-    inline virtual ~Display() { };
+    Display(Display&& o);
+    Display& operator=(Display&& o);
+    virtual ~Display();
 
     virtual void draw() override;
     virtual void update() override;

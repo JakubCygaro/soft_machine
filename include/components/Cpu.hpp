@@ -7,7 +7,6 @@
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <cstring>
-#include <format>
 #include <memory>
 #include <stdexcept>
 
@@ -16,29 +15,13 @@ class CPU : public components::OComponent {
 public:
     struct Register {
         int idx { };
-        inline static Result<std::runtime_error, Register> parse_xml(const char* str)
-        {
-            if (std::strlen(str) != 2
-                || (str[0] != 'R' && str[0] != 'r')
-                || !std::isdigit(str[1])
-                || (str[1] - '0') >= static_cast<int>(CPU::REG_COUNT)) {
-                return {
-                    std::runtime_error(std::format("{} not a valid register", str))
-                };
-            }
-            return {
-                Register { str[1] - '0' }
-            };
-        };
-        inline std::string to_string() const noexcept
-        {
-            return std::format("R{}", idx);
-        }
+        static Result<std::runtime_error, Register> parse_xml(const char* str);
+        std::string to_string() const noexcept;
     };
     struct Instruction : game::xml::MarshallToXml {
         virtual std::string to_string() = 0;
         virtual std::string to_render_string() = 0;
-        inline virtual ~Instruction() { }
+        virtual ~Instruction() = default;
     };
     static Result<std::runtime_error, Instruction*>
     instruction_from_xml(pugi::xml_node&);
@@ -74,67 +57,24 @@ private:
     float m_inst_dims_y_acc;
 
 public:
-    inline CPU(
-        std::string name,
-        code_t&& code)
-        : components::OComponent(name)
-        , m_code { std::move(code) }
-    {
-        setup(*this);
-    }
-    ANNOTATE(fl::use_ctor)
-    inline CPU(
-        fl::string_param_t name)
-        : components::OComponent(std::string(name.data()))
-        , m_code { }
-    {
-        setup(*this);
-    }
+    CPU(std::string name, code_t&& code);
+    CPU(fl::string_param_t name);
     CPU(const CPU&) = delete;
     CPU& operator=(const CPU&) = delete;
-    inline CPU(CPU&& o)
-        : components::OComponent(std::move(o))
-        , m_code { std::move(o.m_code) }
-        , m_regs { std::move(o.m_regs) }
-        , m_inst_draw { std::move(o.m_inst_draw) }
-        , m_max_inst_dims { std::move(o.m_max_inst_dims) }
-        , m_name_sz { std::move(o.m_name_sz) }
-        , m_pc { std::move(o.m_pc) }
-        , m_max_reg_dims { std::move(o.m_max_reg_dims) }
-        , m_reg_draw_data { std::move(o.m_reg_draw_data) }
-        , m_pc_draw_data { std::move(o.m_pc_draw_data) }
-        , m_inst_dims_y_acc { std::move(o.m_inst_dims_y_acc) }
-    {
-    }
-    inline CPU& operator=(CPU&& o)
-    {
-        components::OComponent::operator=(std::move(o));
-        m_code = std::move(o.m_code);
-        m_regs = std::move(o.m_regs);
-        m_inst_draw = std::move(o.m_inst_draw);
-        m_max_inst_dims = std::move(o.m_max_inst_dims);
-        m_name_sz = std::move(o.m_name_sz);
-        m_pc = std::move(o.m_pc);
-        m_reg_draw_data = std::move(o.m_reg_draw_data);
-        m_pc_draw_data = std::move(o.m_pc_draw_data);
-        m_inst_dims_y_acc = std::move(o.m_inst_dims_y_acc);
-        return *this;
-    }
-    inline virtual ~CPU() { };
+    CPU(CPU&& o);
+    CPU& operator=(CPU&& o);
+    virtual ~CPU();
 
-    inline code_t& code()
-    {
-        return m_code;
-    }
+    code_t& code();
 
     virtual void draw() override;
     virtual void update() override;
 
     virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
-    inline virtual const char*
+    virtual const char*
     marshall_to_xml_name() const noexcept override;
-    inline virtual void
+    virtual void
     marshall_to_xml(pugi::xml_node& self) const noexcept override;
 
 private:

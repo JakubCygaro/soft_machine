@@ -1,9 +1,36 @@
 #include "components/Display.hpp"
 #include "common/Ray.hpp"
 #include "components/GameGraphElements.hpp"
+#include "game/resources/Resources.hpp"
 #include <string>
 
 namespace components {
+Display::Display(
+    std::string name)
+    : components::OComponent(name)
+    , m_d { { } }
+{
+}
+Display::Display(
+    fl::string_param_t name)
+    : components::OComponent(std::string(name.data()))
+    , m_d { { } }
+{
+}
+Display::Display(Display&& o)
+    : components::OComponent(std::move(o))
+    , m_d { std::move(o.m_d) }
+{
+}
+Display& Display::operator=(Display&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_d = std::move(o.m_d);
+    return *this;
+}
+Display::~Display() { };
 
 void Display::draw()
 {

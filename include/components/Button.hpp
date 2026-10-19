@@ -1,4 +1,5 @@
 #pragma once
+#include "components/AutoMoveD.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/Fl.hpp"
 #include "machine/Actor.hpp"
@@ -8,14 +9,13 @@
 
 namespace components {
 
-class ANNOTATE(fl::component) Button : public components::OComponent {
+class Button : public components::OComponent {
 public:
     inline static const ::Color BODY_COLOR = ::GRAY;
     inline static const ::Color BUTTON_INACTIVE_COLOR = { 189, 13, 13, 255 };
     inline static const ::Color BUTTON_ACTIVE_COLOR = { 255, 0, 0, 255 };
 
 public:
-
 private:
     struct data {
         std::any m_msg_value;
@@ -25,46 +25,17 @@ private:
     AutoMoveD<data> m_d { };
 
 public:
-    inline Button(
+    Button(
         std::string name,
-        std::any&& msg_value)
-        : components::OComponent(name)
-        , m_d { { msg_value } }
-    {
-    }
-    ANNOTATE(fl::use_ctor)
-    inline Button(
+        std::any&& msg_value);
+    Button(
         fl::string_param_t name,
-        fl::string_param_t msg_value)
-        : components::OComponent(std::string(name.data(), name.size()))
-        , m_d { { nullptr } }
-    {
-        int out { };
-        auto res = std::from_chars(
-            msg_value.data(),
-            msg_value.data() + msg_value.size(),
-            out,
-            10);
-        if (res.ec == std::errc::invalid_argument) {
-            m_d->m_msg_value = std::string(name.data(), name.size());
-        } else {
-            m_d->m_msg_value = out;
-        }
-    }
+        fl::string_param_t msg_value);
     Button(const Button&) = delete;
     Button& operator=(const Button&) = delete;
-    inline Button(Button&& o)
-        : components::OComponent(std::move(o))
-        , m_d { std::move(o.m_d) }
-    {
-    }
-    inline Button& operator=(Button&& o)
-    {
-        components::OComponent::operator=(std::move(o));
-        m_d = std::move(o.m_d);
-        return *this;
-    }
-    inline virtual ~Button() { };
+    Button(Button&& o);
+    Button& operator=(Button&& o);
+    virtual ~Button();
 
     virtual void draw() override;
     virtual void update() override;

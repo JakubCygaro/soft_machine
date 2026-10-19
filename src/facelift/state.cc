@@ -4,12 +4,12 @@
 #include "game/Drawable.hpp"
 #include "game/Scene.hpp"
 #include "game/Styling.hpp"
+#include "game/resources/Resources.hpp"
 #include "game/Xml.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>

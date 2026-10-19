@@ -2,6 +2,7 @@
 
 #include <string>
 namespace components::msg {
+// a common graph message type interface
 struct Msg {
     inline virtual ~Msg() { }
     virtual std::string type_name() const = 0;

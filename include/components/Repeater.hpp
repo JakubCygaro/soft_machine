@@ -1,4 +1,5 @@
 #pragma once
+#include "components/AutoMoveD.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/Fl.hpp"
 #include <set>
@@ -6,7 +7,7 @@ namespace components {
 
 // Takes a message from any incoming connection
 // and repeats it on every outgoing connection
-class ANNOTATE(fl::component) Repeater : public components::OComponent {
+class Repeater : public components::OComponent {
 public:
     inline static const ::Color BODY_COLOR = ::GRAY;
 
@@ -20,37 +21,17 @@ private:
     AutoMoveD<data> m_d;
 
 public:
-    inline Repeater(
+    Repeater(
         std::string name,
         std::optional<unsigned int> max_in = std::nullopt,
-        std::optional<unsigned int> max_out = std::nullopt)
-        : components::OComponent(name)
-        , m_d { { } }
-    {
-        m_d->max_in = max_in;
-        m_d->max_out = max_out;
-    }
-    ANNOTATE(fl::use_ctor)
-    inline Repeater(
-        fl::string_param_t name)
-        : components::OComponent(std::string(name.data()))
-        , m_d { { } }
-    {
-    }
+        std::optional<unsigned int> max_out = std::nullopt);
+    Repeater(
+        fl::string_param_t name);
     Repeater(const Repeater&) = delete;
     Repeater& operator=(const Repeater&) = delete;
-    inline Repeater(Repeater&& o)
-        : components::OComponent(std::move(o))
-        , m_d { std::move(o.m_d) }
-    {
-    }
-    inline Repeater& operator=(Repeater&& o)
-    {
-        components::OComponent::operator=(std::move(o));
-        m_d = std::move(o.m_d);
-        return *this;
-    }
-    inline virtual ~Repeater() { };
+    Repeater(Repeater&& o);
+    Repeater& operator=(Repeater&& o);
+    virtual ~Repeater();
 
     virtual void draw() override;
     virtual void update() override;

@@ -3,6 +3,36 @@
 #include <format>
 
 namespace components {
+Repeater::Repeater(
+    std::string name,
+    std::optional<unsigned int> max_in,
+    std::optional<unsigned int> max_out)
+    : components::OComponent(name)
+    , m_d { { } }
+{
+    m_d->max_in = max_in;
+    m_d->max_out = max_out;
+}
+Repeater::Repeater(
+    fl::string_param_t name)
+    : components::OComponent(std::string(name.data()))
+    , m_d { { } }
+{
+}
+Repeater::Repeater(Repeater&& o)
+    : components::OComponent(std::move(o))
+    , m_d { std::move(o.m_d) }
+{
+}
+Repeater& Repeater::operator=(Repeater&& o)
+{
+    if (&o == this)
+        return *this;
+    components::OComponent::operator=(std::move(o));
+    m_d = std::move(o.m_d);
+    return *this;
+}
+Repeater::~Repeater() { }
 void Repeater::draw()
 {
     // const auto center = get_center();

@@ -8,41 +8,23 @@ private:
     ::Color m_color { ::BLACK };
 
 public:
-    inline Passthrough(
+    Passthrough(
         std::string name,
         machine::Component* a,
         machine::Component* b,
         std::string in,
-        std::string out)
-        : components::OConnection(name, a, b, in, out)
-    {
-    }
-    ANNOTATE(fl::use_ctor)
-    inline Passthrough(
+        std::string out);
+    Passthrough(
         fl::string_param_t name,
         ANNOTATE(fl::ignore) machine::Component* a,
         ANNOTATE(fl::ignore) machine::Component* b,
         fl::string_param_t from,
-        fl::string_param_t to)
-        : components::OConnection(
-              std::string(name.data()), a, b,
-              std::string(from.data()), std::string(to.data()))
-    {
-    }
-    inline Passthrough(const Passthrough&) = delete;
-    inline Passthrough& operator=(const Passthrough&) = delete;
-    inline Passthrough(Passthrough&& o)
-        : components::OConnection(std::move(o))
-        , m_color { o.m_color }
-    {
-    }
-    inline Passthrough& operator=(Passthrough&& o)
-    {
-        components::OConnection::operator=(std::move(o));
-        m_color = o.m_color;
-        return *this;
-    }
-    inline virtual ~Passthrough() { }
+        fl::string_param_t to);
+    Passthrough(const Passthrough&) = delete;
+    Passthrough& operator=(const Passthrough&) = delete;
+    Passthrough(Passthrough&& o);
+    Passthrough& operator=(Passthrough&& o);
+    virtual ~Passthrough();
     virtual void draw() override;
     virtual machine::actor::Actor<void> poll(machine::Mctx ctx) override;
 
