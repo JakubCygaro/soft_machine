@@ -13,7 +13,6 @@
 #include <list>
 #include <memory>
 #include <optional>
-#include <print>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -51,35 +50,28 @@ private:
 
 protected:
     struct Process {
-        // std::string name;
         std::optional<actor::Actor> actor;
         Pollable* pollable;
         std::deque<MessageSent> msgq { };
         std::optional<shed::recv_callback_t> awaiting_msg { };
         std::optional<shed::pause_callback_t> paused { };
         inline Process(
-            // std::string name,
-            
             Pollable* pollable)
-            : // name { name }
-            actor {}
-            // , handle { std::move(handle) }
+            : 
+            actor { }
             , pollable { pollable }
         {
         }
         inline Process(const Process&) = delete;
         inline Process& operator=(const Process&) = delete;
         inline Process(Process&& o)
-            // : name { o.name }
             : actor { std::move(o.actor) }
-            // , handle { std::move(handle) }
             , pollable { o.pollable }
             , msgq { std::move(msgq) }
             , awaiting_msg { std::move(awaiting_msg) }
             , paused { std::move(paused) }
         {
             o.pollable = nullptr;
-            // o.handle = nullptr;
         }
         inline Process& operator=(Process&& o)
         {
@@ -100,7 +92,7 @@ protected:
 private:
     std::unordered_map<elem_id_t, std::unique_ptr<Process>> m_procs { };
     std::deque<std::pair<elem_id_t, shed::pause_callback_t>> m_paused { };
-    std::vector<actor::Actor*> m_initial_resume { };
+    std::vector<elem_id_t> m_initial_resume { };
     std::unordered_map<std::string, elem_id_t> m_named_elements { };
     elem_id_t m_next_id { };
 
@@ -163,16 +155,17 @@ private:
     inline void register_actor(std::uint32_t with_id, T* pollable)
     {
         using namespace std::placeholders;
-        MachineContext mctx = MachineContext(with_id, this);
-        std::println("poll on {}", *get_name_of(with_id));
+        // MachineContext mctx = MachineContext(with_id, this);
+        // std::println("poll on {}", *get_name_of(with_id));
         auto proc = std::make_unique<Process>(pollable);
         this->m_procs.emplace(
             std::make_pair(
                 with_id,
                 std::move(proc)));
-        auto& proc_ref = m_procs.at(with_id);
-        auto act = pollable->poll(mctx);
-        proc_ref->actor = std::move(act);
+        m_initial_resume.push_back(with_id);
+        // auto& proc_ref = m_procs.at(with_id);
+        // auto act = pollable->poll(mctx);
+        // proc_ref->actor = std::move(act);
         // m_initial_resume.push_back(&(proc_ref->actor.value()));
     }
 
@@ -497,9 +490,12 @@ public:
             }
         }
         if (!m_initial_resume.empty()) {
-            for (auto* actor : m_initial_resume) {
-                std::println("initial resume...");
-                actor->resume();
+            for (const auto& id : m_initial_resume) {
+                // std::println("poll of {}", *get_name_of(id));
+                MachineContext mctx = MachineContext(id, this);
+                auto& proc = m_procs[id];
+                proc->actor = std::move(proc->pollable->poll(mctx));
+                // proc->manual_resume();
             }
             m_initial_resume.clear();
         }
@@ -647,7 +643,7 @@ public:
         const std::uint32_t& self,
         shed::recv_callback_t c)
     {
-        std::println("{} called recv", *get_name_of(self));
+        // std::println("{} called recv", *get_name_of(self));
         m_procs[self]->awaiting_msg = c;
     }
     inline virtual std::optional<std::any> try_recv(
