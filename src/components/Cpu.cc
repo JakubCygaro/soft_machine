@@ -267,13 +267,15 @@ void CPU::setup(CPU& self)
     self.m_inst_draw.clear();
     self.m_max_inst_dims = { };
     self.m_inst_dims_y_acc = 0;
+    const auto& style = self.get_style();
+    const auto& fd = style->get_font_data();
     for (const auto& inst : self.m_code) {
         const auto rep = inst->to_render_string();
         const auto dims = ::MeasureTextEx(
-            game::resources::get_node_font(),
+            style->get_font(),
             rep.c_str(),
-            game::resources::default_node_font_size(),
-            game::resources::default_font_spacing());
+            fd.size,
+            fd.spacing);
         self.m_max_inst_dims = {
             .x = std::max(self.m_max_inst_dims.x, dims.x * 1.2f),
             .y = std::max(self.m_max_inst_dims.y, dims.y * 1.0f),
@@ -289,33 +291,36 @@ void CPU::setup(CPU& self)
     setup_pc(self);
     using namespace game::resources;
     self.m_name_sz = ::MeasureTextEx(
-        get_node_font(),
+        style->get_font(),
         self.get_name().c_str(),
-        default_node_font_size(),
-        default_font_spacing());
+        fd.size,
+        fd.spacing);
     setup_bounds(self);
 }
 void CPU::setup_pc(CPU& self)
 {
     using namespace game::resources;
+    const auto& style = self.get_style();
     std::get<std::string>(self.m_pc_draw_data) = std::to_string(self.m_pc);
     std::get<::Vector2>(self.m_pc_draw_data) = ::MeasureTextEx(
-        get_node_font(),
+        style->get_font(),
         std::get<std::string>(self.m_pc_draw_data).c_str(),
-        CPU::REG_FONT_SIZE,
-        default_font_spacing());
+        style->get_font_data().size,
+        style->get_font_data().spacing);
 }
 void CPU::setup_regs(CPU& self)
 {
     using namespace std::ranges::views;
     using namespace std::views;
+    const auto& style = self.get_style();
+    const auto& fd = style->get_font_data();
     for (const auto& [reg, i] : zip(self.m_regs, iota(0))) {
         const auto rep = std::to_string(reg);
         const auto dims = ::MeasureTextEx(
-            game::resources::get_node_font(),
+            style->get_font(),
             rep.c_str(),
             CPU::REG_FONT_SIZE,
-            game::resources::default_font_spacing());
+            fd.spacing);
         self.m_max_reg_dims = {
             .x = std::max(self.m_max_reg_dims.x, dims.x * 1.5f),
             .y = std::max(self.m_max_reg_dims.y, dims.y * 1.5f),
