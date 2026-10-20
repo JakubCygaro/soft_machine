@@ -437,15 +437,18 @@ CPU::poll(machine::Mctx ctx)
         }
         if (auto i = dynamic_cast<const InstMovi*>(inst)) {
             reg(i->attrs->into) = i->attrs->ival;
+            co_await ctx.pause();
         }
         if (auto i = dynamic_cast<const InstSend*>(inst)) {
             co_await ctx.send(i->attrs->to, reg(i->attrs->from));
         }
         if (auto i = dynamic_cast<const InstAdd*>(inst)) {
             reg(i->attrs->dst) += reg(i->attrs->src);
+            co_await ctx.pause();
         }
         if (auto i = dynamic_cast<const InstSub*>(inst)) {
             reg(i->attrs->dst) -= reg(i->attrs->src);
+            co_await ctx.pause();
         }
 
         m_pc++;
