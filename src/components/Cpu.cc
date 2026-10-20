@@ -37,14 +37,14 @@ CPU::CPU(
     : components::OComponent(name)
     , m_code { std::move(code) }
 {
-    setup(*this);
+    // setup(*this);
 }
 CPU::CPU(
     fl::string_param_t name)
     : components::OComponent(std::string(name.data()))
     , m_code { }
 {
-    setup(*this);
+    // setup(*this);
 }
 CPU::CPU(CPU&& o)
     : components::OComponent(std::move(o))
@@ -253,6 +253,10 @@ void CPU::update()
     setup_regs(*this);
     setup_bounds(*this);
 }
+void CPU::set_styling(game::Style::shared_ptr_t s) {
+    OComponent::set_styling(s);
+    setup(*this);
+}
 void CPU::unmark_all(void)
 {
     std::ranges::for_each(m_reg_draw_data,
@@ -334,18 +338,26 @@ void CPU::setup_regs(CPU& self)
 }
 void CPU::setup_bounds(CPU& self)
 {
-    self.m_bounds = ::Rectangle {
-        .x = self.m_bounds.x,
-        .y = self.m_bounds.y,
-        .width = (self.m_max_inst_dims.x
-                     + self.m_max_reg_dims.x * self.m_regs.size())
-            * 1.0f,
-        .height = (self.m_inst_dims_y_acc
-                      + self.m_max_reg_dims.y
-                      + self.m_name_sz.y
-                      + std::get<::Vector2>(self.m_pc_draw_data).y)
-            * 1.2f,
-    };
+    if (
+        auto new_width = (self.m_max_inst_dims.x
+                             + self.m_max_reg_dims.x * self.m_regs.size())
+            * 1.0f;
+        new_width > self.m_bounds.width) {
+        self.m_bounds.width = new_width;
+    }
+    if (
+        auto new_height = (self.m_inst_dims_y_acc
+                              + self.m_max_reg_dims.y
+                              + self.m_name_sz.y
+                              + std::get<::Vector2>(self.m_pc_draw_data).y)
+            * 1.2f;
+        new_height > self.m_bounds.height) {
+        self.m_bounds.height = new_height;
+    }
+    // self.m_bounds = ::Rectangle {
+    //     .x = self.m_bounds.x,
+    //     .y = self.m_bounds.y,
+    // };
 }
 machine::actor::Actor<void>
 CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)

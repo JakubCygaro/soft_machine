@@ -3,6 +3,7 @@
 #include "components/CpuInstPrelude.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/Fl.hpp"
+#include "game/Styling.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
@@ -69,6 +70,7 @@ public:
 
     virtual void draw() override;
     virtual void update() override;
+    virtual void set_styling(game::Style::shared_ptr_t s) override;
 
     virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 

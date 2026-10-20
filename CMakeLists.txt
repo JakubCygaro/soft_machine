@@ -12,6 +12,9 @@ include_directories(
     # ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
     ${CMAKE_SOURCE_DIR}/include
 )
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_compile_options(-D DEBUG)
