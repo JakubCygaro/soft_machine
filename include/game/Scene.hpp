@@ -1,11 +1,8 @@
 #pragma once
-#include "components/GameGraphElements.hpp"
-#include "game/Drawable.hpp"
 #include "game/StylingGraph.hpp"
 #include "machine/MachineGraph.hpp"
 #include <cstdint>
 #include <raylib.h>
-#include <vector>
 
 namespace game {
 class GraphScene {
@@ -29,6 +26,7 @@ private:
 public:
     ::Rectangle bounds { };
     bool m_has_focus { };
+    bool m_input_to_elements { };
 
 public:
     void draw();
@@ -83,5 +81,6 @@ public:
     }
 
     void set_focus(bool);
+    void set_input_to_elements(bool);
 };
 }

@@ -4,8 +4,8 @@
 #include "game/Drawable.hpp"
 #include "game/Scene.hpp"
 #include "game/Styling.hpp"
-#include "game/resources/Resources.hpp"
 #include "game/Xml.hpp"
+#include "game/resources/Resources.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
@@ -128,10 +128,10 @@ void update_objects()
 {
     const auto wmouse = ::GetScreenToWorld2D(
         ::GetMousePosition(),
-        *game::GraphScene::get_camera());
+        *fl_state.graph_scene->get_instance_camera());
     const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
         && !ImGui::GetIO().WantCaptureMouse;
-    bool hit = true;
+    bool hit = false;
     for (auto obj : fl_state.graph_scene
              ->get_graph()
              ->get_elements_as<game::Object>()) {
@@ -195,9 +195,9 @@ void update_objects()
     fl_state.was_dragging = fl_state.is_dragging;
     // no focus on graph if edit mode and hit
     fl_state.graph_scene
-        ->set_focus(
-            !(hit && fl_state.is_edit_mode)
-            || ImGui::GetIO().WantCaptureMouse);
+        ->set_input_to_elements(
+            !(fl_state.is_edit_mode)
+            && !ImGui::GetIO().WantCaptureMouse);
 }
 void update()
 {
@@ -208,8 +208,8 @@ void update()
         fl_state.graph_scene->bounds.width = w;
         fl_state.graph_scene->bounds.height = h;
     }
-    fl_state.graph_scene->update();
     update_objects();
+    fl_state.graph_scene->update();
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_E)) {
         toggle(fl_state.is_element_list_open);
     }
@@ -239,7 +239,7 @@ void selected_draw()
     components::OComponent* as_comp = nullptr;
     const auto wmouse = ::GetScreenToWorld2D(
         ::GetMousePosition(),
-        *game::GraphScene::get_camera());
+        *fl_state.graph_scene->get_instance_camera());
     if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected.value().first);
         c) {
         as_comp = *c;
@@ -260,7 +260,7 @@ void selected_draw()
                 .x = wmouse.x - (b.width / 2.0f),
                 .y = wmouse.y - (b.height / 2.0f),
             };
-            ::BeginMode2D(*fl_state.graph_scene->get_camera());
+            ::BeginMode2D(*fl_state.graph_scene->get_instance_camera());
             ::DrawRectangleLinesEx(
                 ::Rectangle {
                     .x = pos.x,

@@ -13,16 +13,19 @@ GraphScene::GraphScene(GraphScene&& o)
     , m_framec { o.m_framec }
     , bounds { o.bounds }
     , m_has_focus { o.m_has_focus }
+    , m_input_to_elements { o.m_input_to_elements }
 {
 }
 GraphScene& GraphScene::operator=(GraphScene&& o)
 {
+    if (&o == this)
+        return *this;
     m_mgraph = std::move(o.m_mgraph);
-    // m_graph_objs = std::move(o.m_graph_objs);
     m_cam = o.m_cam;
     bounds = o.bounds;
     m_framec = o.m_framec;
     m_has_focus = o.m_has_focus;
+    m_input_to_elements = o.m_input_to_elements;
     return *this;
 }
 GraphScene::~GraphScene()
@@ -33,20 +36,13 @@ GraphScene::GraphScene(std::unique_ptr<graph_t>&& g, ::Rectangle bounds)
     , m_cam { }
     , bounds { bounds }
     , m_has_focus { false }
+    , m_input_to_elements { false }
 {
     init(*this);
 }
 
 void GraphScene::init(GraphScene& self)
 {
-    // for (auto c : self.m_mgraph->get_connections()) {
-    //     if (auto o = dynamic_cast<Object*>(c.get()))
-    //         self.m_graph_objs.push_back(o);
-    // }
-    // for (auto c : self.m_mgraph->get_components()) {
-    //     if (auto o = dynamic_cast<Object*>(c.get()))
-    //         self.m_graph_objs.push_back(o);
-    // }
     self.m_cam.target = { 0, 0 };
     self.m_cam.offset = { self.bounds.width / 2.0f, self.bounds.height / 2.0f };
     self.m_cam.zoom = 2.0;
@@ -82,7 +78,9 @@ void GraphScene::update()
     GraphScene::set_camera(&m_cam);
     const auto m = ::GetScreenToWorld2D(::GetMousePosition(), m_cam);
     for (auto o : m_mgraph->get_elements_as<Object>()) {
-        if (m_has_focus && o->check_point_collision(m)) {
+        if (m_has_focus
+            && m_input_to_elements
+            && o->check_point_collision(m)) {
             o->on_input();
         }
         o->update();
@@ -92,5 +90,9 @@ void GraphScene::update()
 void GraphScene::set_focus(bool f)
 {
     m_has_focus = f;
+}
+void GraphScene::set_input_to_elements(bool in)
+{
+    m_input_to_elements = in;
 }
 }
