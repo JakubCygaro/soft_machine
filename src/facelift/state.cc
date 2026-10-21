@@ -222,7 +222,8 @@ void update()
     }
 }
 
-void draw_highlight_selected_comp(components::OComponent* as_comp,
+void draw_highlight_selected_comp(
+    components::OComponent* as_comp,
     ::Color color)
 {
     ::BeginMode2D(*fl_state.graph_scene->get_instance_camera());
