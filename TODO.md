@@ -1,6 +1,5 @@
 - change drawing code to be dependent upon style
-- fix a bug with CPU changing size and not highlighting all instructions for some
- reason
+- fix a bug with CPU changing size
 - [facelift] file saving, selection and loading at runtime
 - styling via LISP, possibly with topo-sort before styling execution
 ```xml

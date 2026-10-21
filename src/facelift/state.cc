@@ -210,10 +210,10 @@ void update()
     }
     fl_state.graph_scene->update();
     update_objects();
-    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyPressed(::KEY_E)) {
+    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_E)) {
         toggle(fl_state.is_element_list_open);
     }
-    if (::IsKeyDown(::KEY_LEFT_SHIFT) && ::IsKeyPressed(::KEY_W)) {
+    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_W)) {
         fl_state.selected = toggle(fl_state.is_edit_mode)
             ? fl_state.selected
             : std::nullopt;
