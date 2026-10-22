@@ -57,8 +57,7 @@ protected:
         std::optional<shed::pause_callback_t> paused { };
         inline Process(
             Pollable* pollable)
-            : 
-            actor { }
+            : actor { }
             , pollable { pollable }
         {
         }
@@ -376,6 +375,31 @@ public:
         else
             remove_connection(id);
         m_named_elements.erase(name);
+    }
+    inline void clear()
+    {
+        constexpr auto apply_clear = []<typename... Elements>(Elements&... elem) static {
+            (elem.clear(), ...);
+        };
+        apply_clear(
+            m_procs,
+            m_named_elements,
+            m_comps,
+            m_comps_by_id,
+            m_conns,
+            m_conns_by_id,
+            m_paused,
+            m_initial_resume,
+            m_incidents);
+        // m_procs.clear();
+        // m_named_elements.clear();
+        // m_comps.clear();
+        // m_comps_by_id.clear();
+        // m_conns.clear();
+        // m_conns_by_id.clear();
+        // m_paused.clear();
+        // m_initial_resume.clear();
+        // m_incidents.clear();
     }
 
 private:

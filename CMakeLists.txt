@@ -95,6 +95,7 @@ add_executable(facelift
     ${CMAKE_SOURCE_DIR}/src/facelift/main.cc
     ${CMAKE_SOURCE_DIR}/src/facelift/gather.cc
     ${CMAKE_SOURCE_DIR}/src/facelift/state.cc
+    ${CMAKE_SOURCE_DIR}/src/facelift/util.cc
 )
 target_compile_definitions(facelift
     PRIVATE -DFACELIFT_EDITOR

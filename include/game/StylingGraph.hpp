@@ -2,7 +2,6 @@
 #include "components/GameGraphElements.hpp"
 #include "machine/MachineGraph.hpp"
 #include <game/Styling.hpp>
-#include <list>
 #include <memory>
 #include <queue>
 #include <raylib.h>

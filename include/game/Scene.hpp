@@ -2,6 +2,7 @@
 #include "game/StylingGraph.hpp"
 #include "machine/MachineGraph.hpp"
 #include <cstdint>
+#include <functional>
 #include <raylib.h>
 
 namespace game {
@@ -82,5 +83,10 @@ public:
 
     void set_focus(bool);
     void set_input_to_elements(bool);
+    template <typename Ret>
+    inline Ret modify_graph(std::function_ref<Ret(graph_t*)> func)
+    {
+        return func(this->m_mgraph.get());
+    }
 };
 }

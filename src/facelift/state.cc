@@ -366,24 +366,20 @@ void init(const std::vector<std::string>& args)
     auto mg = std::unique_ptr<game::GraphScene::graph_t>(
         game::GraphScene::graph_t::create(
             std::make_shared<game::Style>(std::move(def_style))));
-    if (args.size() == 1) {
-        std::string xml;
-        std::ifstream ifs(args[0]);
-        std::stringstream buf;
-        buf << ifs.rdbuf();
-        xml = buf.str();
-        auto res = game::populate_machine_from_xml(*mg, xml);
-        if (res.iserr()) {
-            throw res.unwrap_err();
-        }
-    }
-
     auto sc = game::GraphScene(std::move(mg),
         { 0,
             0,
             SCREEN_WIDTH,
             SCREEN_HEIGHT });
     fl_state.graph_scene = std::make_unique<game::GraphScene>(std::move(sc));
+
+    if (args.size() == 1) {
+        auto p = std::string(args[0]);
+        auto res = load_file(p);
+        if(!res){
+            ::TraceLog(::LOG_ERROR, "Failed to load file, %s", res.error().c_str());
+        }
+    }
 }
 void deinit()
 {

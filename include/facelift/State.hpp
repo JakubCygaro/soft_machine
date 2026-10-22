@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
+#include <expected>
 #include <memory>
 
 #define SCREEN_WIDTH 800
@@ -36,12 +37,14 @@ struct FaceliftState {
 
     //
     components::OComponent* connect_to = nullptr;
+    std::string file_name { };
 };
 
-inline static FaceliftState fl_state;
+inline FaceliftState fl_state;
 
 void init(const std::vector<std::string>& args);
 void update();
 void draw();
 void deinit();
+std::expected<void, std::string> load_file(std::string&);
 }
