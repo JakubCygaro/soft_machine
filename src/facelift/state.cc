@@ -4,23 +4,22 @@
 #include "game/Drawable.hpp"
 #include "game/Scene.hpp"
 #include "game/Styling.hpp"
-#include "game/Xml.hpp"
 #include "game/resources/Resources.hpp"
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
-#include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <raylib.h>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
 
 namespace facelift {
+namespace fs = std::filesystem;
 namespace {
     inline bool& toggle(bool& thing)
     {
@@ -220,6 +219,12 @@ void update()
         if (!fl_state.selected)
             fl_state.connect_to = nullptr;
     }
+    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_O)) {
+        toggle(fl_state.is_file_dialog_open);
+        if (fl_state.is_file_dialog_open) {
+            fl_state.filed.set_cwd(fl_state.filed.cwd);
+        }
+    }
 }
 
 void draw_highlight_selected_comp(
@@ -329,6 +334,8 @@ void draw()
     }
     if (fl_state.is_element_list_open)
         element_list_draw();
+    if (fl_state.is_file_dialog_open)
+        fl_state.filed.draw();
     // ::rlImGuiEnd();
     ImGui::Render();
     ::ImGui_ImplRaylib_RenderDrawData(ImGui::GetDrawData());
@@ -352,6 +359,7 @@ void init(const std::vector<std::string>& args)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ::rlImGuiEndInitImGui();
 
+    fl_state.filed.set_cwd(fs::current_path());
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();
@@ -376,7 +384,7 @@ void init(const std::vector<std::string>& args)
     if (args.size() == 1) {
         auto p = std::string(args[0]);
         auto res = load_file(p);
-        if(!res){
+        if (!res) {
             ::TraceLog(::LOG_ERROR, "Failed to load file, %s", res.error().c_str());
         }
     }

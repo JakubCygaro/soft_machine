@@ -3,6 +3,7 @@
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
 #include <expected>
+#include <filesystem>
 #include <memory>
 
 #define SCREEN_WIDTH 800
@@ -30,14 +31,22 @@ struct FaceliftState {
     bool is_dragging = false;
     bool was_dragging = false;
     bool is_element_list_open = false;
-    // TODO: edit mode
     bool is_edit_mode = true;
+    bool is_file_dialog_open = true;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
 
-    //
     components::OComponent* connect_to = nullptr;
-    std::string file_name { };
+    class FileDialog {
+        std::optional<std::string> last_err;
+        std::filesystem::directory_iterator cwd_iter;
+
+    public:
+        std::string file_name { };
+        std::filesystem::path cwd { };
+        auto draw() -> void;
+        auto set_cwd(std::filesystem::path) -> void;
+    } filed { };
 };
 
 inline FaceliftState fl_state;
@@ -46,5 +55,6 @@ void init(const std::vector<std::string>& args);
 void update();
 void draw();
 void deinit();
-std::expected<void, std::string> load_file(std::string&);
+std::expected<void, std::string> load_file(const std::string&);
+std::expected<void, std::string> load_file(const std::filesystem::path&);
 }
