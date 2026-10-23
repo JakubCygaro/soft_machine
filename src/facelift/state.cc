@@ -360,6 +360,7 @@ void init(const std::vector<std::string>& args)
     ::rlImGuiEndInitImGui();
 
     fl_state.filed.set_cwd(fs::current_path());
+    fl_state.is_file_dialog_open = false;
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();

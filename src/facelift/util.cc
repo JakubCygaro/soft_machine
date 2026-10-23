@@ -1,5 +1,6 @@
 #include "facelift/State.hpp"
 #include "game/Xml.hpp"
+#include "imgui.h"
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -42,18 +43,29 @@ auto FaceliftState::FileDialog::set_cwd(std::filesystem::path p) -> void
 }
 void FaceliftState::FileDialog::draw()
 {
-    ImGui::Begin("File dialog");
+    ImGui::Begin("File dialog", &fl_state.is_file_dialog_open);
     if (last_err)
         ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_err->c_str());
     bool early_return = false;
-    for (auto const& dir_entry : fs::directory_iterator(cwd_iter)) {
-        if (!dir_entry.is_directory() && !dir_entry.is_regular_file())
-            continue;
+    if (ImGui::BeginListBox("File dialog")) {
+        if (cwd.has_parent_path()) {
+            auto parent_path = cwd.parent_path();
+            ImGui::PushID("..");
+            if (ImGui::Selectable("..")) {
+                cwd = parent_path;
+                early_return = true;
+            }
+            ImGui::PopID();
+        }
+        for (auto const& dir_entry : fs::directory_iterator(cwd)) {
+            if (!dir_entry.is_directory() && !dir_entry.is_regular_file())
+                continue;
 
-        if(ImGui::BeginListBox("File dialog")){
             const auto& name = dir_entry.path().filename();
             ImGui::PushID(name.c_str());
-            if (ImGui::Selectable(name.c_str())) {
+            const auto display_name = std::format("{}{}", name.c_str(),
+                dir_entry.is_directory() ? "/" : "");
+            if (ImGui::Selectable(display_name.c_str())) {
                 if (dir_entry.is_directory()) {
                     cwd = dir_entry.path();
                     cwd_iter = fs::directory_iterator(cwd);
@@ -68,10 +80,10 @@ void FaceliftState::FileDialog::draw()
                 }
             }
             ImGui::PopID();
+            if (early_return)
+                break;
         }
         ImGui::EndListBox();
-        if (early_return)
-            break;
     }
     ImGui::End();
 }
