@@ -207,6 +207,12 @@ void update()
         fl_state.graph_scene->bounds.width = w;
         fl_state.graph_scene->bounds.height = h;
     }
+    if (fl_state.filed.should_load_file()) {
+        if (auto res = load_file(fl_state.filed.get_file_to_load()); !res) {
+            fl_state.filed.last_err = res.error();
+            ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
+        }
+    }
     update_objects();
     fl_state.graph_scene->update();
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_E)) {

@@ -38,14 +38,17 @@ struct FaceliftState {
 
     components::OComponent* connect_to = nullptr;
     class FileDialog {
-        std::optional<std::string> last_err;
         std::filesystem::directory_iterator cwd_iter;
+        std::optional<std::filesystem::path> file_to_load;
 
     public:
+        std::optional<std::string> last_err;
         std::string file_name { };
         std::filesystem::path cwd { };
         auto draw() -> void;
         auto set_cwd(std::filesystem::path) -> void;
+        auto should_load_file() -> bool;
+        auto get_file_to_load() -> std::filesystem::path;
     } filed { };
 };
 

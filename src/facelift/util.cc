@@ -5,6 +5,7 @@
 #include <format>
 #include <fstream>
 #include <iostream>
+#include <print>
 namespace facelift {
 namespace fs = std::filesystem;
 std::expected<void, std::string> load_file(const std::string& p)
@@ -36,6 +37,17 @@ std::expected<void, std::string> load_file(const std::filesystem::path& p)
     }
     return { };
 }
+
+auto FaceliftState::FileDialog::should_load_file() -> bool
+{
+    return file_to_load.has_value();
+}
+auto FaceliftState::FileDialog::get_file_to_load() -> fs::path
+{
+    auto p = *file_to_load;
+    file_to_load = std::nullopt;
+    return p;
+}
 auto FaceliftState::FileDialog::set_cwd(std::filesystem::path p) -> void
 {
     cwd = p;
@@ -49,9 +61,9 @@ void FaceliftState::FileDialog::draw()
     bool early_return = false;
     if (ImGui::BeginListBox("File dialog")) {
         if (cwd.has_parent_path()) {
-            auto parent_path = cwd.parent_path();
-            ImGui::PushID("..");
-            if (ImGui::Selectable("..")) {
+            const auto parent_path = cwd.parent_path();
+            ImGui::PushID("../");
+            if (ImGui::Selectable("../")) {
                 cwd = parent_path;
                 early_return = true;
             }
@@ -71,12 +83,13 @@ void FaceliftState::FileDialog::draw()
                     cwd_iter = fs::directory_iterator(cwd);
                     early_return = true;
                 } else {
-                    auto res = load_file(dir_entry.path());
-                    if (!res) {
-                        last_err = res.error();
-                    } else {
-                        last_err = std::nullopt;
-                    }
+                    file_to_load = dir_entry.path();
+                    last_err = std::nullopt;
+                    // auto res = load_file(dir_entry.path());
+                    // if (!res) {
+                    //     last_err = res.error();
+                    // } else {
+                    // }
                 }
             }
             ImGui::PopID();
