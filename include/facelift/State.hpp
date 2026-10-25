@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
+#include <cstdint>
 #include <expected>
 #include <filesystem>
 #include <memory>
@@ -32,23 +33,27 @@ struct FaceliftState {
     bool was_dragging = false;
     bool is_element_list_open = false;
     bool is_edit_mode = true;
-    bool is_file_dialog_open = true;
+    bool is_file_dialog_open = false;
+    bool is_save_file_open = false;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
 
     components::OComponent* connect_to = nullptr;
     class FileDialog {
         std::filesystem::directory_iterator cwd_iter;
-        std::optional<std::filesystem::path> file_to_load;
+        std::optional<std::filesystem::path> chosen_file;
+        std::array<char, 256> input { 0 };
+        std::optional<std::filesystem::path> input_as_path;
 
     public:
+        FileDialog();
         std::optional<std::string> last_err;
-        std::string file_name { };
+        std::filesystem::path file_name { };
         std::filesystem::path cwd { };
         auto draw() -> void;
         auto set_cwd(std::filesystem::path) -> void;
-        auto should_load_file() -> bool;
-        auto get_file_to_load() -> std::filesystem::path;
+        auto has_file() -> bool;
+        auto get_file() -> std::filesystem::path;
     } filed { };
 };
 
@@ -60,4 +65,5 @@ void draw();
 void deinit();
 std::expected<void, std::string> load_file(const std::string&);
 std::expected<void, std::string> load_file(const std::filesystem::path&);
+std::expected<void, std::string> save_graph_to_file(const std::filesystem::path&);
 }

@@ -207,8 +207,8 @@ void update()
         fl_state.graph_scene->bounds.width = w;
         fl_state.graph_scene->bounds.height = h;
     }
-    if (fl_state.filed.should_load_file()) {
-        if (auto res = load_file(fl_state.filed.get_file_to_load()); !res) {
+    if (fl_state.filed.has_file()) {
+        if (auto res = load_file(fl_state.filed.get_file()); !res) {
             fl_state.filed.last_err = res.error();
             ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
         }
@@ -229,6 +229,15 @@ void update()
         toggle(fl_state.is_file_dialog_open);
         if (fl_state.is_file_dialog_open) {
             fl_state.filed.set_cwd(fl_state.filed.cwd);
+        }
+    }
+    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_S)) {
+        if (::IsKeyDown(::KEY_LEFT_SHIFT)) {
+            // TODO: save file name dialog
+        } else {
+            if (auto res = save_graph_to_file(fl_state.filed.file_name); !res) {
+                ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
+            }
         }
     }
 }

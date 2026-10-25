@@ -1,11 +1,14 @@
 #include "facelift/State.hpp"
 #include "game/Xml.hpp"
+#include "game/XmlMarshalling.hpp"
 #include "imgui.h"
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
-#include <print>
+#include <optional>
+#include <raylib.h>
 namespace facelift {
 namespace fs = std::filesystem;
 std::expected<void, std::string> load_file(const std::string& p)
@@ -37,21 +40,43 @@ std::expected<void, std::string> load_file(const std::filesystem::path& p)
     }
     return { };
 }
-
-auto FaceliftState::FileDialog::should_load_file() -> bool
+std::expected<void, std::string> save_graph_to_file(const std::filesystem::path& path)
 {
-    return file_to_load.has_value();
+    pugi::xml_document doc;
+    auto graph_node = doc.root()
+                          .append_child("graph");
+    using namespace std::views;
+    auto xmls = fl_state.graph_scene
+                    ->get_graph()
+                    ->get_elements_as<game::xml::MarshallToXml>();
+    for (const auto& elem : xmls) {
+        auto node = graph_node.append_child(elem->marshall_to_xml_name());
+        elem->marshall_to_xml(node);
+    }
+    doc.save_file(path.c_str());
+    return { };
 }
-auto FaceliftState::FileDialog::get_file_to_load() -> fs::path
+auto FaceliftState::FileDialog::has_file() -> bool
 {
-    auto p = *file_to_load;
-    file_to_load = std::nullopt;
+    return chosen_file.has_value();
+}
+auto FaceliftState::FileDialog::get_file() -> fs::path
+{
+    auto p = *chosen_file;
+    chosen_file = std::nullopt;
     return p;
 }
 auto FaceliftState::FileDialog::set_cwd(std::filesystem::path p) -> void
 {
     cwd = p;
+    std::ranges::for_each(cwd.string() + "/\0", [&, i = 0](auto ch) mutable {
+        this->input[i++] = ch;
+    });
     cwd_iter = fs::directory_iterator(cwd);
+}
+
+FaceliftState::FileDialog::FileDialog()
+{
 }
 void FaceliftState::FileDialog::draw()
 {
@@ -59,7 +84,19 @@ void FaceliftState::FileDialog::draw()
     if (last_err)
         ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_err->c_str());
     bool early_return = false;
-    if (ImGui::BeginListBox("File dialog")) {
+    if (ImGui::InputText("search", this->input.data(), this->input.size())) {
+        input_as_path = fs::path(input.begin(), input.end());
+    }
+    if (input_as_path && fs::exists(*input_as_path)) {
+        cwd = input_as_path->parent_path();
+        ImGui::SameLine();
+        if (fs::is_regular_file(*input_as_path)
+            && (::IsKeyReleased(::KEY_ENTER) || ImGui::Button("Open"))) {
+            chosen_file = *input_as_path;
+            input_as_path = std::nullopt;
+        }
+    }
+    if (ImGui::BeginListBox("directory view")) {
         if (cwd.has_parent_path()) {
             const auto parent_path = cwd.parent_path();
             ImGui::PushID("../");
@@ -83,13 +120,8 @@ void FaceliftState::FileDialog::draw()
                     cwd_iter = fs::directory_iterator(cwd);
                     early_return = true;
                 } else {
-                    file_to_load = dir_entry.path();
+                    chosen_file = dir_entry.path();
                     last_err = std::nullopt;
-                    // auto res = load_file(dir_entry.path());
-                    // if (!res) {
-                    //     last_err = res.error();
-                    // } else {
-                    // }
                 }
             }
             ImGui::PopID();
