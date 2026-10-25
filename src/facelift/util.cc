@@ -75,12 +75,10 @@ auto FaceliftState::FileDialog::set_cwd(std::filesystem::path p) -> void
     cwd_iter = fs::directory_iterator(cwd);
 }
 
-FaceliftState::FileDialog::FileDialog()
-{
-}
 void FaceliftState::FileDialog::draw()
 {
-    ImGui::Begin("File dialog", &fl_state.is_file_dialog_open);
+    bool open = true;
+    ImGui::Begin("File dialog", &open);
     if (last_err)
         ImGui::TextColored({ 255, 0, 0, 255 }, "%s", last_err->c_str());
     bool early_return = false;
@@ -131,5 +129,6 @@ void FaceliftState::FileDialog::draw()
         ImGui::EndListBox();
     }
     ImGui::End();
+    if(!open) fl_state.file_dialog_state = FaceliftState::FileDialogState::Nil;
 }
 }

@@ -225,9 +225,10 @@ void update()
         if (!fl_state.selected)
             fl_state.connect_to = nullptr;
     }
+    using enum FaceliftState::FileDialogState;
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_O)) {
-        toggle(fl_state.is_file_dialog_open);
-        if (fl_state.is_file_dialog_open) {
+        fl_state.file_dialog_state = OpenFile;
+        if (fl_state.file_dialog_state == OpenFile) {
             fl_state.filed.set_cwd(fl_state.filed.cwd);
         }
     }
@@ -349,7 +350,7 @@ void draw()
     }
     if (fl_state.is_element_list_open)
         element_list_draw();
-    if (fl_state.is_file_dialog_open)
+    if (fl_state.file_dialog_state != FaceliftState::FileDialogState::Nil)
         fl_state.filed.draw();
     // ::rlImGuiEnd();
     ImGui::Render();
@@ -375,7 +376,6 @@ void init(const std::vector<std::string>& args)
     ::rlImGuiEndInitImGui();
 
     fl_state.filed.set_cwd(fs::current_path());
-    fl_state.is_file_dialog_open = false;
     game::resources::init_resources();
     fl_state.comp_blds = facelift::runtime_make_component_builders();
     fl_state.conn_blds = facelift::runtime_make_connection_builders();

@@ -33,8 +33,11 @@ struct FaceliftState {
     bool was_dragging = false;
     bool is_element_list_open = false;
     bool is_edit_mode = true;
-    bool is_file_dialog_open = false;
-    bool is_save_file_open = false;
+    enum class FileDialogState {
+        Nil,
+        OpenFile,
+        SaveFile,
+    } file_dialog_state = FileDialogState::Nil;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
 
@@ -46,7 +49,6 @@ struct FaceliftState {
         std::optional<std::filesystem::path> input_as_path;
 
     public:
-        FileDialog();
         std::optional<std::string> last_err;
         std::filesystem::path file_name { };
         std::filesystem::path cwd { };
