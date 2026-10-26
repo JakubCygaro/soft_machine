@@ -141,11 +141,15 @@ OComponent::marshall_to_xml_name() const noexcept
 }
 void OComponent::marshall_to_xml(pugi::xml_node& self) const noexcept
 {
-    append_position_node(self, get_pos());
+    // append_position_node(self, get_pos());
     self.append_attribute("name").set_value(get_name());
     if (auto s = get_style(); s) {
-        auto style = self.append_child(s->marshall_to_xml_name());
+        auto style = self.append_child(
+            s->marshall_to_xml_name());
         s->marshall_to_xml(style);
+        const auto& pos = get_pos();
+        style.child("abs-pos").attribute("x").set_value(pos.x);
+        style.child("abs-pos").attribute("y").set_value(pos.y);
     }
 }
 bool OComponent::draw_edit_window()

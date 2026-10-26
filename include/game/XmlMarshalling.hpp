@@ -303,4 +303,5 @@ struct MarshallToXml {
     inline virtual void
     marshall_to_xml(pugi::xml_node&) const noexcept = 0;
 };
+
 }

@@ -190,29 +190,29 @@ Style::marshall_to_xml_name() const noexcept
 void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
 {
     auto font = self.append_child("font");
-    font.attribute("size").set_value(m_fontd.size);
-    font.attribute("spacing").set_value(m_fontd.spacing);
+    font.append_attribute("size").set_value(m_fontd.size);
+    font.append_attribute("spacing").set_value(m_fontd.spacing);
     font.set_value(m_font_name);
     if (m_position) {
         auto abs_pos = self.append_child("abs-pos");
-        abs_pos.attribute("x").set_value(m_position->x);
-        abs_pos.attribute("y").set_value(m_position->y);
+        abs_pos.append_attribute("x").set_value(m_position->x);
+        abs_pos.append_attribute("y").set_value(m_position->y);
     }
     if (m_size) {
         auto size = self.append_child("size");
-        size.attribute("width").set_value(m_position->x);
-        size.attribute("height").set_value(m_position->y);
+        size.append_attribute("width").set_value(m_position->x);
+        size.append_attribute("height").set_value(m_position->y);
     }
     auto custom = self.append_child("custom");
     for (auto& [k, v] : custom_parameters) {
         auto param = custom.append_child("param");
-        param.attribute("key").set_value(k);
+        param.append_attribute("key").set_value(k);
         std::visit([&](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::shared_ptr<AsStylingParameter>>) {
-                param.attribute("value").set_value(arg->to_value_string());
+                param.append_attribute("value").set_value(arg->to_value_string());
             } else {
-                param.attribute("value").set_value(arg);
+                param.append_attribute("value").set_value(arg);
             }
         },
             v);

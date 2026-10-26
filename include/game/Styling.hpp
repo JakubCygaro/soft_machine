@@ -5,6 +5,7 @@
 #include <optional>
 #include <raylib.h>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <variant>
 namespace game {
@@ -36,6 +37,9 @@ using StylingParameter = std::variant<
 
 class StyleBuilder;
 class Style {
+public:
+    static constexpr std::string_view ABS_POS_NODE = "abs-pos";
+    // static constexpr std::string_view ABS_POS_NODE = "abs-pos";
 public:
     using shared_ptr_t = std::shared_ptr<Style>;
 
