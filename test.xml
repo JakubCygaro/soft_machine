@@ -2,6 +2,11 @@
     <memory name="MEM" layout="vertical">
         <style>
             <abs-pos x="-400" y="0"/>
+            <rel-pos
+                to="CPU"
+                side="Left"
+                distance="100"
+                />
         </style>
         <memset>2 1 3 7 100</memset>
     </memory>
