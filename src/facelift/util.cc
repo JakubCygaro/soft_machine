@@ -19,11 +19,11 @@ std::expected<void, std::string> load_file(const std::string& p)
 std::expected<void, std::string> load_file(const std::filesystem::path& p)
 {
     if (!fs::exists(p) || !fs::is_regular_file(p))
-        throw std::unexpected(
+        return std::unexpected(
             std::format("file '{}' does not exist or is not a regular file", p));
-    fl_state.filed.file_name = p;
+    fl_state.filed.current_file = p;
     std::string xml;
-    std::ifstream ifs(fl_state.filed.file_name);
+    std::ifstream ifs(fl_state.filed.current_file);
     std::stringstream buf;
     buf << ifs.rdbuf();
     xml = buf.str();
@@ -60,7 +60,7 @@ auto FaceliftState::FileDialog::has_file() -> bool
 {
     return chosen_file.has_value();
 }
-auto FaceliftState::FileDialog::get_file() -> fs::path
+auto FaceliftState::FileDialog::take_file() -> fs::path
 {
     auto p = *chosen_file;
     chosen_file = std::nullopt;
@@ -85,14 +85,15 @@ void FaceliftState::FileDialog::draw()
     if (ImGui::InputText("search", this->input.data(), this->input.size())) {
         input_as_path = fs::path(input.begin(), input.end());
     }
-    if (input_as_path && fs::exists(*input_as_path)) {
+    if (input_as_path) {
         cwd = input_as_path->parent_path();
         ImGui::SameLine();
-        if (fs::is_regular_file(*input_as_path)
-            && (::IsKeyReleased(::KEY_ENTER) || ImGui::Button("Open"))) {
+        if (
+            (::IsKeyReleased(::KEY_ENTER) || ImGui::Button("Open"))) {
             chosen_file = *input_as_path;
             input_as_path = std::nullopt;
         }
+        ImGui::NewLine();
     }
     if (ImGui::BeginListBox("directory view")) {
         if (cwd.has_parent_path()) {
@@ -129,6 +130,7 @@ void FaceliftState::FileDialog::draw()
         ImGui::EndListBox();
     }
     ImGui::End();
-    if(!open) fl_state.file_dialog_state = FaceliftState::FileDialogState::Nil;
+    if (!open)
+        fl_state.file_dialog_state = FaceliftState::FileDialogState::NilState;
 }
 }

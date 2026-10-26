@@ -15,12 +15,31 @@
 #include <raylib.h>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
 namespace facelift {
 namespace fs = std::filesystem;
 namespace {
+    template <class T, class Cond, class Val>
+    inline bool set_if(T& t, Cond cond, Val val)
+    {
+        const auto assign = [&] constexpr {
+            if constexpr (std::is_invocable_v<Val>) {
+                t = val();
+            } else {
+                t = val;
+            }
+            return true;
+        };
+        if constexpr (std::is_invocable_v<Cond>) {
+            return cond() ? assign() : false;
+        } else if (cond) {
+            return cond ? assign() : false;
+        }
+        return false;
+    }
     inline bool& toggle(bool& thing)
     {
         thing = !thing;
@@ -207,12 +226,6 @@ void update()
         fl_state.graph_scene->bounds.width = w;
         fl_state.graph_scene->bounds.height = h;
     }
-    if (fl_state.filed.has_file()) {
-        if (auto res = load_file(fl_state.filed.get_file()); !res) {
-            fl_state.filed.last_err = res.error();
-            ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
-        }
-    }
     update_objects();
     fl_state.graph_scene->update();
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_E)) {
@@ -226,19 +239,49 @@ void update()
             fl_state.connect_to = nullptr;
     }
     using enum FaceliftState::FileDialogState;
-    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_O)) {
-        fl_state.file_dialog_state = OpenFile;
-        if (fl_state.file_dialog_state == OpenFile) {
-            fl_state.filed.set_cwd(fl_state.filed.cwd);
-        }
-    }
-    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_S)) {
-        if (::IsKeyDown(::KEY_LEFT_SHIFT)) {
-            // TODO: save file name dialog
-        } else {
-            if (auto res = save_graph_to_file(fl_state.filed.file_name); !res) {
+    if (fl_state.filed.has_file() && fl_state.file_dialog_state != NilState) {
+        switch (fl_state.file_dialog_state) {
+        case SaveFile:
+            if (auto res = save_graph_to_file(fl_state.filed.take_file()); !res) {
                 ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
             }
+            break;
+        case OpenFile:
+            if (auto res = load_file(fl_state.filed.take_file()); !res) {
+                fl_state.filed.last_err = res.error();
+                ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
+            }
+            break;
+        default:
+            break;
+        }
+        fl_state.file_dialog_state = NilState;
+    }
+    if (fl_state.file_dialog_state == NilState) {
+        set_if(
+            fl_state.file_dialog_state,
+            [] {
+                return ::IsKeyDown(::KEY_LEFT_CONTROL)
+                    && ::IsKeyPressed(::KEY_O);
+            },
+            [&] {
+                fl_state.filed.set_cwd(fl_state.filed.cwd);
+                return OpenFile;
+            });
+        set_if(
+            fl_state.file_dialog_state,
+            [] {
+                return ::IsKeyDown(::KEY_LEFT_CONTROL)
+                    && ::IsKeyDown(::KEY_LEFT_SHIFT)
+                    && ::IsKeyPressed(::KEY_S);
+            },
+            SaveFile);
+    }
+    if (::IsKeyDown(::KEY_LEFT_CONTROL)
+        && ::IsKeyPressed(::KEY_S)
+        && !::IsKeyDown(::KEY_LEFT_SHIFT)) {
+        if (auto res = save_graph_to_file(fl_state.filed.current_file); !res) {
+            ::TraceLog(::LOG_ERROR, "%s\n", res.error().c_str());
         }
     }
 }
@@ -350,7 +393,7 @@ void draw()
     }
     if (fl_state.is_element_list_open)
         element_list_draw();
-    if (fl_state.file_dialog_state != FaceliftState::FileDialogState::Nil)
+    if (fl_state.file_dialog_state != FaceliftState::FileDialogState::NilState)
         fl_state.filed.draw();
     // ::rlImGuiEnd();
     ImGui::Render();

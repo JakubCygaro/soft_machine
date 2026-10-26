@@ -34,28 +34,31 @@ struct FaceliftState {
     bool is_element_list_open = false;
     bool is_edit_mode = true;
     enum class FileDialogState {
-        Nil,
+        NilState,
         OpenFile,
         SaveFile,
-    } file_dialog_state = FileDialogState::Nil;
+    } file_dialog_state = FileDialogState::NilState;
 
     std::unique_ptr<game::GraphScene> graph_scene = nullptr;
 
     components::OComponent* connect_to = nullptr;
     class FileDialog {
         std::filesystem::directory_iterator cwd_iter;
+        /// what file the dialog has chosen
         std::optional<std::filesystem::path> chosen_file;
         std::array<char, 256> input { 0 };
+        /// the dialog text input as a filesystem path
         std::optional<std::filesystem::path> input_as_path;
 
     public:
         std::optional<std::string> last_err;
-        std::filesystem::path file_name { };
+        /// the path of the currently edited xml file
+        std::filesystem::path current_file { };
         std::filesystem::path cwd { };
         auto draw() -> void;
         auto set_cwd(std::filesystem::path) -> void;
         auto has_file() -> bool;
-        auto get_file() -> std::filesystem::path;
+        auto take_file() -> std::filesystem::path;
     } filed { };
 };
 
