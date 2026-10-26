@@ -2,6 +2,7 @@
     <memory name="MEM" layout="vertical">
         <style>
             <abs-pos x="-400" y="0"/>
+            <!-- ponder upon this -->
             <rel-pos
                 to="CPU"
                 side="Left"
