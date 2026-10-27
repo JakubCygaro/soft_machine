@@ -4,7 +4,7 @@
             <abs-pos x="-400" y="0"/>
             <!-- ponder upon this -->
             <rel-pos
-                to="CPU"
+                rel="CPU"
                 side="Left"
                 distance="100"
                 />

@@ -598,12 +598,20 @@ public:
             : std::nullopt;
     }
     using comp_or_conn_ptr_t = std::variant<Comp*, Conn*>;
+    inline std::optional<const Comp*> query_component(const std::string& sv) const
+    {
+        return query_component(sv);
+    }
     inline std::optional<Comp*> query_component(const std::string& sv)
     {
         if (is_component(sv)) {
             return m_comps_by_id[name_to_id(sv)];
         }
         return std::nullopt;
+    }
+    inline std::optional<const Conn*> query_connection(const std::string& sv) const
+    {
+        return query_connection(sv);
     }
     inline std::optional<Conn*> query_connection(const std::string& sv)
     {

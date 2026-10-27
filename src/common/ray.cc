@@ -2,6 +2,15 @@
 #include <raymath.h>
 
 namespace common::ray {
+::Rectangle rec_centered_at(const ::Rectangle& rec, const ::Vector2& center)
+{
+    return ::Rectangle {
+        .x = center.x - rec.width / 2.0f,
+        .y = center.y - rec.height / 2.0f,
+        .width = rec.width,
+        .height = rec.height,
+    };
+}
 ::Vector2 rec_center(const ::Rectangle& rec)
 {
     return ::Vector2Add(

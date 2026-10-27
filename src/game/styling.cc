@@ -1,6 +1,8 @@
 #include "game/Styling.hpp"
+#include "common/Ray.hpp"
 #include "common/Result.hpp"
 #include "common/String.hpp"
+#include "game/StylingContext.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include <raylib.h>
@@ -87,6 +89,18 @@ Style::from_xml(pugi::xml_node& node)
             .y = apos.attrs->y
         };
     }
+    if (auto rpch = node.child("rel-pos"); rpch) {
+        auto unm = xml::unmarshall_node<xml_node_rep::rel_pos_node>(rpch);
+        if (unm.iserr())
+            return { unm.unwrap_err() };
+        auto rpos = unm.unwrap();
+        style.m_rel_pos = RelativePos {
+            .rel_to = rpos.attrs->rel,
+            .side = rpos.attrs->side,
+            .distance = rpos.attrs->distance
+        };
+        style.dependencies.push_back(rpos.attrs->rel);
+    }
     // TODO: actual font loading but that comes much later
     style.m_font = ::GetFontDefault();
     style.m_fontd = FontData {
@@ -171,12 +185,39 @@ Style::get_styling_param(const std::string& name) const
     }
     return std::nullopt;
 }
-auto Style::style(Stylable* stylable) -> void
+auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
 {
     if (m_position)
         stylable->set_pos(*m_position);
     if (m_size)
         stylable->set_size(*m_size);
+    if (m_rel_pos) {
+        if (auto d = sctx->query_component(m_rel_pos->rel_to); d) {
+            // TODO: make this shit properly position the dependent
+            const auto& dist = m_rel_pos->distance;
+            auto d_b = d->get_bounds();
+            auto d_c = d->get_center();
+            const auto b = stylable->get_bounds();
+            const auto c = common::ray::rec_center(b);
+            using enum game::RelativePos::Side;
+            using enum components::AttachPt;
+            switch (m_rel_pos->side) {
+            case Top:
+                common::ray::rec_centered_at(
+                    b,
+                    d->get_att_point(TC));
+                break;
+            case Bottom:
+                break;
+            case Right:
+                stylable->set_pos({ .x = d_b.x + b.width + dist, .y = d_c.y });
+                break;
+            case Left:
+                stylable->set_pos({ .x = d_b.x + b.width - dist, .y = d_c.y });
+                break;
+            }
+        }
+    }
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {

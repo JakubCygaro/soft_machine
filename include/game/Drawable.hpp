@@ -3,6 +3,7 @@
 #include "game/Styling.hpp"
 #include <memory>
 #include <raylib.h>
+#include <raymath.h>
 namespace game {
 struct Editable {
     inline virtual ~Editable() { }
@@ -31,8 +32,11 @@ public:
         m_styling = s;
     }
     // styling
-    inline virtual void set_pos(const ::Vector2&) { };
-    inline virtual void set_size(const ::Vector2&) { };
+    inline virtual void set_pos(const ::Vector2&) override { };
+    inline virtual void set_size(const ::Vector2&) override { };
+    ::Vector2 get_pos() const override { return ::Vector2Zero(); }
+    ::Vector2 get_size() const override { return ::Vector2Zero(); }
+    ::Rectangle get_bounds() const override { return ::Rectangle { }; }
 
 protected:
     inline virtual const std::shared_ptr<Style>& get_style()

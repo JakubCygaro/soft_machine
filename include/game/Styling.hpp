@@ -9,10 +9,14 @@
 #include <unordered_map>
 #include <variant>
 namespace game {
+class StylingContext;
 struct Stylable {
     virtual ~Stylable();
     virtual void set_pos(const ::Vector2&) = 0;
+    virtual ::Vector2 get_pos() const = 0;
     virtual void set_size(const ::Vector2&) = 0;
+    virtual ::Vector2 get_size() const = 0;
+    virtual ::Rectangle get_bounds() const = 0;
 };
 
 struct FontData {
@@ -21,6 +25,13 @@ struct FontData {
 };
 struct RelativePos {
     std::string rel_to;
+    enum class Side {
+        Top,
+        Right,
+        Bottom,
+        Left,
+    } side;
+    float distance;
 };
 
 struct AsStylingParameter {
@@ -80,6 +91,14 @@ public:
             };
             xml::Attribute<attrs> attrs;
         };
+        struct rel_pos_node {
+            struct attrs {
+                std::string rel;
+                RelativePos::Side side;
+                float distance;
+            };
+            xml::Attribute<attrs> attrs;
+        };
         struct size_node {
             struct attrs {
                 float width { }, height { };
@@ -122,7 +141,7 @@ public:
     }
 
     // used to apply the styling on a Stylable object
-    auto style(Stylable*) -> void;
+    auto style(const StylingContext*, Stylable*) -> void;
     auto get_dependencies() -> const std::vector<std::string>&;
 
     const char*

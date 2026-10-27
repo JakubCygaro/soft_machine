@@ -58,10 +58,10 @@ public:
     OComponent& operator=(OComponent&& o);
     virtual ~OComponent();
 
-    ::Vector2 get_pos() const;
     virtual void set_pos(const ::Vector2& p) override;
+    ::Vector2 get_pos() const override;
     virtual void set_size(const ::Vector2& s) override;
-    ::Vector2 get_size() const;
+    ::Vector2 get_size() const override;
     ::Rectangle get_bounds() const;
     ::Vector2 get_center() const;
     virtual bool check_point_collision(const ::Vector2& point) const override;

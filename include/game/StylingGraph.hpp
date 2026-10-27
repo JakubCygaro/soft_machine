@@ -1,5 +1,6 @@
 #pragma once
 #include "components/GameGraphElements.hpp"
+#include "game/StylingContext.hpp"
 #include "machine/MachineGraph.hpp"
 #include <game/Styling.hpp>
 #include <memory>
@@ -10,7 +11,8 @@
 namespace game {
 class StylingGraph : public machine::MachineGraph<
                          components::OComponent,
-                         components::OConnection> {
+                         components::OConnection>,
+                     public game::StylingContext {
 public:
 private:
     using graph_t = machine::MachineGraph<
@@ -43,8 +45,13 @@ private:
     auto build_notify_queue_for(const elem_id_t&) -> std::optional<
         const std::queue<elem_id_t>&>;
     auto notify_incident_of_component(const elem_id_t&) -> void;
+
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;
+    virtual auto query_component(const std::string&) const
+        -> std::optional<const components::OComponent&> override;
+    virtual auto query_connection(const std::string&) const
+        -> std::optional<const components::OConnection&> override;
 };
 }

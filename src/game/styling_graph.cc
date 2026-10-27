@@ -1,6 +1,5 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
-#include <algorithm>
 #include <queue>
 #include <set>
 
@@ -35,12 +34,12 @@ StylingGraph* StylingGraph::create(Style::shared_ptr_t default_style)
 void StylingGraph::on_create_connection(elem_id_t, conn_t* conn)
 {
     conn->set_styling(m_default_style);
-    m_default_style->style(conn);
+    m_default_style->style(this, conn);
 }
 void StylingGraph::on_create_component(elem_id_t, comp_t* comp)
 {
     comp->set_styling(m_default_style);
-    m_default_style->style(comp);
+    m_default_style->style(this, comp);
 }
 auto StylingGraph::notify_incident_of_component(const elem_id_t& id) -> void
 {
@@ -128,7 +127,7 @@ auto StylingGraph::style_notify_for(
     while (!notify_queue.empty()) {
         auto nid = notify_queue.front();
         notify_queue.pop();
-        m_styles[nid]->style(get_element_as<Stylable>(nid));
+        m_styles[nid]->style(this, get_element_as<Stylable>(nid));
     }
     if (is_component(id))
         notify_incident_of_component(id);
@@ -140,5 +139,21 @@ auto StylingGraph::style_notify_for(
         return;
     const auto id = name_to_id(name);
     style_notify_for(id);
+}
+auto StylingGraph::query_component(const std::string& name) const
+    -> std::optional<const components::OComponent&>
+{
+    if (auto comp = graph_t::query_component(name); comp) {
+        return *comp.value();
+    }
+    return { };
+}
+auto StylingGraph::query_connection(const std::string& name) const
+    -> std::optional<const components::OConnection&>
+{
+    if (auto conn = graph_t::query_connection(name); conn) {
+        return *conn.value();
+    }
+    return { };
 }
 }
