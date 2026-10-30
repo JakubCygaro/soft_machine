@@ -1,7 +1,7 @@
 - change drawing code to be dependent upon style
 - fix a bug with CPU changing size
-- [facelift] file saving, selection and loading at runtime
 - styling via LISP, possibly with topo-sort before styling execution
+- add logic gates that treat integer messages as either ON (non-zero) and OFF (zero)
 ```xml
 <element name="element">
     <style>

@@ -193,29 +193,45 @@ auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
         stylable->set_size(*m_size);
     if (m_rel_pos) {
         if (auto d = sctx->query_component(m_rel_pos->rel_to); d) {
-            // TODO: make this shit properly position the dependent
             const auto& dist = m_rel_pos->distance;
-            auto d_b = d->get_bounds();
-            auto d_c = d->get_center();
             const auto b = stylable->get_bounds();
-            const auto c = common::ray::rec_center(b);
             using enum game::RelativePos::Side;
             using enum components::AttachPt;
+            ::Rectangle pos;
             switch (m_rel_pos->side) {
             case Top:
-                common::ray::rec_centered_at(
+                pos = common::ray::rec_centered_at(
                     b,
                     d->get_att_point(TC));
+                pos.y -= b.height / 2.0
+                    - dist;
                 break;
             case Bottom:
+                pos = common::ray::rec_centered_at(
+                    b,
+                    d->get_att_point(BC));
+                pos.y += b.height / 2.0
+                    + dist;
                 break;
             case Right:
-                stylable->set_pos({ .x = d_b.x + b.width + dist, .y = d_c.y });
+                pos = common::ray::rec_centered_at(
+                    b,
+                    d->get_att_point(R));
+                pos.x += b.width / 2.0
+                    + dist;
                 break;
             case Left:
-                stylable->set_pos({ .x = d_b.x + b.width - dist, .y = d_c.y });
+                pos = common::ray::rec_centered_at(
+                    b,
+                    d->get_att_point(L));
+                pos.x -= b.width / 2.0
+                    + dist;
                 break;
             }
+            stylable->set_pos({ pos.x, pos.y });
+        } else {
+            ::TraceLog(::LOG_ERROR, "unable to find styling reference %s",
+                m_rel_pos->rel_to.c_str());
         }
     }
 }

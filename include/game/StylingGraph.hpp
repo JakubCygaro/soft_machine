@@ -49,6 +49,7 @@ private:
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;
+    auto style_notify_all() -> void;
     virtual auto query_component(const std::string&) const
         -> std::optional<const components::OComponent&> override;
     virtual auto query_connection(const std::string&) const

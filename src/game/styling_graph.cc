@@ -132,6 +132,12 @@ auto StylingGraph::style_notify_for(
     if (is_component(id))
         notify_incident_of_component(id);
 }
+auto StylingGraph::style_notify_all() -> void
+{
+    for (const auto& [elem_id, st] : m_styles) {
+        style_notify_for(elem_id);
+    }
+}
 auto StylingGraph::style_notify_for(
     const std::string& name) -> void
 {

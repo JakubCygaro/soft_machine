@@ -410,6 +410,7 @@ populate_machine_from_xml(graph_t& mg, const std::string& xml)
             return { res.unwrap_err() };
         }
     }
+    mg.style_notify_all();
     return { unit() };
 }
 Result<std::runtime_error, std::string>

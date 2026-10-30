@@ -262,9 +262,9 @@ public:
     }
 
 protected:
-    inline elem_id_t name_to_id(const std::string& name)
+    inline elem_id_t name_to_id(const std::string& name) const
     {
-        return m_named_elements[name];
+        return m_named_elements.at(name);
     }
 
 private:
@@ -598,10 +598,6 @@ public:
             : std::nullopt;
     }
     using comp_or_conn_ptr_t = std::variant<Comp*, Conn*>;
-    inline std::optional<const Comp*> query_component(const std::string& sv) const
-    {
-        return query_component(sv);
-    }
     inline std::optional<Comp*> query_component(const std::string& sv)
     {
         if (is_component(sv)) {
@@ -609,14 +605,24 @@ public:
         }
         return std::nullopt;
     }
-    inline std::optional<const Conn*> query_connection(const std::string& sv) const
+    inline std::optional<const Comp*> query_component(const std::string& sv) const
     {
-        return query_connection(sv);
+        if (is_component(sv)) {
+            return m_comps_by_id.at(name_to_id(sv));
+        }
+        return std::nullopt;
     }
     inline std::optional<Conn*> query_connection(const std::string& sv)
     {
         if (is_connector(sv)) {
             return m_conns_by_id[name_to_id(sv)];
+        }
+        return std::nullopt;
+    }
+    inline std::optional<const Conn*> query_connection(const std::string& sv) const
+    {
+        if (is_connector(sv)) {
+            return m_conns_by_id.at(name_to_id(sv));
         }
         return std::nullopt;
     }

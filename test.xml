@@ -6,7 +6,7 @@
             <rel-pos
                 rel="CPU"
                 side="Left"
-                distance="100"
+                distance="200"
                 />
         </style>
         <memset>2 1 3 7 100</memset>
