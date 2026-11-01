@@ -101,6 +101,9 @@ Style::from_xml(pugi::xml_node& node)
         };
         style.dependencies.push_back(rpos.attrs->rel);
     }
+    if (auto lispch = node.child("lisp"); lispch) {
+        style.m_lisp = lispch.text().get();
+    }
     // TODO: actual font loading but that comes much later
     style.m_font = ::GetFontDefault();
     style.m_fontd = FontData {
@@ -143,6 +146,7 @@ Style::Style(Style&& o)
     , m_position { std::move(o.m_position) }
     , m_rel_pos { std::move(o.m_rel_pos) }
     , m_size { std::move(o.m_size) }
+    , m_lisp { std::move(o.m_lisp) }
 {
 }
 Style& Style::operator=(Style&& o)
@@ -155,6 +159,7 @@ Style& Style::operator=(Style&& o)
     m_position = std::move(o.m_position);
     m_rel_pos = std::move(o.m_rel_pos);
     m_size = std::move(o.m_size);
+    m_lisp = std::move(o.m_lisp);
     return *this;
 }
 Style::~Style()
@@ -187,8 +192,6 @@ Style::get_styling_param(const std::string& name) const
 }
 auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
 {
-    if (m_position)
-        stylable->set_pos(*m_position);
     if (m_size)
         stylable->set_size(*m_size);
     if (m_rel_pos) {
@@ -228,12 +231,16 @@ auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
                     + dist;
                 break;
             }
-            stylable->set_pos({ pos.x, pos.y });
+            stylable->set_pos({
+                pos.x + m_position.value_or(::Vector2Zero()).x,
+                pos.y + m_position.value_or(::Vector2Zero()).y,
+            });
         } else {
-            ::TraceLog(::LOG_ERROR, "unable to find styling reference %s",
+            ::TraceLog(::LOG_ERROR, "[Styling] Unable to find styling reference '%s'",
                 m_rel_pos->rel_to.c_str());
         }
-    }
+    } else if (m_position)
+        stylable->set_pos(*m_position);
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {
@@ -277,5 +284,18 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
 }
 Stylable::~Stylable()
 {
+}
+void Style::set_current_instance(Style* s)
+{
+    s_instance = s;
+}
+void Style::clear_current_instance()
+{
+    s_instance = nullptr;
+}
+void Style::instance_set_abs_pos(::Vector2 pos)
+{
+    if (s_instance)
+        s_instance->m_position = pos;
 }
 }

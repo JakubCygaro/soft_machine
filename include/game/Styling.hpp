@@ -1,6 +1,8 @@
 #pragma once
 
 #include "game/XmlMarshalling.hpp"
+#include "s7.h"
+#include "scheme/Scheme.hpp"
 #include <memory>
 #include <optional>
 #include <raylib.h>
@@ -46,7 +48,14 @@ using StylingParameter = std::variant<
     std::shared_ptr<AsStylingParameter>,
     std::string>;
 
+class StyleSchemeWrap : public scheme::SchemeWrap<StyleSchemeWrap> {
+public:
+    void init(::s7_scheme*);
+    virtual inline ~StyleSchemeWrap() = default;
+};
+
 class StyleBuilder;
+
 class Style {
 public:
     static constexpr std::string_view ABS_POS_NODE = "abs-pos";
@@ -56,6 +65,7 @@ public:
 
 private:
     friend class StyleBuilder;
+    friend class StyleSchemeWrap;
     using custom_parameters_t = std::unordered_map<std::string, StylingParameter>;
     custom_parameters_t custom_parameters { };
     std::string m_font_name;
@@ -65,6 +75,7 @@ private:
     std::optional<::Vector2> m_position { };
     std::optional<RelativePos> m_rel_pos;
     std::optional<::Vector2> m_size { };
+    std::optional<std::string> m_lisp { };
     Style();
 
 public:
@@ -148,6 +159,14 @@ public:
     marshall_to_xml_name() const noexcept;
     void
     marshall_to_xml(pugi::xml_node&) const noexcept;
+
+private:
+    inline static Style* s_instance;
+    static void set_current_instance(Style* s);
+    static void clear_current_instance();
+
+public:
+    static void instance_set_abs_pos(::Vector2);
 };
 
 class StyleBuilder {

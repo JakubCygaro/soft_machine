@@ -80,6 +80,7 @@ target_link_libraries(sf_commons
     # PRIVATE ${rlimgui}
     PUBLIC rlImGui
     PUBLIC imgui
+    PUBLIC s7
 )
 
 add_executable(soft_machine
