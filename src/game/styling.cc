@@ -190,8 +190,15 @@ Style::get_styling_param(const std::string& name) const
     }
     return std::nullopt;
 }
-auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
+auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
 {
+    m_sctx = sctx;
+    m_styllable = stylable;
+    if (m_lisp) {
+        Style::set_current_instance(&(*this));
+        sctx->get_style_scheme().execute_string(*m_lisp);
+        Style::clear_current_instance();
+    }
     if (m_size)
         stylable->set_size(*m_size);
     if (m_rel_pos) {
@@ -241,6 +248,8 @@ auto Style::style(const StylingContext* sctx, Stylable* stylable) -> void
         }
     } else if (m_position)
         stylable->set_pos(*m_position);
+    m_sctx = nullptr;
+    m_styllable = nullptr;
 }
 auto Style::get_dependencies() -> const std::vector<std::string>&
 {
@@ -297,5 +306,9 @@ void Style::instance_set_abs_pos(::Vector2 pos)
 {
     if (s_instance)
         s_instance->m_position = pos;
+}
+::Vector2 Style::instance_get_abs_pos()
+{
+    return s_instance->m_position.value_or(::Vector2Zero());
 }
 }

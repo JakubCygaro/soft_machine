@@ -51,7 +51,7 @@ using StylingParameter = std::variant<
 class StyleSchemeWrap : public scheme::SchemeWrap<StyleSchemeWrap> {
 public:
     void init(::s7_scheme*);
-    virtual inline ~StyleSchemeWrap() = default;
+    virtual ~StyleSchemeWrap() = default;
 };
 
 class StyleBuilder;
@@ -71,6 +71,10 @@ private:
     std::string m_font_name;
     ::Font m_font;
     FontData m_fontd;
+
+    StylingContext* m_sctx = nullptr;
+    Stylable* m_styllable = nullptr;
+
     std::vector<std::string> dependencies { };
     std::optional<::Vector2> m_position { };
     std::optional<RelativePos> m_rel_pos;
@@ -152,7 +156,7 @@ public:
     }
 
     // used to apply the styling on a Stylable object
-    auto style(const StylingContext*, Stylable*) -> void;
+    auto style(StylingContext*, Stylable*) -> void;
     auto get_dependencies() -> const std::vector<std::string>&;
 
     const char*
@@ -167,6 +171,7 @@ private:
 
 public:
     static void instance_set_abs_pos(::Vector2);
+    static ::Vector2 instance_get_abs_pos();
 };
 
 class StyleBuilder {

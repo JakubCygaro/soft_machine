@@ -61,6 +61,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/game/styling.cc
     ${CMAKE_SOURCE_DIR}/src/game/style_builder.cc
     ${CMAKE_SOURCE_DIR}/src/game/styling_graph.cc
+    ${CMAKE_SOURCE_DIR}/src/game/styling_scheme.cc
     ${CMAKE_SOURCE_DIR}/src/components/Passthrough.cc
     ${CMAKE_SOURCE_DIR}/src/components/Memory.cc
     ${CMAKE_SOURCE_DIR}/src/components/Memory_mem.cc

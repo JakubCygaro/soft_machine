@@ -22,6 +22,7 @@ private:
     std::unordered_map<elem_id_t, std::vector<elem_id_t>> m_dependent { };
     Style::shared_ptr_t m_default_style;
     std::unordered_map<elem_id_t, std::queue<elem_id_t>> m_notify_queue_cache { };
+    std::unique_ptr<StyleSchemeWrap> m_style_scm { };
 
 protected:
     StylingGraph(Style::shared_ptr_t default_style);
@@ -54,5 +55,6 @@ public:
         -> std::optional<const components::OComponent&> override;
     virtual auto query_connection(const std::string&) const
         -> std::optional<const components::OConnection&> override;
+    virtual game::StyleSchemeWrap& get_style_scheme() override;
 };
 }

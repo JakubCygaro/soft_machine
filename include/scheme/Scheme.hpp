@@ -25,12 +25,16 @@ public:
         static_assert(
             requires(T t, ::s7_scheme* scm) { t.init(scm); },
             "T has no init() method");
-        static_cast<T*>(this)->init();
+        static_cast<T*>(this)->init(m_s7);
     }
     virtual inline ~SchemeWrap()
     {
         if (m_s7)
             ::s7_free(m_s7);
+    }
+    virtual inline void execute_string(const std::string& str)
+    {
+        ::s7_eval_c_string(m_s7, str.c_str());
     }
 };
 }

@@ -8,6 +8,7 @@ namespace game {
 StylingGraph::StylingGraph(Style::shared_ptr_t default_style)
     : game::StylingGraph::graph_t()
     , m_default_style { default_style }
+    , m_style_scm { std::make_unique<StyleSchemeWrap>() }
 {
 }
 StylingGraph::StylingGraph(StylingGraph&& o)
@@ -16,6 +17,7 @@ StylingGraph::StylingGraph(StylingGraph&& o)
     , m_dependent { std::move(o.m_dependent) }
     , m_default_style { std::move(o.m_default_style) }
     , m_notify_queue_cache { std::move(o.m_notify_queue_cache) }
+    , m_style_scm { std::move(o.m_style_scm) }
 {
 }
 StylingGraph& StylingGraph::operator=(StylingGraph&& o)
@@ -25,6 +27,7 @@ StylingGraph& StylingGraph::operator=(StylingGraph&& o)
     m_dependent = std::move(o.m_dependent);
     m_default_style = std::move(o.m_default_style);
     m_notify_queue_cache = std::move(o.m_notify_queue_cache);
+    m_style_scm = std::move(o.m_style_scm);
     return *this;
 }
 StylingGraph* StylingGraph::create(Style::shared_ptr_t default_style)
@@ -161,5 +164,9 @@ auto StylingGraph::query_connection(const std::string& name) const
         return *conn.value();
     }
     return { };
+}
+game::StyleSchemeWrap& StylingGraph::get_style_scheme()
+{
+    return *m_style_scm;
 }
 }
