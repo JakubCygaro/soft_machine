@@ -118,6 +118,9 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
 auto StylingGraph::style_element_with_dep(const elem_id_t& nid) -> void
 {
     m_currently_styling = nid;
+    if (m_styles[nid]->should_rebuild_dep_graph()) {
+        m_dependent[nid].clear();
+    }
     m_styles[nid]->style(this, get_element_as<Stylable>(nid));
     m_currently_styling = std::nullopt;
 }
