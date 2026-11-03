@@ -173,6 +173,8 @@ private:
 public:
     static void instance_set_abs_pos(::Vector2);
     static ::Vector2 instance_get_abs_pos();
+    static void instance_set_rel_pos(RelativePos);
+    static std::optional<const RelativePos&> instance_get_rel_pos();
 };
 
 class StyleBuilder {

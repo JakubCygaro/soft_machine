@@ -64,6 +64,7 @@ constexpr std::optional<E> string_to_enum(const std::string_view sv)
 #else
 {
     (void)sv;
+    return std::nullopt;
 }
 #endif
 

@@ -6,6 +6,7 @@
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include <raylib.h>
+#include <raymath.h>
 #include <type_traits>
 #include <variant>
 
@@ -299,6 +300,12 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
 Stylable::~Stylable()
 {
 }
+namespace {
+    inline void log_instance_not_set_err()
+    {
+        ::TraceLog(::LOG_ERROR, "[STYLING-LISP] Style instance not set!");
+    }
+}
 void Style::set_current_instance(Style* s)
 {
     s_instance = s;
@@ -311,9 +318,28 @@ void Style::instance_set_abs_pos(::Vector2 pos)
 {
     if (s_instance)
         s_instance->m_position = pos;
+    else
+        log_instance_not_set_err();
 }
 ::Vector2 Style::instance_get_abs_pos()
 {
-    return s_instance->m_position.value_or(::Vector2Zero());
+    if (s_instance)
+        return s_instance->m_position.value_or(::Vector2Zero());
+    log_instance_not_set_err();
+    return ::Vector2Zero();
+}
+void Style::instance_set_rel_pos(RelativePos rp)
+{
+    if (s_instance)
+        s_instance->m_rel_pos = rp;
+    else
+        log_instance_not_set_err();
+}
+std::optional<const RelativePos&> Style::instance_get_rel_pos()
+{
+    if (s_instance)
+        return s_instance->m_rel_pos;
+    log_instance_not_set_err();
+    return { };
 }
 }
