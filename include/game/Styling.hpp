@@ -75,7 +75,7 @@ private:
     StylingContext* m_sctx = nullptr;
     Stylable* m_styllable = nullptr;
 
-    std::vector<std::string> dependencies { };
+    // std::vector<std::string> dependencies { };
     std::optional<::Vector2> m_position { };
     std::optional<RelativePos> m_rel_pos;
     std::optional<::Vector2> m_size { };
@@ -157,7 +157,7 @@ public:
 
     // used to apply the styling on a Stylable object
     auto style(StylingContext*, Stylable*) -> void;
-    auto get_dependencies() -> const std::vector<std::string>&;
+    // auto get_dependencies() -> const std::vector<std::string>&;
 
     const char*
     marshall_to_xml_name() const noexcept;

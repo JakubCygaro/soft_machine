@@ -6,6 +6,7 @@
 #include <memory>
 #include <queue>
 #include <raylib.h>
+#include <set>
 #include <string>
 #include <unordered_map>
 namespace game {
@@ -18,11 +19,33 @@ private:
     using graph_t = machine::MachineGraph<
         components::OComponent,
         components::OConnection>;
+
+public:
+    struct Deps {
+    private:
+        std::vector<elem_id_t> ids { };
+        std::set<elem_id_t> dep_hash { };
+
+    public:
+        auto check(const elem_id_t&) const -> bool;
+        auto insert(const elem_id_t&) -> void;
+        auto remove(const elem_id_t&) -> void;
+        auto clear() -> void;
+        auto get_dep_list() -> const std::vector<elem_id_t>&;
+        Deps() = default;
+        Deps(const Deps&) = delete;
+        Deps& operator=(const Deps&) = delete;
+        Deps(Deps&&) = default;
+        Deps& operator=(Deps&&) = default;
+    };
+
+private:
     std::unordered_map<elem_id_t, Style::shared_ptr_t> m_styles { };
-    std::unordered_map<elem_id_t, std::vector<elem_id_t>> m_dependent { };
+    std::unordered_map<elem_id_t, Deps> m_dependent { };
     Style::shared_ptr_t m_default_style;
     std::unordered_map<elem_id_t, std::queue<elem_id_t>> m_notify_queue_cache { };
     std::unique_ptr<StyleSchemeWrap> m_style_scm { };
+    std::optional<elem_id_t> m_currently_styling { };
 
 protected:
     StylingGraph(Style::shared_ptr_t default_style);
@@ -46,14 +69,17 @@ private:
     auto build_notify_queue_for(const elem_id_t&) -> std::optional<
         const std::queue<elem_id_t>&>;
     auto notify_incident_of_component(const elem_id_t&) -> void;
+    /// styling with dependency tracing on query calls
+    auto style_element_with_dep(const elem_id_t&) -> void;
 
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;
     auto style_notify_all() -> void;
-    virtual auto query_component(const std::string&) const
+    auto try_add_dep_to_current(const std::string&) -> void;
+    virtual auto query_component(const std::string&, bool)
         -> std::optional<const components::OComponent&> override;
-    virtual auto query_connection(const std::string&) const
+    virtual auto query_connection(const std::string&, bool)
         -> std::optional<const components::OConnection&> override;
     virtual game::StyleSchemeWrap& get_style_scheme() override;
 };

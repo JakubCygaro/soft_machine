@@ -75,12 +75,12 @@ auto StylingGraph::register_style(
     m_styles[id] = s;
     element->set_styling(s);
     m_dependent[id] = { };
-    for (const auto& dep : s->get_dependencies()) {
-        if (!exists(dep))
-            continue;
-        auto dep_id = name_to_id(dep);
-        m_dependent[id].push_back(dep_id);
-    }
+    // for (const auto& dep : s->get_dependencies()) {
+    //     if (!exists(dep))
+    //         continue;
+    //     auto dep_id = name_to_id(dep);
+    //     m_dependent[id].push_back(dep_id);
+    // }
     style_notify_for(id);
 }
 
@@ -92,7 +92,7 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
     notify_queue.push(id);
 
     std::queue<elem_id_t> dependents { };
-    for (auto& d : m_dependent[id]) {
+    for (auto& d : m_dependent[id].get_dep_list()) {
         if (exists(d))
             dependents.push(d);
     }
@@ -103,7 +103,7 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
             return std::nullopt;
         else
             cycle_hash.insert(did);
-        for (auto& d2 : m_dependent[did]) {
+        for (auto& d2 : m_dependent[did].get_dep_list()) {
             dependents.push(d2);
         }
         notify_queue.push(did);
@@ -114,6 +114,12 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
     }
     m_notify_queue_cache[id] = std::move(notify_queue);
     return m_notify_queue_cache.at(id);
+}
+auto StylingGraph::style_element_with_dep(const elem_id_t& nid) -> void
+{
+    m_currently_styling = nid;
+    m_styles[nid]->style(this, get_element_as<Stylable>(nid));
+    m_currently_styling = std::nullopt;
 }
 auto StylingGraph::style_notify_for(
     const elem_id_t& id) -> void
@@ -130,7 +136,8 @@ auto StylingGraph::style_notify_for(
     while (!notify_queue.empty()) {
         auto nid = notify_queue.front();
         notify_queue.pop();
-        m_styles[nid]->style(this, get_element_as<Stylable>(nid));
+        style_element_with_dep(nid);
+        // m_styles[nid]->style(this, get_element_as<Stylable>(nid));
     }
     if (is_component(id))
         notify_incident_of_component(id);
@@ -149,18 +156,29 @@ auto StylingGraph::style_notify_for(
     const auto id = name_to_id(name);
     style_notify_for(id);
 }
-auto StylingGraph::query_component(const std::string& name) const
+
+auto StylingGraph::try_add_dep_to_current(const std::string& name) -> void
+{
+    if (auto nid = m_currently_styling; nid) {
+        m_dependent.at(*nid).insert(name_to_id(name));
+    }
+}
+auto StylingGraph::query_component(const std::string& name, bool no_dep)
     -> std::optional<const components::OComponent&>
 {
     if (auto comp = graph_t::query_component(name); comp) {
+        if (!no_dep)
+            try_add_dep_to_current(name);
         return *comp.value();
     }
     return { };
 }
-auto StylingGraph::query_connection(const std::string& name) const
+auto StylingGraph::query_connection(const std::string& name, bool no_dep)
     -> std::optional<const components::OConnection&>
 {
     if (auto conn = graph_t::query_connection(name); conn) {
+        if (!no_dep)
+            try_add_dep_to_current(name);
         return *conn.value();
     }
     return { };
@@ -168,5 +186,33 @@ auto StylingGraph::query_connection(const std::string& name) const
 game::StyleSchemeWrap& StylingGraph::get_style_scheme()
 {
     return *m_style_scm;
+}
+auto StylingGraph::Deps::check(const elem_id_t& id) const -> bool
+{
+    return dep_hash.contains(id);
+}
+auto StylingGraph::Deps::insert(const elem_id_t& id) -> void
+{
+    if (!check(id)) {
+        ids.push_back(id);
+        dep_hash.insert(id);
+    }
+}
+auto StylingGraph::Deps::remove(const elem_id_t& id) -> void
+{
+    if (check(id)) {
+        ids.erase(std::find(ids.begin(), ids.end(), id));
+        dep_hash.erase(id);
+    }
+}
+auto StylingGraph::Deps::clear() -> void
+{
+    ids.clear();
+    dep_hash.clear();
+}
+
+auto StylingGraph::Deps::get_dep_list() -> const std::vector<elem_id_t>&
+{
+    return ids;
 }
 }

@@ -99,7 +99,7 @@ Style::from_xml(pugi::xml_node& node)
             .side = rpos.attrs->side,
             .distance = rpos.attrs->distance
         };
-        style.dependencies.push_back(rpos.attrs->rel);
+        // style.dependencies.push_back(rpos.attrs->rel);
     }
     if (auto lispch = node.child("lisp"); lispch) {
         style.m_lisp = lispch.text().get();
@@ -142,7 +142,7 @@ Style::Style(Style&& o)
     , m_font_name { std::move(o.m_font_name) }
     , m_font { o.m_font }
     , m_fontd { o.m_fontd }
-    , dependencies { std::move(o.dependencies) }
+    // , dependencies { std::move(o.dependencies) }
     , m_position { std::move(o.m_position) }
     , m_rel_pos { std::move(o.m_rel_pos) }
     , m_size { std::move(o.m_size) }
@@ -155,7 +155,7 @@ Style& Style::operator=(Style&& o)
     m_font = o.m_font;
     m_font_name = std::move(o.m_font_name);
     m_fontd = o.m_fontd;
-    dependencies = std::move(o.dependencies);
+    // dependencies = std::move(o.dependencies);
     m_position = std::move(o.m_position);
     m_rel_pos = std::move(o.m_rel_pos);
     m_size = std::move(o.m_size);
@@ -202,7 +202,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     if (m_size)
         stylable->set_size(*m_size);
     if (m_rel_pos) {
-        if (auto d = sctx->query_component(m_rel_pos->rel_to); d) {
+        if (auto d = sctx->query_component(m_rel_pos->rel_to, true); d) {
             const auto& dist = m_rel_pos->distance;
             const auto b = stylable->get_bounds();
             using enum game::RelativePos::Side;
@@ -251,10 +251,10 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     m_sctx = nullptr;
     m_styllable = nullptr;
 }
-auto Style::get_dependencies() -> const std::vector<std::string>&
-{
-    return dependencies;
-}
+// auto Style::get_dependencies() -> const std::vector<std::string>&
+// {
+//     return dependencies;
+// }
 const char*
 Style::marshall_to_xml_name() const noexcept
 {
