@@ -158,6 +158,7 @@ public:
     // used to apply the styling on a Stylable object
     auto style(StylingContext*, Stylable*) -> void;
     // auto get_dependencies() -> const std::vector<std::string>&;
+    auto should_rebuild_dep_graph() const -> bool;
 
     const char*
     marshall_to_xml_name() const noexcept;

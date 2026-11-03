@@ -1,3 +1,4 @@
+- add check to Style if the dependency graph has to be rebuild
 - change drawing code to be dependent upon style
 - fix a bug with CPU changing size
 - styling via LISP, possibly with topo-sort before styling execution

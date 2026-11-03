@@ -251,6 +251,11 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     m_sctx = nullptr;
     m_styllable = nullptr;
 }
+auto Style::should_rebuild_dep_graph() const -> bool
+{
+    // TODO: here the magic should happen
+    return false;
+}
 // auto Style::get_dependencies() -> const std::vector<std::string>&
 // {
 //     return dependencies;
