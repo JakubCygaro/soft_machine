@@ -28,7 +28,7 @@ public:
 
     public:
         auto check(const elem_id_t&) const -> bool;
-        auto insert(const elem_id_t&) -> void;
+        auto insert(const elem_id_t&) -> bool;
         auto remove(const elem_id_t&) -> void;
         auto clear() -> void;
         auto get_dep_list() -> const std::vector<elem_id_t>&;

@@ -9,7 +9,9 @@
             <!--     distance="200" -->
             <!--     /> -->
             <lisp>
-                (set!-abs-pos -400.0 0.0)
+                (begin
+                    (set!-abs-pos -400.0 0.0)
+                    (set!-rel-pos "CPU" 'left 200.0))
             </lisp>
         </style>
         <memset>2 1 3 7 100</memset>

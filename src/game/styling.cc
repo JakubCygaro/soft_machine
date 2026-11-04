@@ -203,7 +203,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     if (m_size)
         stylable->set_size(*m_size);
     if (m_rel_pos) {
-        if (auto d = sctx->query_component(m_rel_pos->rel_to, true); d) {
+        if (auto d = sctx->query_component(m_rel_pos->rel_to, false); d) {
             const auto& dist = m_rel_pos->distance;
             const auto b = stylable->get_bounds();
             using enum game::RelativePos::Side;
@@ -321,9 +321,13 @@ void Style::instance_set_abs_pos(::Vector2 pos)
     else
         log_instance_not_set_err();
 }
-::Vector2 Style::instance_get_abs_pos()
+::Vector2 Style::instance_get_abs_pos(std::optional<const std::string&> other)
 {
-    if (s_instance)
+    if (other) {
+        if (auto c = s_instance->m_sctx->query_component(*other); c) {
+            return c->get_pos();
+        }
+    } else if (s_instance)
         return s_instance->m_position.value_or(::Vector2Zero());
     log_instance_not_set_err();
     return ::Vector2Zero();

@@ -163,7 +163,8 @@ auto StylingGraph::style_notify_for(
 auto StylingGraph::try_add_dep_to_current(const std::string& name) -> void
 {
     if (auto nid = m_currently_styling; nid) {
-        m_dependent.at(*nid).insert(name_to_id(name));
+        if (m_dependent.at(*nid).insert(name_to_id(name)))
+            m_notify_queue_cache.erase(*nid);
     }
 }
 auto StylingGraph::query_component(const std::string& name, bool no_dep)
@@ -194,12 +195,13 @@ auto StylingGraph::Deps::check(const elem_id_t& id) const -> bool
 {
     return dep_hash.contains(id);
 }
-auto StylingGraph::Deps::insert(const elem_id_t& id) -> void
+auto StylingGraph::Deps::insert(const elem_id_t& id) -> bool
 {
     if (!check(id)) {
         ids.push_back(id);
-        dep_hash.insert(id);
+        return std::get<1>(dep_hash.insert(id));
     }
+    return false;
 }
 auto StylingGraph::Deps::remove(const elem_id_t& id) -> void
 {

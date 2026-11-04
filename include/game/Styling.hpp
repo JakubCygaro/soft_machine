@@ -172,7 +172,8 @@ private:
 
 public:
     static void instance_set_abs_pos(::Vector2);
-    static ::Vector2 instance_get_abs_pos();
+    static ::Vector2
+    instance_get_abs_pos(std::optional<const std::string&> other = std::nullopt);
     static void instance_set_rel_pos(RelativePos);
     static std::optional<const RelativePos&> instance_get_rel_pos();
 };
