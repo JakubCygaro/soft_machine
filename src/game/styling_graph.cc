@@ -93,7 +93,7 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
 
     std::queue<elem_id_t> dependents { };
     for (auto& d : m_dependent[id].get_dep_list()) {
-        if (exists(d))
+        if (graph_t::exists(d))
             dependents.push(d);
     }
     while (!dependents.empty()) {
@@ -142,7 +142,7 @@ auto StylingGraph::style_notify_for(
         style_element_with_dep(nid);
         // m_styles[nid]->style(this, get_element_as<Stylable>(nid));
     }
-    if (is_component(id))
+    if (graph_t::is_component(id))
         notify_incident_of_component(id);
 }
 auto StylingGraph::style_notify_all() -> void
@@ -190,6 +190,18 @@ auto StylingGraph::query_connection(const std::string& name, bool no_dep)
 game::StyleSchemeWrap& StylingGraph::get_style_scheme()
 {
     return *m_style_scm;
+}
+auto StylingGraph::exists(const std::string& n) const -> bool
+{
+    return graph_t::exists(n);
+}
+auto StylingGraph::is_connector(const std::string& n) const -> bool
+{
+    return graph_t::is_connector(n);
+}
+auto StylingGraph::is_component(const std::string& n) const -> bool
+{
+    return graph_t::is_component(n);
 }
 auto StylingGraph::Deps::check(const elem_id_t& id) const -> bool
 {

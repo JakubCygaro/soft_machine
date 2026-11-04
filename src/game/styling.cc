@@ -5,6 +5,7 @@
 #include "game/StylingContext.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
+#include <functional>
 #include <raylib.h>
 #include <raymath.h>
 #include <type_traits>
@@ -314,30 +315,50 @@ void Style::clear_current_instance()
 {
     s_instance = nullptr;
 }
+
+inline auto with_instance_or_err(Style* inst_ptr, auto func)
+{
+    if (inst_ptr)
+        return func(inst_ptr);
+    else {
+        log_instance_not_set_err();
+        if constexpr (std::is_void<decltype(func(inst_ptr))>::value) {
+            return;
+        } else {
+            return decltype(func(inst_ptr)) { };
+        }
+    }
+}
+
 void Style::instance_set_abs_pos(::Vector2 pos)
 {
-    if (s_instance)
-        s_instance->m_position = pos;
-    else
-        log_instance_not_set_err();
+    with_instance_or_err(s_instance, [=](Style* s) {
+        s->m_position = pos;
+    });
+    // if (s_instance)
+    //     s_instance->m_position = pos;
+    // else
+    //     log_instance_not_set_err();
 }
 ::Vector2 Style::instance_get_abs_pos(std::optional<const std::string&> other)
 {
     if (other) {
-        if (auto c = s_instance->m_sctx->query_component(*other); c) {
-            return c->get_pos();
-        }
-    } else if (s_instance)
-        return s_instance->m_position.value_or(::Vector2Zero());
-    log_instance_not_set_err();
-    return ::Vector2Zero();
+        return with_instance_or_err(s_instance, [&](auto* s) {
+            if (auto c = s->m_sctx->query_component(*other); c) {
+                return c->get_pos();
+            }
+            return ::Vector2Zero();
+        });
+    }
+    return with_instance_or_err(s_instance, [&](auto* s) {
+        return s->m_position.value_or(::Vector2Zero());
+    });
 }
 void Style::instance_set_rel_pos(RelativePos rp)
 {
-    if (s_instance)
-        s_instance->m_rel_pos = rp;
-    else
-        log_instance_not_set_err();
+    return with_instance_or_err(s_instance, [&](auto* s) {
+        s->m_rel_pos = rp;
+    });
 }
 std::optional<const RelativePos&> Style::instance_get_rel_pos()
 {
@@ -345,5 +366,23 @@ std::optional<const RelativePos&> Style::instance_get_rel_pos()
         return s_instance->m_rel_pos;
     log_instance_not_set_err();
     return { };
+}
+bool Style::instance_exists(const std::string& n)
+{
+    return with_instance_or_err(s_instance, [&](Style* s) {
+        return s->m_sctx->exists(n);
+    });
+}
+bool Style::instance_is_component(const std::string& n)
+{
+    return with_instance_or_err(s_instance, [&](Style* s) {
+        return s->m_sctx->is_component(n);
+    });
+}
+bool Style::instance_is_connection(const std::string& n)
+{
+    return with_instance_or_err(s_instance, [&](Style* s) {
+        return s->m_sctx->exists(n);
+    });
 }
 }

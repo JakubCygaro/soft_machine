@@ -82,5 +82,8 @@ public:
     virtual auto query_connection(const std::string&, bool)
         -> std::optional<const components::OConnection&> override;
     virtual game::StyleSchemeWrap& get_style_scheme() override;
+    virtual auto exists(const std::string&) const -> bool override;
+    virtual auto is_connector(const std::string&) const -> bool override;
+    virtual auto is_component(const std::string&) const -> bool override;
 };
 }

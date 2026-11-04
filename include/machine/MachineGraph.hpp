@@ -458,14 +458,20 @@ protected:
             return std::nullopt;
         }
     }
+
+public:
     inline bool exists(const std::string& n) const
     {
         return m_named_elements.contains(n);
     }
+
+protected:
     inline bool exists(const elem_id_t& n) const
     {
         return is_component(n) || is_connector(n);
     }
+
+public:
     inline bool is_connector(const std::string& n) const
     {
         return exists(n) && m_conns_by_id.contains(m_named_elements.at(n));
@@ -474,6 +480,8 @@ protected:
     {
         return exists(n) && m_comps_by_id.contains(m_named_elements.at(n));
     }
+
+protected:
     inline bool is_connector(const elem_id_t& n) const
     {
         return m_conns_by_id.contains(n);

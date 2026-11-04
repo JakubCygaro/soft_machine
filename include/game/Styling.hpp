@@ -176,6 +176,9 @@ public:
     instance_get_abs_pos(std::optional<const std::string&> other = std::nullopt);
     static void instance_set_rel_pos(RelativePos);
     static std::optional<const RelativePos&> instance_get_rel_pos();
+    static bool instance_exists(const std::string&);
+    static bool instance_is_component(const std::string&);
+    static bool instance_is_connection(const std::string&);
 };
 
 class StyleBuilder {
