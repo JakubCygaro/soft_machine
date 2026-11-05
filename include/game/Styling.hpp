@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/Editable.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "s7.h"
 #include "scheme/Scheme.hpp"
@@ -56,7 +57,7 @@ public:
 
 class StyleBuilder;
 
-class Style {
+class Style : public Editable {
 public:
     static constexpr std::string_view ABS_POS_NODE = "abs-pos";
     // static constexpr std::string_view ABS_POS_NODE = "abs-pos";
@@ -179,6 +180,7 @@ public:
     static bool instance_exists(const std::string&);
     static bool instance_is_component(const std::string&);
     static bool instance_is_connection(const std::string&);
+    virtual bool draw_edit_window() override;
 };
 
 class StyleBuilder {

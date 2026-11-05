@@ -1,17 +1,11 @@
 #pragma once
 
 #include "game/Styling.hpp"
+#include "game/Editable.hpp"
 #include <memory>
 #include <raylib.h>
 #include <raymath.h>
 namespace game {
-struct Editable {
-    inline virtual ~Editable() { }
-    /// the return value indicates whether a change to the underlying object occured
-    virtual bool draw_edit_window() = 0;
-    /// handler for when the object is notified that something has changed
-    inline virtual void on_notified() { };
-};
 class Object : public Editable, public Stylable {
 private:
     std::shared_ptr<Style> m_styling;

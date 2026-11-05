@@ -160,6 +160,9 @@ bool OComponent::draw_edit_window()
         m_bounds.x = pos[0];
         m_bounds.y = pos[1];
     }
+    if (auto s = get_style(); s) {
+        s->draw_edit_window();
+    }
     return notify;
 }
 
