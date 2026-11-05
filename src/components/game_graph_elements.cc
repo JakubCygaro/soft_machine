@@ -155,7 +155,7 @@ void OComponent::marshall_to_xml(pugi::xml_node& self) const noexcept
 }
 std::unique_ptr<game::Editor> OComponent::get_editor_object()
 {
-    float pos[2] = { m_bounds.x, m_bounds.y };
+    std::array<float, 2> pos = { m_bounds.x, m_bounds.y };
     auto style = get_style();
     auto style_edior = style ? style->get_editor_object() : nullptr;
     return game::LambdaEditor::make([this,
@@ -163,9 +163,9 @@ std::unique_ptr<game::Editor> OComponent::get_editor_object()
                                         pos = pos] mutable -> bool {
         auto notify = false;
         if (ImGui::CollapsingHeader("component")) {
-            if ((notify |= ImGui::InputFloat2("Position", pos))) {
-                m_bounds.x = pos[0];
-                m_bounds.y = pos[1];
+            if ((notify |= ImGui::InputFloat2("Position", pos.data()))) {
+                this->m_bounds.x = pos[0];
+                this->m_bounds.y = pos[1];
             }
         }
         if (style_edior) {

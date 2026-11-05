@@ -10,9 +10,11 @@
 #include "imgui.h"
 #include <algorithm>
 #include <array>
+#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <optional>
+#include <print>
 #include <raylib.h>
 #include <raymath.h>
 #include <type_traits>
@@ -394,51 +396,51 @@ bool Style::instance_is_connection(const std::string& n)
 }
 std::unique_ptr<Editor> Style::get_editor_object()
 {
-    float _abs_pos[2] = { };
-    char _rel_pos_r[256] { };
-    char _rel_pos_s[256] { };
+    std::array<float, 2> _abs_pos = { };
+    std::array<char, 256> _rel_pos_r = { };
+    std::array<char, 256> _rel_pos_s = { };
     common::visit_opt(m_position, [&](const auto& p) {
         _abs_pos[0] = p.x;
         _abs_pos[1] = p.y;
     });
-    static float _rel_pos_d;
+    float _rel_pos_d;
     common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
         _rel_pos_d = rp.distance;
-        std::strcpy(_rel_pos_r, rp.rel_to.c_str());
-        std::strcpy(_rel_pos_s, common::reflect::enum_to_string(rp.side).c_str());
+        std::strcpy(_rel_pos_r.data(), rp.rel_to.c_str());
+        std::strcpy(_rel_pos_s.data(), common::reflect::enum_to_string(rp.side).c_str());
     });
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
         if (ImGui::CollapsingHeader("styling")) {
             ImGui::SeparatorText("Absolute position");
-            if ((flag |= ImGui::InputFloat2("Pos", _abs_pos))) {
-                m_position = ::Vector2 {
+            if ((flag |= ImGui::InputFloat2("Pos", _abs_pos.data()))) {
+                this->m_position = ::Vector2 {
                     _abs_pos[0],
                     _abs_pos[1],
                 };
             }
             ImGui::SeparatorText("Relative position");
-            ImGui::InputText("Depends on", _rel_pos_r, sizeof(_rel_pos_r));
-            if (m_rel_pos
-                && ImGui::InputText("Side", _rel_pos_s, sizeof(_rel_pos_s))) {
+            ImGui::InputText("Depends on", _rel_pos_r.data(), _rel_pos_r.size());
+            if (this->m_rel_pos
+                && ImGui::InputText("Side", _rel_pos_s.data(), _rel_pos_s.size())) {
             }
-            if (m_rel_pos
+            if (this->m_rel_pos
                 && ImGui::InputFloat("Distance", &_rel_pos_d)) {
             }
-            if ((std::strlen(_rel_pos_r) != 0 || m_rel_pos)
+            if ((std::strlen(_rel_pos_r.data()) != 0 || this->m_rel_pos)
                 && ImGui::Button("Change")) {
-                if (!m_rel_pos)
-                    m_rel_pos = RelativePos { };
-                m_rel_pos->rel_to.clear();
+                RelativePos rp { };
+                rp.rel_to.resize(_rel_pos_r.size());
                 std::copy(
-                    std::begin(_rel_pos_r),
-                    std::end(_rel_pos_r),
-                    m_rel_pos->rel_to.begin());
+                    _rel_pos_r.begin(),
+                    _rel_pos_r.end(),
+                    rp.rel_to.begin());
                 using enum common::reflect::MatchCase;
-                m_rel_pos->side = common::reflect::string_to_enum<
-                    game::RelativePos::Side, IgnoreCase>(_rel_pos_s)
-                                      .value_or(m_rel_pos->side);
-                m_rel_pos->distance = _rel_pos_d;
+                rp.side = common::reflect::string_to_enum<
+                    game::RelativePos::Side, IgnoreCase>(_rel_pos_s.data())
+                              .value_or(game::RelativePos::Side::Left);
+                rp.distance = _rel_pos_d;
+                this->m_rel_pos = std::move(rp);
                 flag |= true;
             }
         }
