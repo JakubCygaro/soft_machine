@@ -71,6 +71,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/components/Display.cc
     ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
     ${CMAKE_SOURCE_DIR}/src/components/Clock.cc
+    ${CMAKE_SOURCE_DIR}/src/components/editable.cc
     ${CMAKE_SOURCE_DIR}/src/components/game_graph_elements.cc
     ${CMAKE_SOURCE_DIR}/src/common/ray.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc

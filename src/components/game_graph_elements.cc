@@ -1,5 +1,6 @@
 #include "common/String.hpp"
 #include "components/GameGraphElements.hpp"
+#include "game/Editable.hpp"
 #include "imgui.h"
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
@@ -152,18 +153,26 @@ void OComponent::marshall_to_xml(pugi::xml_node& self) const noexcept
         style.child("abs-pos").attribute("y").set_value(pos.y);
     }
 }
-bool OComponent::draw_edit_window()
+std::unique_ptr<game::Editor> OComponent::get_editor_object()
 {
-    auto notify = false;
-    static float pos[2] = { m_bounds.x, m_bounds.y };
-    if ((notify |= ImGui::InputFloat2("Position", pos))) {
-        m_bounds.x = pos[0];
-        m_bounds.y = pos[1];
-    }
-    if (auto s = get_style(); s) {
-        s->draw_edit_window();
-    }
-    return notify;
+    float pos[2] = { m_bounds.x, m_bounds.y };
+    auto style = get_style();
+    auto style_edior = style ? style->get_editor_object() : nullptr;
+    return game::LambdaEditor::make([this,
+                                        style_edior = std::move(style_edior),
+                                        pos = pos] mutable -> bool {
+        auto notify = false;
+        if (ImGui::CollapsingHeader("component")) {
+            if ((notify |= ImGui::InputFloat2("Position", pos))) {
+                m_bounds.x = pos[0];
+                m_bounds.y = pos[1];
+            }
+        }
+        if (style_edior) {
+            notify |= style_edior->draw_update();
+        }
+        return notify;
+    });
 }
 
 OConnection::OConnection(
@@ -286,9 +295,11 @@ void OConnection::marshall_to_xml(pugi::xml_node& self) const noexcept
         s->marshall_to_xml(style);
     }
 }
-bool OConnection::draw_edit_window()
+std::unique_ptr<game::Editor> OConnection::get_editor_object()
 {
-    return false;
+    return game::LambdaEditor::make([] mutable {
+        return false;
+    });
 }
 void OConnection::on_notified()
 {

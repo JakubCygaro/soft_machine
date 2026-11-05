@@ -3,11 +3,13 @@
 #include "common/Ray.hpp"
 #include "common/Result.hpp"
 #include "common/String.hpp"
+#include "game/Editable.hpp"
 #include "game/StylingContext.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include "imgui.h"
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <functional>
 #include <optional>
@@ -390,61 +392,58 @@ bool Style::instance_is_connection(const std::string& n)
         return s->m_sctx->exists(n);
     });
 }
-bool Style::draw_edit_window()
+std::unique_ptr<Editor> Style::get_editor_object()
 {
-    using bullshit_t = std::optional<Unit>;
-    bool flag = false;
-    static float _abs_pos[2];
-    common::visit_opt(m_position, [](const auto& p) {
-        _abs_pos[0] = p.x;
-        _abs_pos[1] = p.y;
-    });
-    static float _rel_pos_d;
-    static char _rel_pos_r[256] { };
-    static char _rel_pos_s[256] { };
-    common::visit_opt(m_rel_pos, [](const RelativePos& rp) {
-        _rel_pos_d = rp.distance;
-        std::strcpy(_rel_pos_r, rp.rel_to.c_str());
-        std::strcpy(_rel_pos_s, common::reflect::enum_to_string(rp.side).c_str());
-    });
+    float _abs_pos[2] = { };
+    char _rel_pos_r[256] { };
+    char _rel_pos_s[256] { };
+    return LambdaEditor::make([=, this] mutable -> bool {
+        bool flag = false;
+        common::visit_opt(m_position, [&](const auto& p) {
+            _abs_pos[0] = p.x;
+            _abs_pos[1] = p.y;
+        });
+        static float _rel_pos_d;
+        common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
+            _rel_pos_d = rp.distance;
+            std::strcpy(_rel_pos_r, rp.rel_to.c_str());
+            std::strcpy(_rel_pos_s, common::reflect::enum_to_string(rp.side).c_str());
+        });
 
-    if (ImGui::CollapsingHeader("styling")) {
-        ImGui::SeparatorText("Relative position");
-        if ((flag |= ImGui::InputFloat2("Position", _abs_pos))) {
-            m_position = ::Vector2 {
-                _abs_pos[0],
-                _abs_pos[1],
-            };
+        if (ImGui::CollapsingHeader("styling")) {
+            ImGui::SeparatorText("Absolute position");
+            if ((flag |= ImGui::InputFloat2("Pos", _abs_pos))) {
+                m_position = ::Vector2 {
+                    _abs_pos[0],
+                    _abs_pos[1],
+                };
+            }
+            ImGui::SeparatorText("Relative position");
+            ImGui::InputText("Depends on", _rel_pos_r, sizeof(_rel_pos_r));
+            if (m_rel_pos
+                && ImGui::InputText("Side", _rel_pos_s, sizeof(_rel_pos_s))) {
+            }
+            if (m_rel_pos
+                && ImGui::InputFloat("Distance", &_rel_pos_d)) {
+            }
+            if (std::strlen(_rel_pos_r) == 0
+                && ImGui::Button("Change")) {
+                if (!m_rel_pos)
+                    m_rel_pos = RelativePos { };
+                m_rel_pos->rel_to.clear();
+                std::copy(
+                    std::begin(_rel_pos_r),
+                    std::end(_rel_pos_r),
+                    m_rel_pos->rel_to.begin());
+                using enum common::reflect::MatchCase;
+                m_rel_pos->side = common::reflect::string_to_enum<
+                    game::RelativePos::Side, IgnoreCase>(_rel_pos_s)
+                                      .value_or(m_rel_pos->side);
+                m_rel_pos->distance = _rel_pos_d;
+                flag |= true;
+            }
         }
-        ImGui::SeparatorText("Relative position");
-        if ((flag |= ImGui::InputText("Depends on",
-                 _rel_pos_r,
-                 sizeof(_rel_pos_r)))) {
-            if (!m_rel_pos)
-                m_rel_pos = RelativePos { };
-            m_rel_pos->rel_to.clear();
-            std::copy(
-                std::begin(_rel_pos_r),
-                std::end(_rel_pos_r),
-                m_rel_pos->rel_to.begin());
-        }
-        if ((flag |= ImGui::InputText("Depends on",
-                 _rel_pos_s,
-                 sizeof(_rel_pos_s)))) {
-            if (!m_rel_pos)
-                m_rel_pos = RelativePos { };
-            using enum common::reflect::MatchCase;
-            m_rel_pos->side = common::reflect::string_to_enum<
-                game::RelativePos::Side,
-                IgnoreCase>(_rel_pos_s)
-                                  .value_or(m_rel_pos->side);
-        }
-        if ((flag |= ImGui::InputFloat("Distance", &_rel_pos_d))) {
-            if (!m_rel_pos)
-                m_rel_pos = RelativePos { };
-        }
-    }
-
-    return flag;
+        return flag;
+    });
 }
 }

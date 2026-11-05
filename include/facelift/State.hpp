@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "facelift/GatherComponents.hpp"
 #include "game/Drawable.hpp"
+#include "game/Editable.hpp"
 #include <cstdint>
 #include <expected>
 #include <filesystem>
@@ -25,10 +26,12 @@ struct FaceliftState {
     std::optional<std::string> open_conn_bld { };
 
     // std::vector<either_comp_or_conn> objects { };
-    std::optional<
-        std::pair<
-            either_comp_or_conn, game::Editable*>>
-        selected;
+    struct Selected {
+        either_comp_or_conn element;
+        game::Editable* as_editable;
+        std::unique_ptr<game::Editor> editor_object;
+    };
+    std::optional<Selected> selected;
     bool is_dragging = false;
     bool was_dragging = false;
     bool is_element_list_open = false;

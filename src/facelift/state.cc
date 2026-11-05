@@ -9,7 +9,6 @@
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
 #include <filesystem>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <raylib.h>
@@ -67,6 +66,9 @@ namespace {
                         conn->on_notified();
                     return std::optional(Unit());
                 });
+            fl_state.graph_scene
+                ->get_graph()
+                ->style_notify_for(elem->get_name());
         });
     }
 }
@@ -81,9 +83,11 @@ void element_list_draw()
                  ->get_components()) {
             ImGui::PushID(component->get_name().c_str());
             if (ImGui::Selectable(component->get_name().c_str())) {
-                fl_state.selected = {
-                    component.get(),
-                    static_cast<game::Editable*>(component.get())
+                auto* p = component.get();
+                fl_state.selected = FaceliftState::Selected {
+                    .element = p,
+                    .as_editable = static_cast<game::Editable*>(component.get()),
+                    .editor_object = p->get_editor_object(),
                 };
             }
             ImGui::PopID();
@@ -179,7 +183,7 @@ void update_objects()
         && !fl_state.connect_to
         && ::IsKeyReleased(::KEY_DELETE)
         && !ImGui::GetIO().WantCaptureMouse) {
-        apply_on(fl_state.selected->first, [&](auto& elem) {
+        apply_on(fl_state.selected->element, [&](auto& elem) {
             fl_state.graph_scene
                 ->get_graph()
                 ->remove_element(elem->get_name());
@@ -188,12 +192,12 @@ void update_objects()
     }
     const auto holds_component = fl_state.selected
         && std::holds_alternative<components::OComponent*>(
-            fl_state.selected->first);
+            fl_state.selected->element);
     fl_state.is_dragging = fl_state.selected
         && !ImGui::GetIO().WantCaptureMouse
         && ::IsMouseButtonDown(::MOUSE_BUTTON_LEFT)
         && holds_component
-        && (std::get<components::OComponent*>(fl_state.selected->first)
+        && (std::get<components::OComponent*>(fl_state.selected->element)
                 ->check_point_collision(wmouse)
             || fl_state.was_dragging);
     // stopped dragging
@@ -201,14 +205,14 @@ void update_objects()
         && fl_state.was_dragging
         && !fl_state.is_dragging
         && holds_component) {
-        auto comp = std::get<components::OComponent*>(fl_state.selected->first);
+        auto comp = std::get<components::OComponent*>(fl_state.selected->element);
         const auto b = comp->get_bounds();
         const ::Vector2 pos = {
             .x = wmouse.x - (b.width / 2.0f),
             .y = wmouse.y - (b.height / 2.0f),
         };
         comp->set_pos(pos);
-        notify_element(fl_state.selected->first);
+        notify_element(fl_state.selected->element);
     }
     fl_state.was_dragging = fl_state.is_dragging;
     // no focus on graph if edit mode and hit
@@ -233,7 +237,7 @@ void update()
     }
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_W)) {
         fl_state.selected = toggle(fl_state.is_edit_mode)
-            ? fl_state.selected
+            ? std::move(fl_state.selected)
             : std::nullopt;
         if (!fl_state.selected)
             fl_state.connect_to = nullptr;
@@ -305,7 +309,7 @@ void selected_draw()
     const auto wmouse = ::GetScreenToWorld2D(
         ::GetMousePosition(),
         *fl_state.graph_scene->get_instance_camera());
-    if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected.value().first);
+    if (auto c = std::get_if<decltype(as_comp)>(&fl_state.selected.value().element);
         c) {
         as_comp = *c;
     }
@@ -319,7 +323,7 @@ void selected_draw()
         if (fl_state.was_dragging
             && fl_state.is_dragging
             && fl_state.is_edit_mode) {
-            auto comp = std::get<components::OComponent*>(fl_state.selected->first);
+            auto comp = std::get<components::OComponent*>(fl_state.selected->element);
             const auto b = comp->get_bounds();
             const ::Vector2 pos = {
                 .x = wmouse.x - (b.width / 2.0f),
@@ -340,8 +344,8 @@ void selected_draw()
     }
     ImGui::Begin("Selected", &open);
     if (fl_state.selected) {
-        fl_state.selected->second->draw_edit_window()
-            ? notify_element(fl_state.selected->first)
+        fl_state.selected->editor_object->draw_update()
+            ? notify_element(fl_state.selected->element)
             : (void)0;
     }
     ImGui::End();
@@ -375,7 +379,7 @@ void draw()
         }
     }
     if (fl_state.open_conn_bld) {
-        auto& from = std::get<components::OComponent*>(fl_state.selected->first)
+        auto& from = std::get<components::OComponent*>(fl_state.selected->element)
                          ->get_name();
         auto& to = fl_state.connect_to->get_name();
         auto& bld = fl_state.conn_blds[*fl_state.open_conn_bld];

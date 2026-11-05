@@ -62,13 +62,13 @@ public:
     ::Vector2 get_pos() const override;
     virtual void set_size(const ::Vector2& s) override;
     ::Vector2 get_size() const override;
-    ::Rectangle get_bounds() const;
+    ::Rectangle get_bounds() const override;
     ::Vector2 get_center() const;
     virtual bool check_point_collision(const ::Vector2& point) const override;
     virtual ::Vector2 get_att_point(AttachPt att) const;
     virtual const char* marshall_to_xml_name() const noexcept override;
     virtual void marshall_to_xml(pugi::xml_node& self) const noexcept override;
-    virtual bool draw_edit_window() override;
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
 };
 class OConnection : public machine::Connection,
                     public game::Object,
@@ -119,7 +119,7 @@ public:
     marshall_to_xml_name() const noexcept override;
     virtual void
     marshall_to_xml(pugi::xml_node& self) const noexcept override;
-    virtual bool draw_edit_window() override;
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
     virtual void on_notified() override;
 };
 }
