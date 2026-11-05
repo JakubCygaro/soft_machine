@@ -86,7 +86,7 @@ void element_list_draw()
                 auto* p = component.get();
                 fl_state.selected = FaceliftState::Selected {
                     .element = p,
-                    .as_editable = static_cast<game::Editable*>(component.get()),
+                    .as_editable = static_cast<game::Editable*>(p),
                     .editor_object = p->get_editor_object(),
                 };
             }
@@ -102,9 +102,11 @@ void element_list_draw()
                  ->get_connections()) {
             ImGui::PushID(connector->get_name().c_str());
             if (ImGui::Selectable(connector->get_name().c_str())) {
-                fl_state.selected = {
-                    connector.get(),
-                    static_cast<game::Editable*>(connector.get())
+                auto* p = connector.get();
+                fl_state.selected = FaceliftState::Selected {
+                    .element = p,
+                    .as_editable = static_cast<game::Editable*>(p),
+                    .editor_object = p->get_editor_object(),
                 };
             }
             ImGui::PopID();
@@ -164,12 +166,19 @@ void update_objects()
                 if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
                     fl_state.connect_to = as_comp;
                 } else {
-                    fl_state.selected = { as_comp, dynamic_cast<game::Editable*>(obj) };
+                    fl_state.selected = {
+                        .element = as_comp,
+                        .as_editable = dynamic_cast<game::Editable*>(obj),
+                        .editor_object = obj->get_editor_object(),
+                    };
                     fl_state.connect_to = nullptr;
                 }
             } else {
-                fl_state.selected = { dynamic_cast<components::OConnection*>(obj),
-                    dynamic_cast<game::Editable*>(obj) };
+                fl_state.selected = {
+                    .element = dynamic_cast<components::OConnection*>(obj),
+                    .as_editable = dynamic_cast<game::Editable*>(obj),
+                    .editor_object = obj->get_editor_object(),
+                };
                 fl_state.connect_to = nullptr;
             }
             hit = true;

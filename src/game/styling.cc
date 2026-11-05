@@ -397,19 +397,18 @@ std::unique_ptr<Editor> Style::get_editor_object()
     float _abs_pos[2] = { };
     char _rel_pos_r[256] { };
     char _rel_pos_s[256] { };
+    common::visit_opt(m_position, [&](const auto& p) {
+        _abs_pos[0] = p.x;
+        _abs_pos[1] = p.y;
+    });
+    static float _rel_pos_d;
+    common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
+        _rel_pos_d = rp.distance;
+        std::strcpy(_rel_pos_r, rp.rel_to.c_str());
+        std::strcpy(_rel_pos_s, common::reflect::enum_to_string(rp.side).c_str());
+    });
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
-        common::visit_opt(m_position, [&](const auto& p) {
-            _abs_pos[0] = p.x;
-            _abs_pos[1] = p.y;
-        });
-        static float _rel_pos_d;
-        common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
-            _rel_pos_d = rp.distance;
-            std::strcpy(_rel_pos_r, rp.rel_to.c_str());
-            std::strcpy(_rel_pos_s, common::reflect::enum_to_string(rp.side).c_str());
-        });
-
         if (ImGui::CollapsingHeader("styling")) {
             ImGui::SeparatorText("Absolute position");
             if ((flag |= ImGui::InputFloat2("Pos", _abs_pos))) {
@@ -426,7 +425,7 @@ std::unique_ptr<Editor> Style::get_editor_object()
             if (m_rel_pos
                 && ImGui::InputFloat("Distance", &_rel_pos_d)) {
             }
-            if (std::strlen(_rel_pos_r) == 0
+            if ((std::strlen(_rel_pos_r) != 0 || m_rel_pos)
                 && ImGui::Button("Change")) {
                 if (!m_rel_pos)
                     m_rel_pos = RelativePos { };

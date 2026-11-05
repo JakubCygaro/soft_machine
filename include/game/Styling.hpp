@@ -27,14 +27,14 @@ struct FontData {
     int spacing { };
 };
 struct RelativePos {
-    std::string rel_to;
+    std::string rel_to { };
     enum class Side {
         Top,
         Right,
         Bottom,
         Left,
-    } side;
-    float distance;
+    } side { };
+    float distance { };
 };
 
 struct AsStylingParameter {
