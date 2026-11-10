@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
+#include <cstdio>
 #include <deque>
 #include <format>
 #include <list>
@@ -115,8 +116,8 @@ public:
         , m_procs { std::move(o.m_procs) }
         , m_paused { std::move(o.m_paused) }
         , m_initial_resume { std::move(o.m_initial_resume) }
-        , m_named_elements { std::move(m_named_elements) }
-        , m_next_id { std::move(m_next_id) }
+        , m_named_elements { std::move(o.m_named_elements) }
+        , m_next_id { std::move(o.m_next_id) }
     {
     }
     inline MachineGraph& operator=(MachineGraph&& o)
@@ -154,18 +155,12 @@ private:
     inline void register_actor(std::uint32_t with_id, T* pollable)
     {
         using namespace std::placeholders;
-        // MachineContext mctx = MachineContext(with_id, this);
-        // std::println("poll on {}", *get_name_of(with_id));
         auto proc = std::make_unique<Process>(pollable);
         this->m_procs.emplace(
             std::make_pair(
                 with_id,
                 std::move(proc)));
         m_initial_resume.push_back(with_id);
-        // auto& proc_ref = m_procs.at(with_id);
-        // auto act = pollable->poll(mctx);
-        // proc_ref->actor = std::move(act);
-        // m_initial_resume.push_back(&(proc_ref->actor.value()));
     }
 
 protected:
@@ -391,15 +386,6 @@ public:
             m_paused,
             m_initial_resume,
             m_incidents);
-        // m_procs.clear();
-        // m_named_elements.clear();
-        // m_comps.clear();
-        // m_comps_by_id.clear();
-        // m_conns.clear();
-        // m_conns_by_id.clear();
-        // m_paused.clear();
-        // m_initial_resume.clear();
-        // m_incidents.clear();
     }
 
 private:
@@ -523,11 +509,9 @@ public:
         }
         if (!m_initial_resume.empty()) {
             for (const auto& id : m_initial_resume) {
-                // std::println("poll of {}", *get_name_of(id));
                 MachineContext mctx = MachineContext(id, this);
                 auto& proc = m_procs[id];
                 proc->actor = std::move(proc->pollable->poll(mctx));
-                // proc->manual_resume();
             }
             m_initial_resume.clear();
         }
@@ -689,7 +673,6 @@ public:
         const std::uint32_t& self,
         shed::recv_callback_t c)
     {
-        // std::println("{} called recv", *get_name_of(self));
         m_procs[self]->awaiting_msg = c;
     }
     inline virtual std::optional<std::any> try_recv(

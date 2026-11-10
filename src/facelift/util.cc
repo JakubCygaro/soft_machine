@@ -9,6 +9,7 @@
 #include <iostream>
 #include <optional>
 #include <raylib.h>
+#include <sstream>
 namespace facelift {
 namespace fs = std::filesystem;
 std::expected<void, std::string> load_file(const std::string& p)
@@ -40,7 +41,7 @@ std::expected<void, std::string> load_file(const std::filesystem::path& p)
     }
     return { };
 }
-std::expected<void, std::string> save_graph_to_file(const std::filesystem::path& path)
+pugi::xml_document build_graph_document()
 {
     pugi::xml_document doc;
     auto graph_node = doc.root()
@@ -53,6 +54,19 @@ std::expected<void, std::string> save_graph_to_file(const std::filesystem::path&
         auto node = graph_node.append_child(elem->marshall_to_xml_name());
         elem->marshall_to_xml(node);
     }
+    return doc;
+}
+std::expected<std::string, std::string> do_dump()
+{
+    const auto doc = build_graph_document();
+    std::stringstream ss { };
+    pugi::xml_writer_stream writer { ss };
+    doc.save(writer);
+    return ss.str();
+}
+std::expected<void, std::string> save_graph_to_file(const std::filesystem::path& path)
+{
+    const auto doc = build_graph_document();
     doc.save_file(path.c_str());
     return { };
 }

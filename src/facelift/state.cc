@@ -251,6 +251,14 @@ void update()
         if (!fl_state.selected)
             fl_state.connect_to = nullptr;
     }
+    if (::IsKeyReleased(::KEY_F11)) {
+        toggle(fl_state.show_dump);
+        if (auto dump = do_dump(); dump) {
+            fl_state.graph_dump = dump.value();
+        } else {
+            ::TraceLog(::LOG_ERROR, "%s", dump.error().c_str());
+        }
+    }
     using enum FaceliftState::FileDialogState;
     if (fl_state.filed.has_file() && fl_state.file_dialog_state != NilState) {
         switch (fl_state.file_dialog_state) {
@@ -362,6 +370,14 @@ void selected_draw()
         fl_state.selected = std::nullopt;
 }
 
+void dump_draw()
+{
+    if (ImGui::Begin("Graph Dump", &fl_state.show_dump)) {
+        ImGui::Text("%s", fl_state.graph_dump.value().c_str());
+    }
+    ImGui::End();
+}
+
 void draw()
 {
     // ::rlImGuiBegin();
@@ -400,6 +416,9 @@ void draw()
             fl_state.open_conn_bld = std::nullopt;
             fl_state.selected = std::nullopt;
         }
+    }
+    if(fl_state.show_dump){
+        dump_draw();
     }
     if (fl_state.selected) {
         selected_draw();

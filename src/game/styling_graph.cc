@@ -1,18 +1,19 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
+#include <print>
 #include <queue>
 #include <set>
 
 namespace game {
 
 StylingGraph::StylingGraph(Style::shared_ptr_t default_style)
-    : game::StylingGraph::graph_t()
+    : graph_t()
     , m_default_style { default_style }
     , m_style_scm { std::make_unique<StyleSchemeWrap>() }
 {
 }
 StylingGraph::StylingGraph(StylingGraph&& o)
-    : StylingGraph::graph_t(std::move(o))
+    : graph_t(std::move(o))
     , m_styles { std::move(o.m_styles) }
     , m_dependent { std::move(o.m_dependent) }
     , m_default_style { std::move(o.m_default_style) }
@@ -22,7 +23,7 @@ StylingGraph::StylingGraph(StylingGraph&& o)
 }
 StylingGraph& StylingGraph::operator=(StylingGraph&& o)
 {
-    StylingGraph::graph_t::operator=(std::move(o));
+    graph_t::operator=(std::move(o));
     m_styles = std::move(o.m_styles);
     m_dependent = std::move(o.m_dependent);
     m_default_style = std::move(o.m_default_style);

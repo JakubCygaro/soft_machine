@@ -10,7 +10,6 @@
 #include "imgui.h"
 #include <algorithm>
 #include <array>
-#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <optional>
@@ -110,7 +109,6 @@ Style::from_xml(pugi::xml_node& node)
             .side = rpos.attrs->side,
             .distance = rpos.attrs->distance
         };
-        // style.dependencies.push_back(rpos.attrs->rel);
     }
     if (auto lispch = node.child("lisp"); lispch) {
         style.m_lisp = lispch.text().get();
@@ -153,7 +151,6 @@ Style::Style(Style&& o)
     , m_font_name { std::move(o.m_font_name) }
     , m_font { o.m_font }
     , m_fontd { o.m_fontd }
-    // , dependencies { std::move(o.dependencies) }
     , m_position { std::move(o.m_position) }
     , m_rel_pos { std::move(o.m_rel_pos) }
     , m_size { std::move(o.m_size) }
@@ -166,7 +163,6 @@ Style& Style::operator=(Style&& o)
     m_font = o.m_font;
     m_font_name = std::move(o.m_font_name);
     m_fontd = o.m_fontd;
-    // dependencies = std::move(o.dependencies);
     m_position = std::move(o.m_position);
     m_rel_pos = std::move(o.m_rel_pos);
     m_size = std::move(o.m_size);
@@ -225,14 +221,14 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
                     b,
                     d->get_att_point(TC));
                 pos.y -= b.height / 2.0
-                    - dist;
+                    + dist;
                 break;
             case Bottom:
                 pos = common::ray::rec_centered_at(
                     b,
                     d->get_att_point(BC));
                 pos.y += b.height / 2.0
-                    + dist;
+                    - dist;
                 break;
             case Right:
                 pos = common::ray::rec_centered_at(
@@ -429,18 +425,24 @@ std::unique_ptr<Editor> Style::get_editor_object()
             }
             if ((std::strlen(_rel_pos_r.data()) != 0 || this->m_rel_pos)
                 && ImGui::Button("Change")) {
-                RelativePos rp { };
-                rp.rel_to.resize(_rel_pos_r.size());
-                std::copy(
-                    _rel_pos_r.begin(),
-                    _rel_pos_r.end(),
-                    rp.rel_to.begin());
                 using enum common::reflect::MatchCase;
-                rp.side = common::reflect::string_to_enum<
-                    game::RelativePos::Side, IgnoreCase>(_rel_pos_s.data())
-                              .value_or(game::RelativePos::Side::Left);
-                rp.distance = _rel_pos_d;
+                using namespace common;
+                RelativePos rp {
+                    .rel_to = std::string(
+                        _rel_pos_r.data(), std::strlen(_rel_pos_r.data())),
+                    .side = reflect::string_to_enum<
+                        game::RelativePos::Side, IgnoreCase>(_rel_pos_s.data())
+                        .value_or(game::RelativePos::Side::Left),
+                    .distance = _rel_pos_d,
+                };
                 this->m_rel_pos = std::move(rp);
+                const auto as_str = reflect::enum_to_string(rp.side);
+                _rel_pos_s.fill('\0');
+                std::copy(
+                    as_str.begin(),
+                    as_str.end(),
+                    _rel_pos_s.begin());
+                // _rel_pos_s = reflect::enum_to_string(rp.side);
                 flag |= true;
             }
         }

@@ -36,6 +36,8 @@ struct FaceliftState {
     bool was_dragging = false;
     bool is_element_list_open = false;
     bool is_edit_mode = true;
+    bool show_dump = false;
+    std::optional<std::string> graph_dump;
     enum class FileDialogState {
         NilState,
         OpenFile,
@@ -73,5 +75,6 @@ void draw();
 void deinit();
 std::expected<void, std::string> load_file(const std::string&);
 std::expected<void, std::string> load_file(const std::filesystem::path&);
+std::expected<std::string, std::string> do_dump();
 std::expected<void, std::string> save_graph_to_file(const std::filesystem::path&);
 }
