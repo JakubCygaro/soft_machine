@@ -9,8 +9,11 @@
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
 #include <filesystem>
+#include <iostream>
 #include <memory>
 #include <optional>
+#include <ostream>
+#include <print>
 #include <raylib.h>
 #include <stdexcept>
 #include <string>
@@ -220,7 +223,13 @@ void update_objects()
             .x = wmouse.x - (b.width / 2.0f),
             .y = wmouse.y - (b.height / 2.0f),
         };
+        std::println("set_pos {} {}", pos.x, pos.y);
         comp->set_pos(pos);
+        std::flush(std::cout);
+        // fl_state.selected->editor_object = fl_state
+        //                                        .selected
+        //                                        ->as_editable
+        //                                        ->get_editor_object();
         notify_element(fl_state.selected->element);
     }
     fl_state.was_dragging = fl_state.is_dragging;
@@ -417,7 +426,7 @@ void draw()
             fl_state.selected = std::nullopt;
         }
     }
-    if(fl_state.show_dump){
+    if (fl_state.show_dump) {
         dump_draw();
     }
     if (fl_state.selected) {

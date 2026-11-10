@@ -81,6 +81,7 @@ private:
     std::optional<RelativePos> m_rel_pos;
     std::optional<::Vector2> m_size { };
     std::optional<std::string> m_lisp { };
+    bool m_override_abs_pos = true;
     Style();
 
 public:

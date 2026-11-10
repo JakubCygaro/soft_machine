@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "game/Editable.hpp"
 #include "imgui.h"
+#include <print>
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
 {
@@ -68,6 +69,7 @@ OComponent::~OComponent() { }
 }
 void OComponent::set_pos(const ::Vector2& p)
 {
+    std::println("OComponent::set_pos {} {}", p.x, p.y);
     this->m_bounds.x = p.x;
     this->m_bounds.y = p.y;
 }
@@ -161,11 +163,11 @@ std::unique_ptr<game::Editor> OComponent::get_editor_object()
     return game::LambdaEditor::make([this,
                                         style_edior = std::move(style_edior),
                                         pos = pos] mutable -> bool {
+        pos[0] = m_bounds.x, pos[1] = m_bounds.y;
         auto notify = false;
         if (ImGui::CollapsingHeader("component")) {
             if ((notify |= ImGui::InputFloat2("Position", pos.data()))) {
-                this->m_bounds.x = pos[0];
-                this->m_bounds.y = pos[1];
+                this->set_pos({ pos[0], pos[1] });
             }
         }
         if (style_edior) {

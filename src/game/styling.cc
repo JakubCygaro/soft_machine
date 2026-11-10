@@ -89,6 +89,7 @@ Style::from_xml(pugi::xml_node& node)
             .y = sz.attrs->height
         };
     }
+    style.m_override_abs_pos = false;
     if (auto apch = node.child("abs-pos"); apch) {
         auto unm = xml::unmarshall_node<xml_node_rep::abs_pos_node>(apch);
         if (unm.iserr())
@@ -98,6 +99,7 @@ Style::from_xml(pugi::xml_node& node)
             .x = apos.attrs->x,
             .y = apos.attrs->y
         };
+        style.m_override_abs_pos |= true;
     }
     if (auto rpch = node.child("rel-pos"); rpch) {
         auto unm = xml::unmarshall_node<xml_node_rep::rel_pos_node>(rpch);
@@ -109,6 +111,7 @@ Style::from_xml(pugi::xml_node& node)
             .side = rpos.attrs->side,
             .distance = rpos.attrs->distance
         };
+        style.m_override_abs_pos |= true;
     }
     if (auto lispch = node.child("lisp"); lispch) {
         style.m_lisp = lispch.text().get();
@@ -155,6 +158,7 @@ Style::Style(Style&& o)
     , m_rel_pos { std::move(o.m_rel_pos) }
     , m_size { std::move(o.m_size) }
     , m_lisp { std::move(o.m_lisp) }
+    , m_override_abs_pos { o.m_override_abs_pos }
 {
 }
 Style& Style::operator=(Style&& o)
@@ -167,6 +171,7 @@ Style& Style::operator=(Style&& o)
     m_rel_pos = std::move(o.m_rel_pos);
     m_size = std::move(o.m_size);
     m_lisp = std::move(o.m_lisp);
+    m_override_abs_pos = o.m_override_abs_pos;
     return *this;
 }
 Style::~Style()
@@ -253,8 +258,11 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
             ::TraceLog(::LOG_ERROR, "[Styling] Unable to find styling reference '%s'",
                 m_rel_pos->rel_to.c_str());
         }
-    } else if (m_position)
+    } else if (m_position) {
+        if (!m_override_abs_pos && *m_position != stylable->get_pos())
+            m_position = stylable->get_pos();
         stylable->set_pos(*m_position);
+    }
     m_sctx = nullptr;
     m_styllable = nullptr;
 }
@@ -263,10 +271,6 @@ auto Style::should_rebuild_dep_graph() const -> bool
     // TODO: here the magic should happen
     return false;
 }
-// auto Style::get_dependencies() -> const std::vector<std::string>&
-// {
-//     return dependencies;
-// }
 const char*
 Style::marshall_to_xml_name() const noexcept
 {
@@ -407,6 +411,8 @@ std::unique_ptr<Editor> Style::get_editor_object()
     });
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
+        if (this->m_override_abs_pos)
+            _abs_pos[0] = m_position->x, _abs_pos[1] = m_position->y;
         if (ImGui::CollapsingHeader("styling")) {
             ImGui::SeparatorText("Absolute position");
             if ((flag |= ImGui::InputFloat2("Pos", _abs_pos.data()))) {
@@ -414,6 +420,15 @@ std::unique_ptr<Editor> Style::get_editor_object()
                     _abs_pos[0],
                     _abs_pos[1],
                 };
+            }
+            ImGui::SameLine();
+            if (ImGui::Checkbox("Style override", &this->m_override_abs_pos)) {
+                flag |= true;
+                if (this->m_override_abs_pos)
+                    this->m_position = ::Vector2 {
+                        _abs_pos[0],
+                        _abs_pos[1],
+                    };
             }
             ImGui::SeparatorText("Relative position");
             ImGui::InputText("Depends on", _rel_pos_r.data(), _rel_pos_r.size());
