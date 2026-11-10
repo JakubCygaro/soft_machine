@@ -289,8 +289,8 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
     }
     if (m_size) {
         auto size = self.append_child("size");
-        size.append_attribute("width").set_value(m_position->x);
-        size.append_attribute("height").set_value(m_position->y);
+        size.append_attribute("width").set_value(m_size->x);
+        size.append_attribute("height").set_value(m_size->y);
     }
     auto custom = self.append_child("custom");
     for (auto& [k, v] : custom_parameters) {
@@ -397,11 +397,16 @@ bool Style::instance_is_connection(const std::string& n)
 std::unique_ptr<Editor> Style::get_editor_object()
 {
     std::array<float, 2> _abs_pos = { };
+    std::array<float, 2> _size = { };
     std::array<char, 256> _rel_pos_r = { };
     std::array<char, 256> _rel_pos_s = { };
     common::visit_opt(m_position, [&](const auto& p) {
         _abs_pos[0] = p.x;
         _abs_pos[1] = p.y;
+    });
+    common::visit_opt(m_size, [&](const auto& sz) {
+        _size[0] = sz.x;
+        _size[1] = sz.y;
     });
     float _rel_pos_d;
     common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
@@ -413,9 +418,18 @@ std::unique_ptr<Editor> Style::get_editor_object()
         bool flag = false;
         if (this->m_override_abs_pos)
             _abs_pos[0] = m_position->x, _abs_pos[1] = m_position->y;
+        if (m_size)
+            _size[0] = m_size->x, _size[1] = m_size->y;
         if (ImGui::CollapsingHeader("styling")) {
+            ImGui::SeparatorText("Size");
+            if ((flag |= ImGui::InputFloat2("Size", _size.data()))) {
+                this->m_size = ::Vector2 {
+                    _size[0],
+                    _size[1],
+                };
+            }
             ImGui::SeparatorText("Absolute position");
-            if ((flag |= ImGui::InputFloat2("Pos", _abs_pos.data()))) {
+            if ((flag |= ImGui::InputFloat2("Position", _abs_pos.data()))) {
                 this->m_position = ::Vector2 {
                     _abs_pos[0],
                     _abs_pos[1],

@@ -2,7 +2,6 @@
 #include "components/GameGraphElements.hpp"
 #include "game/Editable.hpp"
 #include "imgui.h"
-#include <print>
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
 {
@@ -69,7 +68,6 @@ OComponent::~OComponent() { }
 }
 void OComponent::set_pos(const ::Vector2& p)
 {
-    std::println("OComponent::set_pos {} {}", p.x, p.y);
     this->m_bounds.x = p.x;
     this->m_bounds.y = p.y;
 }
