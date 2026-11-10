@@ -1,3 +1,4 @@
+- full editability of LISP styling
 - full editability for all components - CPU needs an instruction parser for that to work
 - immediate mode drawing of components:
 ```cpp
