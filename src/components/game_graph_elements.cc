@@ -2,6 +2,7 @@
 #include "components/GameGraphElements.hpp"
 #include "game/Editable.hpp"
 #include "imgui.h"
+#include "common/reflect/Enum.hpp"
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
 {

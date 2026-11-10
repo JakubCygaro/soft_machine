@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
-#include <cstdio>
 #include <deque>
 #include <format>
 #include <list>

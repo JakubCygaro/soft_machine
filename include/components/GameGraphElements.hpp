@@ -1,6 +1,5 @@
 #pragma once
 #include "common/Result.hpp"
-#include "common/reflect/Enum.hpp"
 #include "game/Drawable.hpp"
 // #include "game/Xml.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -9,7 +8,6 @@
 #include <pugixml.hpp>
 #include <raylib.h>
 #include <raymath.h>
-#include <string_view>
 
 namespace components {
 

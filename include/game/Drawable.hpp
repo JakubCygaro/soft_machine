@@ -1,10 +1,12 @@
 #pragma once
 
-#include "game/Styling.hpp"
 #include "game/Editable.hpp"
+#include "game/Styling.hpp"
 #include <memory>
 #include <raylib.h>
 #include <raymath.h>
+
+
 namespace game {
 class Object : public Editable, public Stylable {
 private:
