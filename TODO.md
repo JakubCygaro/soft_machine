@@ -1,3 +1,10 @@
+- full editability for all components - CPU needs an instruction parser for that to work
+- immediate mode drawing of components:
+```cpp
+draw::BeginBody(m_bounds);
+// various draw calls
+draw::EndBody();
+```
 - add check to Style if the dependency graph has to be rebuild
 - change drawing code to be dependent upon style
 - fix a bug with CPU changing size
