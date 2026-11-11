@@ -1,13 +1,6 @@
 <graph>
     <memory name="MEM" layout="vertical">
         <style>
-            <!-- <abs-pos x="-400" y="0"/> -->
-            <!-- ponder upon this -->
-            <!-- <rel-pos -->
-            <!--     rel="CPU" -->
-            <!--     side="Left" -->
-            <!--     distance="200" -->
-            <!--     /> -->
             <lisp>
                 (begin
                     (set!-abs-pos -400.0 0.0)
@@ -102,7 +95,11 @@
     </passthrough>
     <display name="DISPLAY" >
         <style>
-            <abs-pos x="1500" y="0"/>
+            <rel-pos
+                rel="CPU"
+                side="Right"
+                distance="200"
+                />
             <size width="200" height="200"/>
             <font size="24"></font>
         </style>
@@ -115,7 +112,11 @@
     <!--repeater-->
     <repeater name="REP">
         <style>
-            <abs-pos x="600" y="1400"/>
+            <rel-pos
+                rel="CPU"
+                side="Bottom"
+                distance="200"
+                />
             <size width="100" height="100"/>
         </style>
     </repeater>
@@ -128,7 +129,11 @@
     <!--top row-->
     <button name="7BUTTON">
         <style>
-            <abs-pos x="200" y="1600"/>
+            <rel-pos
+                rel="8BUTTON"
+                side="Left"
+                distance="-200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">7</value>
@@ -140,7 +145,11 @@
 
     <button name="8BUTTON">
         <style>
-            <abs-pos x="500" y="1600"/>
+            <rel-pos
+                rel="REP"
+                side="Bottom"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">8</value>
@@ -152,7 +161,11 @@
 
     <button name="9BUTTON" >
         <style>
-            <abs-pos x="800" y="1600"/>
+            <rel-pos
+                rel="8BUTTON"
+                side="Right"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">9</value>
@@ -166,7 +179,11 @@
     <!--middle row-->
     <button name="4BUTTON" >
         <style>
-            <abs-pos x="200" y="1900"/>
+            <rel-pos
+                rel="5BUTTON"
+                side="Left"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">4</value>
@@ -178,7 +195,11 @@
 
     <button name="5BUTTON" >
         <style>
-            <abs-pos x="500" y="1900"/>
+            <rel-pos
+                rel="8BUTTON"
+                side="Bottom"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">5</value>
@@ -190,7 +211,11 @@
 
     <button name="6BUTTON" >
         <style>
-            <abs-pos x="800" y="1900"/>
+            <rel-pos
+                rel="5BUTTON"
+                side="Right"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">6</value>
@@ -204,7 +229,11 @@
     <!--bottom row-->
     <button name="1BUTTON" >
         <style>
-            <abs-pos x="200" y="2200"/>
+            <rel-pos
+                rel="2BUTTON"
+                side="Left"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">1</value>
@@ -216,7 +245,11 @@
 
     <button name="2BUTTON" >
         <style>
-            <abs-pos x="500" y="2200"/>
+            <rel-pos
+                rel="5BUTTON"
+                side="Bottom"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">2</value>
@@ -228,7 +261,11 @@
 
     <button name="3BUTTON" >
         <style>
-            <abs-pos x="800" y="2200"/>
+            <rel-pos
+                rel="2BUTTON"
+                side="Right"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">3</value>

@@ -1,6 +1,5 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
-#include <print>
 #include <queue>
 #include <set>
 
@@ -76,12 +75,6 @@ auto StylingGraph::register_style(
     m_styles[id] = s;
     element->set_styling(s);
     m_dependent[id] = { };
-    // for (const auto& dep : s->get_dependencies()) {
-    //     if (!exists(dep))
-    //         continue;
-    //     auto dep_id = name_to_id(dep);
-    //     m_dependent[id].push_back(dep_id);
-    // }
     style_notify_for(id);
 }
 
@@ -141,10 +134,9 @@ auto StylingGraph::style_notify_for(
         auto nid = notify_queue.front();
         notify_queue.pop();
         style_element_with_dep(nid);
-        // m_styles[nid]->style(this, get_element_as<Stylable>(nid));
+        if (graph_t::is_component(nid))
+            notify_incident_of_component(nid);
     }
-    if (graph_t::is_component(id))
-        notify_incident_of_component(id);
 }
 auto StylingGraph::style_notify_all() -> void
 {
@@ -164,8 +156,8 @@ auto StylingGraph::style_notify_for(
 auto StylingGraph::try_add_dep_to_current(const std::string& name) -> void
 {
     if (auto nid = m_currently_styling; nid) {
-        if (m_dependent.at(*nid).insert(name_to_id(name)))
-            m_notify_queue_cache.erase(*nid);
+        if (m_dependent.at(name_to_id(name)).insert(*nid))
+            m_notify_queue_cache.erase(name_to_id(name));
     }
 }
 auto StylingGraph::query_component(const std::string& name, bool no_dep)

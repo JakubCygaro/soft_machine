@@ -1,8 +1,8 @@
 #include "common/String.hpp"
+#include "common/reflect/Enum.hpp"
 #include "components/GameGraphElements.hpp"
 #include "game/Editable.hpp"
 #include "imgui.h"
-#include "common/reflect/Enum.hpp"
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
 {
@@ -164,7 +164,8 @@ std::unique_ptr<game::Editor> OComponent::get_editor_object()
                                         pos = pos] mutable -> bool {
         pos[0] = m_bounds.x, pos[1] = m_bounds.y;
         auto notify = false;
-        if (ImGui::CollapsingHeader("component")) {
+        if (ImGui::CollapsingHeader("component properties")) {
+            ImGui::Text("%s", this->get_name().c_str());
             if ((notify |= ImGui::InputFloat2("Position", pos.data()))) {
                 this->set_pos({ pos[0], pos[1] });
             }

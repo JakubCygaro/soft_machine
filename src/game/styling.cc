@@ -251,7 +251,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
                     b,
                     d->get_att_point(BC));
                 pos.y += b.height / 2.0
-                    - dist;
+                    + dist;
                 break;
             case Right:
                 pos = common::ray::rec_centered_at(
@@ -265,7 +265,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
                     b,
                     d->get_att_point(L));
                 pos.x -= b.width / 2.0
-                    + dist;
+                    - dist;
                 break;
             }
             stylable->set_pos({
@@ -443,13 +443,18 @@ std::unique_ptr<Editor> Style::get_editor_object()
         std::strcpy(_rel_pos_s.data(), common::reflect::enum_to_string(rp.side).c_str());
     });
     bool lisp_changed = false;
+    float _font_size = m_fontd.size;
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
-        if (this->m_override_abs_pos)
+        if (this->m_override_abs_pos && m_position)
             _abs_pos[0] = m_position->x, _abs_pos[1] = m_position->y;
         if (m_size)
             _size[0] = m_size->x, _size[1] = m_size->y;
         if (ImGui::CollapsingHeader("styling")) {
+            ImGui::SeparatorText("Font size");
+            if ((flag |= ImGui::InputFloat("Font Size", &_font_size))) {
+                this->m_fontd.size = _font_size;
+            }
             ImGui::SeparatorText("Size");
             if ((flag |= ImGui::InputFloat2("Size", _size.data()))) {
                 this->m_size = ::Vector2 {
@@ -503,6 +508,7 @@ std::unique_ptr<Editor> Style::get_editor_object()
                 // _rel_pos_s = reflect::enum_to_string(rp.side);
                 flag |= true;
             }
+            ImGui::SeparatorText("LISP source");
             if (ImGui::InputTextMultiline("LISP", _lisp.data(), _lisp.size())) {
                 lisp_changed |= true;
             }

@@ -182,7 +182,6 @@ public:
     static bool instance_exists(const std::string&);
     static bool instance_is_component(const std::string&);
     static bool instance_is_connection(const std::string&);
-    // virtual bool draw_edit_window() override;
     virtual std::unique_ptr<Editor> get_editor_object() override;
 };
 

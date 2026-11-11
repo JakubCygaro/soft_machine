@@ -1,3 +1,4 @@
+- fix ref styling, need cascading for incident
 - LISP error output to special error message sink
 - full editability of LISP styling
 - full editability for all components - CPU needs an instruction parser for that to work
