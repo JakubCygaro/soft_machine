@@ -3,6 +3,7 @@
 #include "common/Ray.hpp"
 #include "common/Result.hpp"
 #include "common/String.hpp"
+#include "common/reflect/Enum.hpp"
 #include "game/Editable.hpp"
 #include "game/StylingContext.hpp"
 #include "game/XmlMarshalling.hpp"
@@ -13,9 +14,10 @@
 #include <cstring>
 #include <functional>
 #include <optional>
-#include "common/reflect/Enum.hpp"
 #include <raylib.h>
 #include <raymath.h>
+#include <sstream>
+#include <string>
 #include <type_traits>
 #include <variant>
 
@@ -61,6 +63,20 @@ font_node_t::parse_xml(pugi::xml_text txt)
 
 Style::Style()
 {
+}
+namespace {
+    std::string trim_lisp_text(const pugi::xml_text& txt)
+    {
+        std::string ret;
+        ret.reserve(std::strlen(txt.get()));
+        std::stringstream ss;
+        ss << txt.get();
+        for (std::string line; std::getline(ss, line);) {
+            ret += common::trim(line);
+            ret += '\n';
+        }
+        return ret;
+    }
 }
 Result<std::runtime_error, Style>
 Style::from_xml(pugi::xml_node& node)
@@ -114,7 +130,9 @@ Style::from_xml(pugi::xml_node& node)
         style.m_override_abs_pos |= true;
     }
     if (auto lispch = node.child("lisp"); lispch) {
-        style.m_lisp = lispch.text().get();
+        style.m_lisp = trim_lisp_text(lispch.text());
+        // style.m_lisp = lispch.text().get();
+        // style.m_lisp = common::trim(*style.m_lisp);
     }
     // TODO: actual font loading but that comes much later
     style.m_font = ::GetFontDefault();
@@ -266,10 +284,11 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     m_sctx = nullptr;
     m_styllable = nullptr;
 }
-auto Style::should_rebuild_dep_graph() const -> bool
+auto Style::should_rebuild_dep_graph() -> bool
 {
-    // TODO: here the magic should happen
-    return false;
+    const auto ret = m_should_rebuild_dep;
+    this->m_should_rebuild_dep = false;
+    return ret;
 }
 const char*
 Style::marshall_to_xml_name() const noexcept
@@ -305,6 +324,10 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
             }
         },
             v);
+    }
+    if (m_lisp) {
+        auto lisp = self.append_child("lisp");
+        lisp.text() = *m_lisp;
     }
 }
 Stylable::~Stylable()
@@ -344,10 +367,6 @@ void Style::instance_set_abs_pos(::Vector2 pos)
     with_instance_or_err(s_instance, [=](Style* s) {
         s->m_position = pos;
     });
-    // if (s_instance)
-    //     s_instance->m_position = pos;
-    // else
-    //     log_instance_not_set_err();
 }
 ::Vector2 Style::instance_get_abs_pos(std::optional<const std::string&> other)
 {
@@ -400,6 +419,8 @@ std::unique_ptr<Editor> Style::get_editor_object()
     std::array<float, 2> _size = { };
     std::array<char, 256> _rel_pos_r = { };
     std::array<char, 256> _rel_pos_s = { };
+    // TODO: this probably needs to be dynamically resizable
+    std::array<char, 512> _lisp { };
     common::visit_opt(m_position, [&](const auto& p) {
         _abs_pos[0] = p.x;
         _abs_pos[1] = p.y;
@@ -407,6 +428,13 @@ std::unique_ptr<Editor> Style::get_editor_object()
     common::visit_opt(m_size, [&](const auto& sz) {
         _size[0] = sz.x;
         _size[1] = sz.y;
+    });
+    common::visit_opt(m_lisp, [&](const auto& lisp) {
+        _lisp.fill(0);
+        std::copy(
+            lisp.begin(),
+            lisp.end(),
+            _lisp.begin());
     });
     float _rel_pos_d;
     common::visit_opt(m_rel_pos, [&](const RelativePos& rp) {
@@ -472,6 +500,11 @@ std::unique_ptr<Editor> Style::get_editor_object()
                     as_str.end(),
                     _rel_pos_s.begin());
                 // _rel_pos_s = reflect::enum_to_string(rp.side);
+                flag |= true;
+            }
+            if (ImGui::InputTextMultiline("LISP", _lisp.data(), _lisp.size())) {
+                this->m_lisp = std::string(_lisp.data());
+                this->m_should_rebuild_dep = true;
                 flag |= true;
             }
         }

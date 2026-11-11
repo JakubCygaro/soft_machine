@@ -82,6 +82,7 @@ private:
     std::optional<::Vector2> m_size { };
     std::optional<std::string> m_lisp { };
     bool m_override_abs_pos = true;
+    bool m_should_rebuild_dep = false;
     Style();
 
 public:
@@ -160,7 +161,7 @@ public:
     // used to apply the styling on a Stylable object
     auto style(StylingContext*, Stylable*) -> void;
     // auto get_dependencies() -> const std::vector<std::string>&;
-    auto should_rebuild_dep_graph() const -> bool;
+    auto should_rebuild_dep_graph() -> bool;
 
     const char*
     marshall_to_xml_name() const noexcept;

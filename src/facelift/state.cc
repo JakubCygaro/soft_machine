@@ -8,6 +8,8 @@
 #include "imgui.h"
 #include "imgui_impl_raylib.h"
 #include "rlImGui.h"
+#include "s7.h"
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -268,6 +270,9 @@ void update()
             ::TraceLog(::LOG_ERROR, "%s", dump.error().c_str());
         }
     }
+    if (::IsKeyReleased(::KEY_F3)) {
+        toggle(fl_state.show_lisp_errors);
+    }
     using enum FaceliftState::FileDialogState;
     if (fl_state.filed.has_file() && fl_state.file_dialog_state != NilState) {
         switch (fl_state.file_dialog_state) {
@@ -378,6 +383,13 @@ void selected_draw()
     if (!open)
         fl_state.selected = std::nullopt;
 }
+void lisp_error_draw()
+{
+    if (ImGui::Begin("Lisp errors", &fl_state.show_lisp_errors)) {
+        ImGui::Text("%s", fl_state.lisp_error_log.c_str());
+    }
+    ImGui::End();
+}
 
 void dump_draw()
 {
@@ -429,6 +441,9 @@ void draw()
     if (fl_state.show_dump) {
         dump_draw();
     }
+    if (fl_state.show_lisp_errors) {
+        lisp_error_draw();
+    }
     if (fl_state.selected) {
         selected_draw();
     }
@@ -440,6 +455,21 @@ void draw()
     ImGui::Render();
     ::ImGui_ImplRaylib_RenderDrawData(ImGui::GetDrawData());
     ::EndDrawing();
+}
+
+extern "C" {
+static void lisp_style_error_port(::s7_scheme*, uint8_t c, ::s7_pointer)
+{
+    auto& log = fl_state.lisp_error_log;
+    if (log.size() >= 512) {
+        std::shift_left(
+            log.begin(),
+            log.end(),
+            100);
+        log.clear();
+    }
+    log.push_back(static_cast<char>(c));
+}
 }
 
 void init(const std::vector<std::string>& args)
@@ -470,7 +500,6 @@ void init(const std::vector<std::string>& args)
                 .spacing = 10 });
     auto def_style = std::move(bld)
                          .build_style();
-
     auto mg = std::unique_ptr<game::GraphScene::graph_t>(
         game::GraphScene::graph_t::create(
             std::make_shared<game::Style>(std::move(def_style))));
@@ -480,6 +509,11 @@ void init(const std::vector<std::string>& args)
             SCREEN_WIDTH,
             SCREEN_HEIGHT });
     fl_state.graph_scene = std::make_unique<game::GraphScene>(std::move(sc));
+    fl_state.lisp_error_log.reserve(256);
+    fl_state.graph_scene
+        ->get_graph()
+        ->get_style_scheme()
+        .set_error_port(&lisp_style_error_port);
 
     if (args.size() == 1) {
         auto p = std::string(args[0]);

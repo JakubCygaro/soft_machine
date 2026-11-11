@@ -37,6 +37,7 @@ struct FaceliftState {
     bool is_element_list_open = false;
     bool is_edit_mode = true;
     bool show_dump = false;
+    bool show_lisp_errors = false;
     std::optional<std::string> graph_dump;
     enum class FileDialogState {
         NilState,
@@ -65,6 +66,8 @@ struct FaceliftState {
         auto has_file() -> bool;
         auto take_file() -> std::filesystem::path;
     } filed { };
+
+    std::string lisp_error_log {};
 };
 
 inline FaceliftState fl_state;
