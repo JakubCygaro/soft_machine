@@ -41,7 +41,7 @@ static ::s7_pointer style_get_abs_pos(::s7_scheme* scm, ::s7_pointer args)
 {
     std::optional<std::string> param;
     // ex. (get-abs-pos "CPU")
-    if (::s7_is_string(args)) {
+    if (::s7_is_string(::s7_car(args))) {
         param = std::string(::s7_string(args));
     } else if (!::s7_is_null(scm, args)) {
         return (::s7_wrong_type_arg_error(scm,
@@ -98,7 +98,7 @@ static ::s7_pointer style_set_rel_pos(::s7_scheme* scm, ::s7_pointer args)
     return (::s7_nil(scm));
 }
 // ex. (get-rel-pos)
-static ::s7_pointer style_get_rel_pos(::s7_scheme* scm, ::s7_pointer args)
+static ::s7_pointer style_get_rel_pos(::s7_scheme* scm, ::s7_pointer)
 {
     const auto p = game::Style::instance_get_rel_pos();
     auto ret = ::s7_make_list(scm, 3, ::s7_nil(scm));
@@ -124,7 +124,7 @@ void StyleSchemeWrap::init(::s7_scheme* scm)
         false,
         "set absolute position");
     ::s7_define_function(scm,
-        "get!-abs-pos",
+        "get-abs-pos",
         ::style_get_abs_pos,
         0,
         1,

@@ -442,6 +442,7 @@ std::unique_ptr<Editor> Style::get_editor_object()
         std::strcpy(_rel_pos_r.data(), rp.rel_to.c_str());
         std::strcpy(_rel_pos_s.data(), common::reflect::enum_to_string(rp.side).c_str());
     });
+    bool lisp_changed = false;
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
         if (this->m_override_abs_pos)
@@ -503,8 +504,12 @@ std::unique_ptr<Editor> Style::get_editor_object()
                 flag |= true;
             }
             if (ImGui::InputTextMultiline("LISP", _lisp.data(), _lisp.size())) {
+                lisp_changed |= true;
+            }
+            if (lisp_changed && ImGui::Button("Save LISP")) {
                 this->m_lisp = std::string(_lisp.data());
                 this->m_should_rebuild_dep = true;
+                lisp_changed = false;
                 flag |= true;
             }
         }
