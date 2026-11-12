@@ -71,12 +71,14 @@ private:
     auto notify_incident_of_component(const elem_id_t&) -> void;
     /// styling with dependency tracing on query calls
     auto style_element_with_dep(const elem_id_t&) -> void;
+    auto try_invalidate_cache_for(const elem_id_t&) -> void;
+    auto try_invalidate_cache_for_current() -> void;
 
 public:
     auto register_style(const std::string&, std::shared_ptr<Style>) -> void;
     auto style_notify_for(const std::string&) -> void;
     auto style_notify_all() -> void;
-    auto try_add_dep_to_current(const std::string&) -> void;
+    auto try_add_dep_to_current(std::optional<const std::string&>) -> void;
     virtual auto query_component(const std::string&, bool)
         -> std::optional<const components::OComponent&> override;
     virtual auto query_connection(const std::string&, bool)

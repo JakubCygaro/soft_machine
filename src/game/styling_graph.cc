@@ -135,7 +135,7 @@ auto StylingGraph::style_notify_for(
 {
     if (!m_styles.contains(id))
         return;
-    //TODO: fix cache
+    // TODO: fix cache
     // auto notify_queue_opt = m_notify_queue_cache.contains(id)
     //     ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
     //     : build_notify_queue_for(id);
@@ -155,6 +155,7 @@ auto StylingGraph::style_notify_for(
 }
 auto StylingGraph::style_notify_all() -> void
 {
+    m_notify_queue_cache.clear();
     for (const auto& [elem_id, st] : m_styles) {
         style_notify_for(elem_id);
     }
@@ -167,24 +168,40 @@ auto StylingGraph::style_notify_for(
     const auto id = name_to_id(name);
     style_notify_for(id);
 }
-
-auto StylingGraph::try_add_dep_to_current(const std::string& name) -> void
+auto StylingGraph::try_invalidate_cache_for(const elem_id_t& id) -> void
 {
-    if (auto nid = m_currently_styling; nid) {
-        if (m_dependent.at(name_to_id(name)).insert(*nid))
-            m_notify_queue_cache.erase(name_to_id(name));
+    m_notify_queue_cache.erase(id);
+}
+auto StylingGraph::try_invalidate_cache_for_current() -> void
+{
+    if (auto nid = m_currently_styling; nid)
+        try_invalidate_cache_for(*nid);
+}
+auto StylingGraph::try_add_dep_to_current(
+    std::optional<const std::string&> name) -> void
+{
+    if (auto nid = m_currently_styling; !nid)
+        return;
+    auto nid = *m_currently_styling;
+    if (name) {
+        if (m_dependent.at(name_to_id(*name)).insert(nid))
+            try_invalidate_cache_for(name_to_id(*name));
+    } else {
+        // case: that guy does NOT exist
+        // try_invalidate_cache_for(name_to_id(*name));
     }
 }
 auto StylingGraph::query_component(const std::string& name, bool no_dep)
     -> std::optional<const components::OComponent&>
 {
-    if (auto comp = graph_t::query_component(name); comp) {
-        std::println("QUERY FROM {}, FOR {} NO_DEP {}",
-            *get_name_of(*m_currently_styling),
-            name,
-            no_dep);
-        if (!no_dep)
-            try_add_dep_to_current(name);
+    std::println("QUERY FROM {}, FOR {} NO_DEP {}",
+        *get_name_of(*m_currently_styling),
+        name,
+        no_dep);
+    auto comp = graph_t::query_component(name);
+    if (!no_dep)
+        try_add_dep_to_current(comp ? std::optional(std::ref(name)) : std::nullopt);
+    if (comp) {
         return *comp.value();
     }
     return { };
@@ -192,9 +209,10 @@ auto StylingGraph::query_component(const std::string& name, bool no_dep)
 auto StylingGraph::query_connection(const std::string& name, bool no_dep)
     -> std::optional<const components::OConnection&>
 {
-    if (auto conn = graph_t::query_connection(name); conn) {
-        if (!no_dep)
-            try_add_dep_to_current(name);
+    auto conn = graph_t::query_connection(name);
+    if (!no_dep)
+        try_add_dep_to_current(conn ? std::optional(std::ref(name)) : std::nullopt);
+    if (conn) {
         return *conn.value();
     }
     return { };
