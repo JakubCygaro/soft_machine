@@ -132,7 +132,7 @@
             <rel-pos
                 rel="8BUTTON"
                 side="Left"
-                distance="-200"
+                distance="200"
                 />
             <size width="200" height="200"/>
         </style>
@@ -279,7 +279,11 @@
     <!--zero-->
     <button name="0BUTTON">
         <style>
-            <abs-pos x="500" y="2500"/>
+            <rel-pos
+                rel="2BUTTON"
+                side="Bottom"
+                distance="200"
+                />
             <size width="200" height="200"/>
         </style>
         <value kind="number">0</value>

@@ -1,6 +1,9 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
+#include <iostream>
+#include <print>
 #include <queue>
+#include <ranges>
 #include <set>
 
 namespace game {
@@ -81,32 +84,41 @@ auto StylingGraph::register_style(
 auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
     -> std::optional<const std::queue<elem_id_t>&>
 {
+    std::println("BUILDING NOTIFY QUEUE FOR {}:", *get_name_of(id));
     std::set<elem_id_t> cycle_hash { id };
     std::queue<elem_id_t> notify_queue { };
     notify_queue.push(id);
+    std::print(" {},", *get_name_of(id));
 
     std::queue<elem_id_t> dependents { };
     for (auto& d : m_dependent[id].get_dep_list()) {
-        if (graph_t::exists(d))
+        if (graph_t::exists(d)) {
             dependents.push(d);
+        }
     }
     while (!dependents.empty()) {
         auto did = dependents.front();
         dependents.pop();
-        if (cycle_hash.contains(did))
+        if (cycle_hash.contains(did)) {
+            ::TraceLog(::LOG_ERROR,
+                "[STYLING] Dependency cycle for %s",
+                *get_name_of(id)->c_str());
             return std::nullopt;
-        else
+        } else
             cycle_hash.insert(did);
         for (auto& d2 : m_dependent[did].get_dep_list()) {
             dependents.push(d2);
         }
         notify_queue.push(did);
+        std::print(" {},", *get_name_of(did));
     }
     if (m_notify_queue_cache.size() >= 16) {
         auto first = m_notify_queue_cache.begin()->first;
         m_notify_queue_cache.erase(first);
     }
     m_notify_queue_cache[id] = std::move(notify_queue);
+    std::println();
+    std::flush(std::cout);
     return m_notify_queue_cache.at(id);
 }
 auto StylingGraph::style_element_with_dep(const elem_id_t& nid) -> void
@@ -123,13 +135,15 @@ auto StylingGraph::style_notify_for(
 {
     if (!m_styles.contains(id))
         return;
-    auto notify_queue_opt = m_notify_queue_cache.contains(id)
-        ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
-        : build_notify_queue_for(id);
+    //TODO: fix cache
+    // auto notify_queue_opt = m_notify_queue_cache.contains(id)
+    //     ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
+    //     : build_notify_queue_for(id);
+    auto notify_queue_opt = build_notify_queue_for(id);
     if (!notify_queue_opt.has_value())
         return;
     auto notify_queue = std::queue(*notify_queue_opt);
-
+    using namespace std::ranges;
     while (!notify_queue.empty()) {
         auto nid = notify_queue.front();
         notify_queue.pop();
@@ -137,6 +151,7 @@ auto StylingGraph::style_notify_for(
         if (graph_t::is_component(nid))
             notify_incident_of_component(nid);
     }
+    std::flush(std::cout);
 }
 auto StylingGraph::style_notify_all() -> void
 {
@@ -164,6 +179,10 @@ auto StylingGraph::query_component(const std::string& name, bool no_dep)
     -> std::optional<const components::OComponent&>
 {
     if (auto comp = graph_t::query_component(name); comp) {
+        std::println("QUERY FROM {}, FOR {} NO_DEP {}",
+            *get_name_of(*m_currently_styling),
+            name,
+            no_dep);
         if (!no_dep)
             try_add_dep_to_current(name);
         return *comp.value();

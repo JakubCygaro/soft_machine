@@ -265,7 +265,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
                     b,
                     d->get_att_point(L));
                 pos.x -= b.width / 2.0
-                    - dist;
+                    + dist;
                 break;
             }
             stylable->set_pos({
