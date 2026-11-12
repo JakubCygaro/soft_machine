@@ -403,7 +403,7 @@ CPU::exec_load(machine::Mctx& ctx, const InstLoad* i)
     }
     co_return;
 }
-machine::actor::Actor<void>
+void
 CPU::exec_if(machine::Mctx&, const InstIf* i)
 {
     const auto& a = reg(i->attrs->a);
@@ -431,7 +431,6 @@ CPU::exec_if(machine::Mctx&, const InstIf* i)
     }
     if (res)
         m_pc = i->attrs->jmpto - 1;
-    co_return;
 }
 
 machine::actor::Actor<void>
@@ -450,7 +449,8 @@ CPU::poll(machine::Mctx ctx)
             co_await exec_load(ctx, i);
         }
         if (auto i = dynamic_cast<const InstIf*>(inst)) {
-            co_await exec_if(ctx, i);
+            exec_if(ctx, i);
+            co_await ctx.pause();
         }
         if (auto i = dynamic_cast<const InstMovi*>(inst)) {
             reg(i->attrs->into) = i->attrs->ival;

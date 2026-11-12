@@ -88,7 +88,7 @@ private:
     int& reg(const Register&);
     machine::actor::Actor<void> exec_wait(machine::Mctx&, const InstWait*);
     machine::actor::Actor<void> exec_load(machine::Mctx&, const InstLoad*);
-    machine::actor::Actor<void> exec_if(machine::Mctx&, const InstIf*);
+    void exec_if(machine::Mctx&, const InstIf*);
 
 protected:
 };
