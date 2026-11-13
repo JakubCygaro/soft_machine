@@ -20,6 +20,7 @@ struct Stylable {
     virtual void set_size(const ::Vector2&) = 0;
     virtual ::Vector2 get_size() const = 0;
     virtual ::Rectangle get_bounds() const = 0;
+    virtual const std::string& get_name() const = 0;
 };
 
 struct FontData {
@@ -180,8 +181,17 @@ public:
     static void instance_set_rel_pos(RelativePos);
     static std::optional<const RelativePos&> instance_get_rel_pos();
     static bool instance_exists(const std::string&);
-    static bool instance_is_component(const std::string&);
-    static bool instance_is_connection(const std::string&);
+    // nullopt means _this_ is queried
+    static bool instance_is_component(std::optional<const std::string&> = std::nullopt);
+    // nullopt means _this_ is queried
+    static bool instance_is_connection(std::optional<const std::string&> = std::nullopt);
+    static void instance_set_font_size(float);
+    static float
+        instance_get_font_size(std::optional<const std::string&> = std::nullopt);
+    static void instance_set_font(const std::string&);
+    static const std::string& instance_get_font();
+    static void instance_set_param(const std::string&, StylingParameter);
+    static std::optional<const StylingParameter&> instance_get_param(const std::string&);
     virtual std::unique_ptr<Editor> get_editor_object() override;
 };
 

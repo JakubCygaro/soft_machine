@@ -7,10 +7,29 @@
 #endif
 namespace {
 extern "C" {
+static ::s7_pointer style_connection(::s7_scheme* scm, ::s7_pointer args)
+{
+    std::optional<std::string> param;
+    if (::s7_is_string(::s7_car(args))) {
+        param = std::string(::s7_string(::s7_car(args)));
+    }
+    const auto e = game::Style::instance_is_connection(param);
+    return (::s7_make_boolean(scm, e));
+}
+static ::s7_pointer style_component(::s7_scheme* scm, ::s7_pointer args)
+{
+
+    std::optional<std::string> param;
+    if (::s7_is_string(::s7_car(args))) {
+        param = std::string(::s7_string(::s7_car(args)));
+    }
+    const auto e = game::Style::instance_is_component(param);
+    return (::s7_make_boolean(scm, e));
+}
 // ex. (exists? "CPU")
 static ::s7_pointer style_exists(::s7_scheme* scm, ::s7_pointer args)
 {
-    if (!::s7_is_string(args)) {
+    if (!::s7_is_string(::s7_car(args))) {
         return (::s7_wrong_type_arg_error(scm,
             "exists?",
             1,
@@ -18,7 +37,7 @@ static ::s7_pointer style_exists(::s7_scheme* scm, ::s7_pointer args)
             "string"));
     }
     const auto e = game::Style::instance_exists(std::string(
-        ::s7_string(args)));
+        ::s7_string(::s7_car(args))));
     return (::s7_make_boolean(scm, e));
 }
 static ::s7_pointer style_set_abs_pos(::s7_scheme* scm, ::s7_pointer args)
@@ -35,7 +54,7 @@ static ::s7_pointer style_set_abs_pos(::s7_scheme* scm, ::s7_pointer args)
         "set!-abs-pos",
         1,
         args,
-        "expected position"));
+        "(cons 'x 'y)"));
 }
 static ::s7_pointer style_get_abs_pos(::s7_scheme* scm, ::s7_pointer args)
 {
@@ -48,7 +67,7 @@ static ::s7_pointer style_get_abs_pos(::s7_scheme* scm, ::s7_pointer args)
             "get-abs-pos",
             1,
             args,
-            "expected either string or nil"));
+            "either string or nil"));
     }
     const auto p = game::Style::instance_get_abs_pos(param);
     return (::s7_cons(scm,
@@ -64,7 +83,7 @@ static ::s7_pointer style_set_rel_pos(::s7_scheme* scm, ::s7_pointer args)
             "set!-rel-pos",
             1,
             ::s7_car(args),
-            "expected element name"));
+            "string"));
     } else {
         rp.rel_to = ::s7_string(::s7_car(args));
     }
@@ -86,7 +105,7 @@ static ::s7_pointer style_set_rel_pos(::s7_scheme* scm, ::s7_pointer args)
                 "set!-rel-pos",
                 1,
                 ::s7_cadr(args),
-                "a valid position"));
+                "(cons 'x 'y)"));
         }
     }
     if (!::s7_is_real(::s7_caddr(args))) {
@@ -144,5 +163,26 @@ void StyleSchemeWrap::init(::s7_scheme* scm)
         0,
         false,
         "get relative position of this");
+    ::s7_define_function(scm,
+        "exists?",
+        ::style_exists,
+        1,
+        0,
+        false,
+        "check if a graph element exists");
+    ::s7_define_function(scm,
+        "component?",
+        ::style_component,
+        0,
+        1,
+        false,
+        "check if a graph element is a component");
+    ::s7_define_function(scm,
+        "connection?",
+        ::style_connection,
+        0,
+        1,
+        false,
+        "check if a graph element is a connection");
 }
 }

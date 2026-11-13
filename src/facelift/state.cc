@@ -470,6 +470,9 @@ void init(const std::vector<std::string>& args)
     ::SetConfigFlags(
         ::FLAG_WINDOW_RESIZABLE);
     ::InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Facelift");
+#ifdef DEBUG
+    ::SetTraceLogLevel(::LOG_DEBUG);
+#endif
     ::rlImGuiBeginInitImGui();
     ::SetTargetFPS(60);
 

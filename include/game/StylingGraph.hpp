@@ -79,6 +79,8 @@ public:
     auto style_notify_for(const std::string&) -> void;
     auto style_notify_all() -> void;
     auto try_add_dep_to_current(std::optional<const std::string&>) -> void;
+    virtual auto query_style(const std::string&, bool no_dep = false)
+        -> std::optional<const game::Style&> override;
     virtual auto query_component(const std::string&, bool)
         -> std::optional<const components::OComponent&> override;
     virtual auto query_connection(const std::string&, bool)

@@ -401,17 +401,61 @@ bool Style::instance_exists(const std::string& n)
         return s->m_sctx->exists(n);
     });
 }
-bool Style::instance_is_component(const std::string& n)
+bool Style::instance_is_component(std::optional<const std::string&> n)
 {
     return with_instance_or_err(s_instance, [&](Style* s) {
-        return s->m_sctx->is_component(n);
+        if (n) {
+            return s->m_sctx->is_component(*n);
+        } else {
+            return !!dynamic_cast<components::OComponent*>(s->m_styllable);
+        }
     });
 }
-bool Style::instance_is_connection(const std::string& n)
+bool Style::instance_is_connection(std::optional<const std::string&> n)
 {
     return with_instance_or_err(s_instance, [&](Style* s) {
-        return s->m_sctx->exists(n);
+        if (n) {
+            return s->m_sctx->is_connector(*n);
+        } else {
+            return !!dynamic_cast<components::OConnection*>(s->m_styllable);
+        }
     });
+}
+void Style::instance_set_font_size(float sz)
+{
+    with_instance_or_err(s_instance, [=](Style* s) {
+        s->m_fontd.size = sz;
+    });
+}
+float Style::instance_get_font_size(std::optional<const std::string&> n)
+{
+    return with_instance_or_err(s_instance, [=](Style* s) {
+        if (n) {
+            return s->m_sctx->query_style(*n)
+                .and_then([](const auto& st) { return std::optional {
+                                                   st.get_font_data().size
+                                               }; })
+                .value_or(0.0f);
+        } else {
+            return s->m_fontd.size;
+        }
+    });
+}
+void Style::instance_set_font(const std::string&)
+{
+    // TODO: fonts
+}
+const std::string& Style::instance_get_font()
+{
+    static std::string _dummy = "defult";
+    return _dummy;
+}
+void Style::instance_set_param(const std::string& name, StylingParameter param)
+{
+}
+std::optional<const StylingParameter&>
+Style::instance_get_param(const std::string& name)
+{
 }
 std::unique_ptr<Editor> Style::get_editor_object()
 {

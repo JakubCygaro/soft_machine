@@ -187,6 +187,31 @@ auto StylingGraph::try_add_dep_to_current(
             try_invalidate_cache_for(name_to_id(*name));
     }
 }
+auto StylingGraph::query_style(const std::string& name, bool no_dep)
+    -> std::optional<const game::Style&>
+{
+    ::TraceLog(::LOG_DEBUG,
+        LOG_PREFIX "QUERY FROM '%s', FOR STYLE OF '%s', NO_DEP = %s",
+        get_name_of(*m_currently_styling)->c_str(),
+        name.c_str(),
+        no_dep ? "YES" : "NO");
+    if (!exists(name))
+        return { };
+    const auto id = name_to_id(name);
+    std::shared_ptr<Style> st = nullptr;
+    if (!m_styles.contains(id)) {
+        ::TraceLog(::LOG_ERROR,
+            LOG_PREFIX "ELEMENT '%s' DOES NOT HAVE A STYLE REGISTERED",
+            name.c_str());
+    } else {
+        st = m_styles.at(id);
+    }
+    if (!no_dep)
+        try_add_dep_to_current(st ? std::optional(std::ref(name)) : std::nullopt);
+    if (st)
+        return *st;
+    return { };
+}
 auto StylingGraph::query_component(const std::string& name, bool no_dep)
     -> std::optional<const components::OComponent&>
 {

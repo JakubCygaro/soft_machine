@@ -67,6 +67,7 @@ public:
     virtual const char* marshall_to_xml_name() const noexcept override;
     virtual void marshall_to_xml(pugi::xml_node& self) const noexcept override;
     virtual std::unique_ptr<game::Editor> get_editor_object() override;
+    virtual const std::string& get_name() const override;
 };
 class OConnection : public machine::Connection,
                     public game::Object,
@@ -119,5 +120,6 @@ public:
     marshall_to_xml(pugi::xml_node& self) const noexcept override;
     virtual std::unique_ptr<game::Editor> get_editor_object() override;
     virtual void on_notified() override;
+    virtual const std::string& get_name() const override;
 };
 }

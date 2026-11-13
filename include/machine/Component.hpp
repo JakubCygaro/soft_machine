@@ -13,16 +13,9 @@ public:
     Component(std::string name);
     Component(const Component&) = delete;
     Component& operator=(const Component&) = delete;
-    inline Component(Component&& o)
-        : name { std::move(o.name) }
-    {
-    }
-    inline Component& operator=(Component&& o)
-    {
-        this->name = o.name;
-        return *this;
-    }
-    virtual ~Component();
+    Component(Component&& o) = default;
+    Component& operator=(Component&& o) = default;
+    virtual ~Component() = default;
     const std::string& get_name() const;
 
     // conn_msg is what the connection object has sent as a message

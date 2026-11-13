@@ -154,6 +154,10 @@ void OComponent::marshall_to_xml(pugi::xml_node& self) const noexcept
         style.child("abs-pos").attribute("y").set_value(pos.y);
     }
 }
+const std::string& OComponent::get_name() const
+{
+    return machine::Component::get_name();
+}
 std::unique_ptr<game::Editor> OComponent::get_editor_object()
 {
     std::array<float, 2> pos = { m_bounds.x, m_bounds.y };
@@ -308,4 +312,8 @@ void OConnection::on_notified()
     on_component_changed(Attachment::Start);
     on_component_changed(Attachment::End);
 };
+const std::string& OConnection::get_name() const
+{
+    return machine::Connection::get_name();
+}
 }

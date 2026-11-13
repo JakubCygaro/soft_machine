@@ -5,6 +5,8 @@ namespace game {
 class StylingContext {
 public:
     virtual ~StylingContext() = default;
+    virtual auto query_style(const std::string&, bool no_dep = false)
+        -> std::optional<const game::Style&> = 0;
     virtual auto query_component(const std::string&, bool no_dep = false)
         -> std::optional<const components::OComponent&> = 0;
     virtual auto query_connection(const std::string&, bool no_dep = false)
