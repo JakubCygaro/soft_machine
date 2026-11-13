@@ -1,9 +1,8 @@
-- fix faulty cache invalidation for elements not yet instantiated
-- fix ref styling, need cascading for incident
 - LISP error output to special error message sink
 - full editability of LISP styling
 - full editability for all components - CPU needs an instruction parser for that to work
 - immediate mode drawing of components:
+- editor: graph pausing, stepping and cycle rate controls
 ```cpp
 draw::BeginBody(m_bounds);
 // various draw calls

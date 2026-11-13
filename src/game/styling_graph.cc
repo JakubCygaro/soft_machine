@@ -1,10 +1,9 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
-#include <iostream>
-#include <print>
 #include <queue>
-#include <ranges>
 #include <set>
+
+#define LOG_PREFIX "[STYLING GRAPH] "
 
 namespace game {
 
@@ -39,13 +38,15 @@ StylingGraph* StylingGraph::create(Style::shared_ptr_t default_style)
 }
 void StylingGraph::on_create_connection(elem_id_t, conn_t* conn)
 {
-    conn->set_styling(m_default_style);
-    m_default_style->style(this, conn);
+    m_notify_queue_cache.clear();
+    register_style(conn->get_name(), m_default_style);
+    style_notify_all();
 }
 void StylingGraph::on_create_component(elem_id_t, comp_t* comp)
 {
-    comp->set_styling(m_default_style);
-    m_default_style->style(this, comp);
+    m_notify_queue_cache.clear();
+    register_style(comp->get_name(), m_default_style);
+    style_notify_all();
 }
 auto StylingGraph::notify_incident_of_component(const elem_id_t& id) -> void
 {
@@ -84,11 +85,12 @@ auto StylingGraph::register_style(
 auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
     -> std::optional<const std::queue<elem_id_t>&>
 {
-    std::println("BUILDING NOTIFY QUEUE FOR {}:", *get_name_of(id));
+    ::TraceLog(::LOG_DEBUG,
+        LOG_PREFIX "BUILDING NOTIFY QUEUE FOR '%s':",
+        *get_name_of(id)->c_str());
     std::set<elem_id_t> cycle_hash { id };
     std::queue<elem_id_t> notify_queue { };
     notify_queue.push(id);
-    std::print(" {},", *get_name_of(id));
 
     std::queue<elem_id_t> dependents { };
     for (auto& d : m_dependent[id].get_dep_list()) {
@@ -101,7 +103,7 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
         dependents.pop();
         if (cycle_hash.contains(did)) {
             ::TraceLog(::LOG_ERROR,
-                "[STYLING] Dependency cycle for %s",
+                LOG_PREFIX "Dependency cycle for %s",
                 *get_name_of(id)->c_str());
             return std::nullopt;
         } else
@@ -110,15 +112,13 @@ auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
             dependents.push(d2);
         }
         notify_queue.push(did);
-        std::print(" {},", *get_name_of(did));
+        ::TraceLog(::LOG_DEBUG, " -> '%s'", get_name_of(did)->c_str());
     }
     if (m_notify_queue_cache.size() >= 16) {
         auto first = m_notify_queue_cache.begin()->first;
         m_notify_queue_cache.erase(first);
     }
     m_notify_queue_cache[id] = std::move(notify_queue);
-    std::println();
-    std::flush(std::cout);
     return m_notify_queue_cache.at(id);
 }
 auto StylingGraph::style_element_with_dep(const elem_id_t& nid) -> void
@@ -135,11 +135,10 @@ auto StylingGraph::style_notify_for(
 {
     if (!m_styles.contains(id))
         return;
-    // TODO: fix cache
-    // auto notify_queue_opt = m_notify_queue_cache.contains(id)
-    //     ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
-    //     : build_notify_queue_for(id);
-    auto notify_queue_opt = build_notify_queue_for(id);
+    auto notify_queue_opt = m_notify_queue_cache.contains(id)
+        ? std::optional<const std::queue<elem_id_t>&>(m_notify_queue_cache.at(id))
+        : build_notify_queue_for(id);
+    // auto notify_queue_opt = build_notify_queue_for(id);
     if (!notify_queue_opt.has_value())
         return;
     auto notify_queue = std::queue(*notify_queue_opt);
@@ -186,18 +185,16 @@ auto StylingGraph::try_add_dep_to_current(
     if (name) {
         if (m_dependent.at(name_to_id(*name)).insert(nid))
             try_invalidate_cache_for(name_to_id(*name));
-    } else {
-        // case: that guy does NOT exist
-        // try_invalidate_cache_for(name_to_id(*name));
     }
 }
 auto StylingGraph::query_component(const std::string& name, bool no_dep)
     -> std::optional<const components::OComponent&>
 {
-    std::println("QUERY FROM {}, FOR {} NO_DEP {}",
-        *get_name_of(*m_currently_styling),
-        name,
-        no_dep);
+    ::TraceLog(::LOG_DEBUG,
+        LOG_PREFIX "QUERY FROM '%s', FOR COMPONENT '%s', NO_DEP = %s",
+        get_name_of(*m_currently_styling)->c_str(),
+        name.c_str(),
+        no_dep ? "YES" : "NO");
     auto comp = graph_t::query_component(name);
     if (!no_dep)
         try_add_dep_to_current(comp ? std::optional(std::ref(name)) : std::nullopt);
@@ -209,6 +206,11 @@ auto StylingGraph::query_component(const std::string& name, bool no_dep)
 auto StylingGraph::query_connection(const std::string& name, bool no_dep)
     -> std::optional<const components::OConnection&>
 {
+    ::TraceLog(::LOG_DEBUG,
+        LOG_PREFIX "QUERY FROM '%s', FOR CONNECTION '%s', NO_DEP = %s",
+        get_name_of(*m_currently_styling)->c_str(),
+        name.c_str(),
+        no_dep ? "YES" : "NO");
     auto conn = graph_t::query_connection(name);
     if (!no_dep)
         try_add_dep_to_current(conn ? std::optional(std::ref(name)) : std::nullopt);
