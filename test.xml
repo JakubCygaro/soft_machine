@@ -102,6 +102,9 @@
                 />
             <size width="200" height="200"/>
             <font size="24"></font>
+            <custom>
+                <param key="dupa" value="69"/>
+            </custom>
         </style>
     </display>
     <passthrough name="CPU-DISP">

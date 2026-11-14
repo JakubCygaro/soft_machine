@@ -21,6 +21,13 @@
 #include <type_traits>
 #include <variant>
 
+namespace {
+template <class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+}
+
 namespace game {
 namespace {
     template <class T>
@@ -141,6 +148,12 @@ Style::from_xml(pugi::xml_node& node)
         .spacing = xml.font.attrs->spacing.value_or(
             game::resources::default_font_spacing()),
     };
+    xml.custom = { };
+    if (auto cch = node.child("custom"); cch) {
+        auto res = xml.custom.unmarshall_self(cch);
+        if (res.iserr())
+            return { res.unwrap_err() };
+    }
     style.custom_parameters = std::move(xml.custom.params);
     return { std::move(style) };
 }
@@ -571,6 +584,25 @@ std::unique_ptr<Editor> Style::get_editor_object()
                     _rel_pos_s.begin());
                 // _rel_pos_s = reflect::enum_to_string(rp.side);
                 flag |= true;
+            }
+            ImGui::SeparatorText("Custom");
+            if (ImGui::BeginListBox("Parameters")) {
+                for (auto& [k, v] : this->custom_parameters) {
+                    ImGui::PushID(k.c_str());
+                    ImGui::Text("%s: ", k.c_str());
+                    ImGui::SameLine();
+                    auto disp = std::visit(
+                        overloaded {
+                            [=](const int& i) { return std::to_string(i); },
+                            [=](const float& f) { return std::to_string(f); },
+                            [=](const double& d) { return std::to_string(d); },
+                            [=](const std::string& s) { return s; },
+                            [=](const auto&) { return std::string("<WIP>"); } },
+                        v);
+                    ImGui::Text("%s", disp.c_str());
+                    ImGui::PopID();
+                }
+                ImGui::EndListBox();
             }
             ImGui::SeparatorText("LISP source");
             if (ImGui::InputTextMultiline("LISP", _lisp.data(), _lisp.size())) {

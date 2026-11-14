@@ -451,7 +451,7 @@ extern "C" {
 static void lisp_style_error_port(::s7_scheme*, uint8_t c, ::s7_pointer)
 {
     auto& log = fl_state.lisp_error_log;
-    if (log.size() >= 512) {
+    if (log.size() >= 2048) {
         std::shift_left(
             log.begin(),
             log.end(),

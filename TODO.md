@@ -1,6 +1,3 @@
-- LISP: set!-font-size, get-font-size, set!-font, set!-param, get-param, set!-body-color, get-body-color
-    set!-param and get-param would do a lookup in the custom parameter list of the Style object
-- improve LISP error sink (longer history)
 - full editability of LISP styling
 - full editability for all components: start with passthrough and attachment point editing - CPU needs an instruction parser for that to work
 - editor: graph pausing, stepping and cycle rate controls

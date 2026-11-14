@@ -11,17 +11,17 @@ static ::s7_pointer style_set_param(::s7_scheme* scm, ::s7_pointer args)
         return (::s7_wrong_type_arg_error(scm,
             "set!-param",
             1,
-            args,
-            "(cons 'key 'value)"));
+            ::s7_car(args),
+            "string"));
     }
     const auto key = std::string(::s7_string(::s7_car(args)));
-    const auto value = scheme::obj_to_styling_param(scm, ::s7_cdr(args));
+    const auto value = scheme::obj_to_styling_param(scm, ::s7_cadr(args));
     if (!value) {
         return (::s7_wrong_type_arg_error(scm,
             "set!-param",
-            1,
-            args,
-            "(cons 'key 'value)"));
+            2,
+            ::s7_cadr(args),
+            "valid param type"));
     }
     game::Style::instance_set_param(key, *value);
     return (::s7_nil(scm));
@@ -33,17 +33,17 @@ static ::s7_pointer style_get_param(::s7_scheme* scm, ::s7_pointer args)
         return (::s7_wrong_type_arg_error(scm,
             "get-param",
             1,
-            args,
-            "(cons 'param 'optional-name)"));
+            ::s7_car(args),
+            "string"));
     }
-    if (::s7_is_string(::s7_cdr(args))) {
-        target = std::string(::s7_string(::s7_cdr(args)));
-    } else if (!::s7_is_null(scm, ::s7_cdr(args))) {
+    if (::s7_is_string(::s7_cadr(args))) {
+        target = std::string(::s7_string(::s7_cadr(args)));
+    } else if (!::s7_is_unspecified(scm, ::s7_cadr(args))) {
         return (::s7_wrong_type_arg_error(scm,
             "get-param",
-            1,
-            args,
-            "(cons 'param 'optional-name)"));
+            2,
+            ::s7_cadr(args),
+            "string"));
     }
     const auto key = std::string(::s7_string(::s7_car(args)));
     if(auto param = game::Style::instance_get_param(key, target); param){
@@ -59,7 +59,7 @@ static ::s7_pointer style_set_font(::s7_scheme* scm, ::s7_pointer args)
         return (::s7_wrong_type_arg_error(scm,
             "set!-font",
             1,
-            args,
+            ::s7_car(args),
             "string"));
     }
     game::Style::instance_set_font(::s7_string(::s7_car(args)));
@@ -80,7 +80,7 @@ static ::s7_pointer style_set_font_size(::s7_scheme* scm, ::s7_pointer args)
         return (::s7_wrong_type_arg_error(scm,
             "set!-font-size",
             1,
-            args,
+            ::s7_car(args),
             "real"));
     }
     game::Style::instance_set_font_size(::s7_real(::s7_car(args)));
@@ -121,7 +121,7 @@ static ::s7_pointer style_exists(::s7_scheme* scm, ::s7_pointer args)
         return (::s7_wrong_type_arg_error(scm,
             "exists?",
             1,
-            args,
+            ::s7_car(args),
             "string"));
     }
     const auto e = game::Style::instance_exists(std::string(
