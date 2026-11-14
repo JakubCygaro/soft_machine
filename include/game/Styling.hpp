@@ -189,9 +189,12 @@ public:
     static float
         instance_get_font_size(std::optional<const std::string&> = std::nullopt);
     static void instance_set_font(const std::string&);
-    static const std::string& instance_get_font();
+    static const std::string&
+        instance_get_font(std::optional<const std::string&> = std::nullopt);
     static void instance_set_param(const std::string&, StylingParameter);
-    static std::optional<const StylingParameter&> instance_get_param(const std::string&);
+    static std::optional<StylingParameter>
+    instance_get_param(const std::string&,
+        std::optional<const std::string&> = std::nullopt);
     virtual std::unique_ptr<Editor> get_editor_object() override;
 };
 

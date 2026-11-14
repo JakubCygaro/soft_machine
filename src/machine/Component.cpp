@@ -4,7 +4,7 @@ Component::Component(std::string name)
     : name { name }
 {
 }
-Component::~Component() { };
+// Component::~Component() { };
 const std::string& Component::get_name() const
 {
     return name;

@@ -1,12 +1,100 @@
 #include "common/reflect/Enum.hpp"
 #include "game/Styling.hpp"
 #include "s7.h"
+#include "scheme/Util.hpp"
 #include <raylib.h>
-#ifndef CLANGD_SKIP
-#include <meta>
-#endif
 namespace {
 extern "C" {
+static ::s7_pointer style_set_param(::s7_scheme* scm, ::s7_pointer args)
+{
+    if (!::s7_is_string(::s7_car(args))) {
+        return (::s7_wrong_type_arg_error(scm,
+            "set!-param",
+            1,
+            args,
+            "(cons 'key 'value)"));
+    }
+    const auto key = std::string(::s7_string(::s7_car(args)));
+    const auto value = scheme::obj_to_styling_param(scm, ::s7_cdr(args));
+    if (!value) {
+        return (::s7_wrong_type_arg_error(scm,
+            "set!-param",
+            1,
+            args,
+            "(cons 'key 'value)"));
+    }
+    game::Style::instance_set_param(key, *value);
+    return (::s7_nil(scm));
+}
+static ::s7_pointer style_get_param(::s7_scheme* scm, ::s7_pointer args)
+{
+    std::optional<std::string> target;
+    if (!::s7_is_string(::s7_car(args))) {
+        return (::s7_wrong_type_arg_error(scm,
+            "get-param",
+            1,
+            args,
+            "(cons 'param 'optional-name)"));
+    }
+    if (::s7_is_string(::s7_cdr(args))) {
+        target = std::string(::s7_string(::s7_cdr(args)));
+    } else if (!::s7_is_null(scm, ::s7_cdr(args))) {
+        return (::s7_wrong_type_arg_error(scm,
+            "get-param",
+            1,
+            args,
+            "(cons 'param 'optional-name)"));
+    }
+    const auto key = std::string(::s7_string(::s7_car(args)));
+    if(auto param = game::Style::instance_get_param(key, target); param){
+        return (scheme::styling_param_to_obj(scm, *param));
+    } else {
+        return (::s7_nil(scm));
+    }
+
+}
+static ::s7_pointer style_set_font(::s7_scheme* scm, ::s7_pointer args)
+{
+    if (!::s7_is_string(::s7_car(args))) {
+        return (::s7_wrong_type_arg_error(scm,
+            "set!-font",
+            1,
+            args,
+            "string"));
+    }
+    game::Style::instance_set_font(::s7_string(::s7_car(args)));
+    return (::s7_nil(scm));
+}
+static ::s7_pointer style_get_font(::s7_scheme* scm, ::s7_pointer args)
+{
+    std::optional<std::string> param;
+    if (::s7_is_string(::s7_car(args))) {
+        param = std::string(::s7_string(::s7_car(args)));
+    }
+    const auto f = game::Style::instance_get_font(param);
+    return (::s7_make_string(scm, f.c_str()));
+}
+static ::s7_pointer style_set_font_size(::s7_scheme* scm, ::s7_pointer args)
+{
+    if (!::s7_is_real(::s7_car(args))) {
+        return (::s7_wrong_type_arg_error(scm,
+            "set!-font-size",
+            1,
+            args,
+            "real"));
+    }
+    game::Style::instance_set_font_size(::s7_real(::s7_car(args)));
+    return (::s7_nil(scm));
+}
+static ::s7_pointer style_get_font_size(::s7_scheme* scm, ::s7_pointer args)
+{
+    std::optional<std::string> param;
+    if (::s7_is_string(::s7_car(args))) {
+        param = std::string(::s7_string(::s7_car(args)));
+    }
+    const auto e = game::Style::instance_get_font_size(param);
+    return (::s7_make_boolean(scm, e));
+}
 static ::s7_pointer style_connection(::s7_scheme* scm, ::s7_pointer args)
 {
     std::optional<std::string> param;
@@ -184,5 +272,47 @@ void StyleSchemeWrap::init(::s7_scheme* scm)
         1,
         false,
         "check if a graph element is a connection");
+    ::s7_define_function(scm,
+        "set!-param",
+        ::style_set_param,
+        2,
+        0,
+        false,
+        "set custom styling parameter for this element");
+    ::s7_define_function(scm,
+        "get-param",
+        ::style_get_param,
+        1,
+        1,
+        false,
+        "get custom styling parameter for this or some other element");
+    ::s7_define_function(scm,
+        "set!-font",
+        ::style_set_font,
+        1,
+        0,
+        false,
+        "set font for this element");
+    ::s7_define_function(scm,
+        "get-font",
+        ::style_get_font,
+        1,
+        1,
+        false,
+        "get font for this or some other element");
+    ::s7_define_function(scm,
+        "set!-font-size",
+        ::style_set_font_size,
+        1,
+        0,
+        false,
+        "set font size for this element");
+    ::s7_define_function(scm,
+        "get-font-size",
+        ::style_get_font_size,
+        1,
+        1,
+        false,
+        "get font size for this or some other element");
 }
 }

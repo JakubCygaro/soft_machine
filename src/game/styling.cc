@@ -445,17 +445,37 @@ void Style::instance_set_font(const std::string&)
 {
     // TODO: fonts
 }
-const std::string& Style::instance_get_font()
+const std::string& Style::instance_get_font(std::optional<const std::string&>)
 {
     static std::string _dummy = "defult";
     return _dummy;
 }
 void Style::instance_set_param(const std::string& name, StylingParameter param)
 {
+    with_instance_or_err(s_instance, [&](Style* s) {
+        s->custom_parameters[name] = param;
+    });
 }
-std::optional<const StylingParameter&>
-Style::instance_get_param(const std::string& name)
+std::optional<StylingParameter>
+Style::instance_get_param(const std::string& param,
+    std::optional<const std::string&> name)
 {
+    return with_instance_or_err(s_instance,
+        [&](Style* s) -> std::optional<StylingParameter> {
+            if (name) {
+                if (auto st = s->m_sctx->query_style(*name); st) {
+                    return st->custom_parameters.contains(param)
+                        ? std::optional { s->custom_parameters[param] }
+                        : std::nullopt;
+                } else {
+                    return std::nullopt;
+                }
+            } else {
+                return s->custom_parameters.contains(param)
+                    ? std::optional { s->custom_parameters[param] }
+                    : std::nullopt;
+            }
+        });
 }
 std::unique_ptr<Editor> Style::get_editor_object()
 {

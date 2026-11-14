@@ -66,6 +66,8 @@ void StylingGraph::on_removing_element(
 {
     (void)name;
     m_styles.erase(id);
+    m_dependent.erase(id);
+    style_notify_all();
 }
 
 auto StylingGraph::register_style(
@@ -85,9 +87,11 @@ auto StylingGraph::register_style(
 auto StylingGraph::build_notify_queue_for(const elem_id_t& id)
     -> std::optional<const std::queue<elem_id_t>&>
 {
-    ::TraceLog(::LOG_DEBUG,
-        LOG_PREFIX "BUILDING NOTIFY QUEUE FOR '%s':",
-        *get_name_of(id)->c_str());
+    if (const auto n = get_name_of(id); n) {
+        ::TraceLog(::LOG_DEBUG,
+            LOG_PREFIX "BUILDING NOTIFY QUEUE FOR '%s':",
+            n->c_str());
+    }
     std::set<elem_id_t> cycle_hash { id };
     std::queue<elem_id_t> notify_queue { };
     notify_queue.push(id);
