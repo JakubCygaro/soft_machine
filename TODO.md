@@ -1,5 +1,6 @@
+- fix rel-pos serialization
 - full editability of LISP styling
-- full editability for all components: start with passthrough and attachment point editing - CPU needs an instruction parser for that to work
+- full editability for all components: start with passthrough and attachment point editing then go to MEM - CPU needs an instruction parser for that to work
 - editor: graph pausing, stepping and cycle rate controls
 - immediate mode drawing of components:
 ```cpp
@@ -16,10 +17,11 @@ draw::EndBody();
 <element name="element">
     <style>
         <lisp>
-            (set!-position-rel "element2" 'right 100)
-            (set!-font "default")
-            (set!-font-size 24)
-            (set!-param "body-color" 'GREEN)
+            (begin
+             (set!-position-rel "element2" 'right 100)
+             (set!-font "default")
+             (set!-font-size 24)
+             (set!-param "body-color" 'GREEN))
         </lisp>
     </style>
 </element>

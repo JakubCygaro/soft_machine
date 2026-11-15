@@ -1,300 +1,250 @@
+<?xml version="1.0"?>
 <graph>
-    <memory name="MEM" layout="vertical">
-        <style>
-            <lisp>
-                (begin
-                    (set!-abs-pos -400.0 0.0)
-                    (set!-rel-pos "CPU" 'left 200.0)
-                    )
-            </lisp>
-        </style>
-        <memset>2 1 3 7 100</memset>
-    </memory>
-    <cpu name="CPU">
-        <style>
-            <abs-pos x="200" y="-500"/>
-        </style>
-        <code>
-            <wait
-                on="REP-CPU"
-                into="R0"/>
-            <wait
-                on="REP-CPU"
-                into="R1"/>
-            <wait
-                on="REP-CPU"
-                into="R2"/>
-            <wait
-                on="REP-CPU"
-                into="R3"/>
-            <load
-                from="MEM-CPU"
-                at="0"
-                into="R4"
-                />
-            <load
-                from="MEM-CPU"
-                at="1"
-                into="R5"
-                />
-            <load
-                from="MEM-CPU"
-                at="2"
-                into="R6"
-                />
-            <load
-                from="MEM-CPU"
-                at="3"
-                into="R7"
-                />
-            <sub
-                src="R4"
-                dst="R0"
-                />
-            <sub
-                src="R5"
-                dst="R1"
-                />
-            <sub
-                src="R6"
-                dst="R2"
-                />
-            <sub
-                src="R7"
-                dst="R3"
-                />
-            <add
-                src="R0"
-                dst="R1"
-                />
-            <add
-                src="R0"
-                dst="R2"
-                />
-            <add
-                src="R0"
-                dst="R3"
-                />
-            <movi
-                ival="0"
-                into="R1"/>
-            <if
-                a="R0" op="NE" b="R1"
-                jmpto="0"/>
-            <movi
-                ival="1"
-                into="R0"/>
-            <send
-                from="R0"
-                to="CPU-DISP"/>
-        </code>
-    </cpu>
-    <passthrough name="MEM-CPU">
-        <from name="MEM" at="R"/>
-        <to name="CPU" at="L"/>
-    </passthrough>
-    <display name="DISPLAY" >
-        <style>
-            <rel-pos
-                rel="CPU"
-                side="Right"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-            <font size="24"></font>
-            <custom>
-                <param key="dupa" value="69"/>
-            </custom>
-        </style>
-    </display>
-    <passthrough name="CPU-DISP">
-        <from name="CPU" at="R"/>
-        <to name="DISPLAY" at="L"/>
-    </passthrough>
-    <!--Keypad section-->
-    <!--repeater-->
-    <repeater name="REP">
-        <style>
-            <rel-pos
-                rel="CPU"
-                side="Bottom"
-                distance="200"
-                />
-            <size width="100" height="100"/>
-        </style>
-    </repeater>
-    <passthrough name="REP-CPU">
-        <from name="REP" at="TC"/>
-        <to name="CPU" at="BC"/>
-    </passthrough>
-    <!--repeater end-->
+	<memory name="MEM" layout="Vertical">
+		<style>
+			<font size="24" spacing="10" />
+			<abs-pos x="6014.20557" y="-705.318604" />
+			<custom />
+			<lisp>
+(begin
+(set!-abs-pos -400.0 0.0)
+(set!-rel-pos "CPU" 'left 200.0)
+)
 
-    <!--top row-->
-    <button name="7BUTTON">
-        <style>
-            <rel-pos
-                rel="8BUTTON"
-                side="Left"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">7</value>
-    </button>
-    <passthrough name="7BUTTON-REP">
-        <from name="7BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="8BUTTON">
-        <style>
-            <rel-pos
-                rel="REP"
-                side="Bottom"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">8</value>
-    </button>
-    <passthrough name="8BUTTON-REP">
-        <from name="8BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="9BUTTON" >
-        <style>
-            <rel-pos
-                rel="8BUTTON"
-                side="Right"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">9</value>
-    </button>
-    <passthrough name="9BUTTON-REP">
-        <from name="9BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-    <!--top row end-->
-
-    <!--middle row-->
-    <button name="4BUTTON" >
-        <style>
-            <rel-pos
-                rel="5BUTTON"
-                side="Left"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">4</value>
-    </button>
-    <passthrough name="4BUTTON-REP">
-        <from name="4BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="5BUTTON" >
-        <style>
-            <rel-pos
-                rel="8BUTTON"
-                side="Bottom"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">5</value>
-    </button>
-    <passthrough name="5BUTTON-REP">
-        <from name="5BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="6BUTTON" >
-        <style>
-            <rel-pos
-                rel="5BUTTON"
-                side="Right"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">6</value>
-    </button>
-    <passthrough name="6BUTTON-REP">
-        <from name="6BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-    <!--middle row end-->
-
-    <!--bottom row-->
-    <button name="1BUTTON" >
-        <style>
-            <rel-pos
-                rel="2BUTTON"
-                side="Left"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">1</value>
-    </button>
-    <passthrough name="1BUTTON-REP">
-        <from name="1BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="2BUTTON" >
-        <style>
-            <rel-pos
-                rel="5BUTTON"
-                side="Bottom"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">2</value>
-    </button>
-    <passthrough name="2BUTTON-REP">
-        <from name="2BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <button name="3BUTTON" >
-        <style>
-            <rel-pos
-                rel="2BUTTON"
-                side="Right"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">3</value>
-    </button>
-    <passthrough name="3BUTTON-REP">
-        <from name="3BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-    <!--bottlom row end-->
-
-    <!--zero-->
-    <button name="0BUTTON">
-        <style>
-            <rel-pos
-                rel="2BUTTON"
-                side="Bottom"
-                distance="200"
-                />
-            <size width="200" height="200"/>
-        </style>
-        <value kind="number">0</value>
-    </button>
-    <passthrough name="0BUTTON-REP">
-        <from name="0BUTTON" at="TC"/>
-        <to name="REP" at="BC"/>
-    </passthrough>
-
-    <!--Keypad section end-->
+</lisp>
+		</style>
+		<memset>2 1 3 7 100</memset>
+	</memory>
+	<cpu name="CPU">
+		<style>
+			<font size="24" spacing="10" />
+			<abs-pos x="6829.56592" y="-1346.99866" />
+			<custom />
+		</style>
+		<code>
+			<wait on="REP-CPU" into="R0" />
+			<wait on="REP-CPU" into="R1" />
+			<wait on="REP-CPU" into="R2" />
+			<wait on="REP-CPU" into="R3" />
+			<load from="MEM-CPU" at="0" into="R4" />
+			<load from="MEM-CPU" at="1" into="R5" />
+			<load from="MEM-CPU" at="2" into="R6" />
+			<load from="MEM-CPU" at="3" into="R7" />
+			<sub src="R4" dst="R0" />
+			<sub src="R5" dst="R1" />
+			<sub src="R6" dst="R2" />
+			<sub src="R7" dst="R3" />
+			<add src="R0" dst="R1" />
+			<add src="R0" dst="R2" />
+			<add src="R0" dst="R3" />
+			<movi into="R1" ival="0" />
+			<if a="R0" op="NE" b="R1" jmpto="0" />
+			<movi into="R0" ival="1" />
+			<send from="R0" to="CPU-DISP" />
+		</code>
+	</cpu>
+	<display name="DISPLAY" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom>
+				<param key="dupa" value="73" />
+			</custom>
+			<lisp>(begin
+(define dupa (get-param "dupa"))
+(set!-param "dupa" (+ dupa 1))
+)</lisp>
+		</style>
+	</display>
+	<repeater name="REP" width="100" height="100">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="100" height="100" />
+			<custom />
+		</style>
+	</repeater>
+	<button name="7BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">7</value>
+	</button>
+	<button name="8BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">8</value>
+	</button>
+	<button name="9BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">9</value>
+	</button>
+	<button name="4BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">4</value>
+	</button>
+	<button name="5BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">5</value>
+	</button>
+	<button name="6BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">6</value>
+	</button>
+	<button name="1BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">1</value>
+	</button>
+	<button name="2BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">2</value>
+	</button>
+	<button name="3BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">3</value>
+	</button>
+	<button name="0BUTTON" width="200" height="200">
+		<style>
+			<font size="24" spacing="10" />
+			<size width="200" height="200" />
+			<custom />
+		</style>
+		<value kind="Number">0</value>
+	</button>
+	<passthrough name="MEM-CPU">
+		<from name="CPU" at="R" />
+		<to name="CPU" at="L" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="CPU-DISP">
+		<from name="DISPLAY" at="R" />
+		<to name="DISPLAY" at="L" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="REP-CPU">
+		<from name="CPU" at="TC" />
+		<to name="CPU" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="7BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="8BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="9BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="4BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="5BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="6BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="1BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="2BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="3BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
+	<passthrough name="0BUTTON-REP">
+		<from name="REP" at="TC" />
+		<to name="REP" at="BC" />
+		<style>
+			<font size="24" spacing="10" />
+			<custom />
+		</style>
+	</passthrough>
 </graph>
