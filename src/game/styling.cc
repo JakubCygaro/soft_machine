@@ -319,6 +319,13 @@ void Style::marshall_to_xml(pugi::xml_node& self) const noexcept
         abs_pos.append_attribute("x").set_value(m_position->x);
         abs_pos.append_attribute("y").set_value(m_position->y);
     }
+    if (m_rel_pos) {
+        auto rel_pos = self.append_child("rel-pos");
+        rel_pos.append_attribute("rel").set_value(m_rel_pos->rel_to);
+        rel_pos.append_attribute("distance").set_value(m_rel_pos->distance);
+        rel_pos.append_attribute("side")
+            .set_value(common::reflect::enum_to_string(m_rel_pos->side));
+    }
     if (m_size) {
         auto size = self.append_child("size");
         size.append_attribute("width").set_value(m_size->x);
