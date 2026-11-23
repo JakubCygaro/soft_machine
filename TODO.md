@@ -1,4 +1,3 @@
-- fix rel-pos serialization
 - full editability of LISP styling
 - full editability for all components: start with passthrough and attachment point editing then go to MEM - CPU needs an instruction parser for that to work
 - editor: graph pausing, stepping and cycle rate controls
@@ -13,16 +12,4 @@ draw::EndBody();
 - fix a bug with CPU changing size
 - styling via LISP, possibly with topo-sort before styling execution
 - add logic gates that treat integer messages as either ON (non-zero) and OFF (zero)
-```xml
-<element name="element">
-    <style>
-        <lisp>
-            (begin
-             (set!-position-rel "element2" 'right 100)
-             (set!-font "default")
-             (set!-font-size 24)
-             (set!-param "body-color" 'GREEN))
-        </lisp>
-    </style>
-</element>
-```
+- some sort of testing framework?

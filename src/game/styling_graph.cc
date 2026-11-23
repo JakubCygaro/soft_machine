@@ -1,7 +1,9 @@
 #include "game/Styling.hpp"
 #include "game/StylingGraph.hpp"
 #include <queue>
+#include <ranges>
 #include <set>
+#include <span>
 
 #define LOG_PREFIX "[STYLING GRAPH] "
 
@@ -271,7 +273,7 @@ auto StylingGraph::Deps::check(const elem_id_t& id) const -> bool
 auto StylingGraph::Deps::insert(const elem_id_t& id) -> bool
 {
     if (!check(id)) {
-        ids.push_back(id);
+        // ids.push_back(id);
         return std::get<1>(dep_hash.insert(id));
     }
     return false;
@@ -279,18 +281,18 @@ auto StylingGraph::Deps::insert(const elem_id_t& id) -> bool
 auto StylingGraph::Deps::remove(const elem_id_t& id) -> void
 {
     if (check(id)) {
-        ids.erase(std::find(ids.begin(), ids.end(), id));
+        // ids.erase(std::find(ids.begin(), ids.end(), id));
         dep_hash.erase(id);
     }
 }
 auto StylingGraph::Deps::clear() -> void
 {
-    ids.clear();
+    // ids.clear();
     dep_hash.clear();
 }
 
-auto StylingGraph::Deps::get_dep_list() -> const std::vector<elem_id_t>&
+auto StylingGraph::Deps::get_dep_list() -> const std::unordered_set<elem_id_t>&
 {
-    return ids;
+    return dep_hash;
 }
 }

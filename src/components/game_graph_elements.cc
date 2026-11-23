@@ -3,6 +3,9 @@
 #include "components/GameGraphElements.hpp"
 #include "game/Editable.hpp"
 #include "imgui.h"
+#include <algorithm>
+#include <cstring>
+#include <utility>
 namespace components {
 void append_position_node(pugi::xml_node& to, const ::Vector2& pos)
 {
@@ -66,6 +69,14 @@ OComponent::~OComponent() { }
 ::Vector2 OComponent::get_pos() const
 {
     return ::Vector2 { .x = m_bounds.x, .y = m_bounds.y };
+}
+void OConnection::set_line_type(const LineType& lt)
+{
+    m_line_type = lt;
+}
+LineType OConnection::get_line_type() const
+{
+    return m_line_type;
 }
 void OComponent::set_pos(const ::Vector2& p)
 {
@@ -198,6 +209,7 @@ OConnection::OConnection(OConnection&& o)
     , m_end_pos { o.m_end_pos }
     , m_start_ap { o.m_start_ap }
     , m_end_ap { o.m_end_ap }
+    , m_line_type { o.m_line_type }
 {
 }
 OConnection& OConnection::operator=(OConnection&& o)
@@ -209,6 +221,7 @@ OConnection& OConnection::operator=(OConnection&& o)
     m_end_pos = o.m_end_pos;
     m_start_ap = o.m_start_ap;
     m_end_ap = o.m_end_ap;
+    m_line_type = o.m_line_type;
     return *this;
 }
 OConnection::~OConnection() { }
@@ -303,8 +316,42 @@ void OConnection::marshall_to_xml(pugi::xml_node& self) const noexcept
 }
 std::unique_ptr<game::Editor> OConnection::get_editor_object()
 {
-    return game::LambdaEditor::make([] mutable {
-        return false;
+    using namespace common::reflect;
+    int _start_attach_pt { 0 };
+    int _end_attach_pt { 0 };
+    const auto attp_list = attach_pt_string_list();
+    for (auto i = 0UL; i < attp_list.size(); i++) {
+        if (std::strcmp(attp_list[i], enum_to_string(get_from_attp()).c_str()) == 0) {
+            _start_attach_pt = i;
+        }
+        if (std::strcmp(attp_list[i], enum_to_string(get_to_attp()).c_str()) == 0) {
+            _end_attach_pt = i;
+        }
+    }
+    const auto* attp_list_ptr = attach_pt_string_list().data();
+    return game::LambdaEditor::make([=, this] mutable {
+        bool flag = false;
+        if (ImGui::CollapsingHeader("connection")) {
+            ImGui::SeparatorText("Start");
+            ImGui::PushID(1);
+            if ((flag |= ImGui::Combo("Attachment", &_start_attach_pt,
+                     attp_list_ptr, AttachPtArrSize))) {
+                this->set_from_attp(
+                    string_to_enum<AttachPt>(attp_list_ptr[_start_attach_pt])
+                        .value_or(get_from_attp()));
+            }
+            ImGui::PopID();
+            ImGui::PushID(2);
+            ImGui::SeparatorText("End");
+            if ((flag |= ImGui::Combo("Attachment", &_end_attach_pt,
+                     attp_list_ptr, AttachPtArrSize))) {
+                this->set_to_attp(
+                    string_to_enum<AttachPt>(attp_list_ptr[_end_attach_pt])
+                        .value_or(get_to_attp()));
+            }
+            ImGui::PopID();
+        }
+        return flag;
     });
 }
 void OConnection::on_notified()
@@ -315,5 +362,21 @@ void OConnection::on_notified()
 const std::string& OConnection::get_name() const
 {
     return machine::Connection::get_name();
+}
+
+const std::array<const char*, AttachPtArrSize>& attach_pt_string_list(void)
+{
+    static std::array<const char*, AttachPtArrSize> _ret = {
+        "TL",
+        "TC",
+        "TR",
+        "L",
+        "C",
+        "R",
+        "BL",
+        "BC",
+        "BR"
+    };
+    return _ret;
 }
 }

@@ -28,6 +28,8 @@ public:
     virtual void draw() override;
     virtual machine::actor::Actor<void> poll(machine::Mctx ctx) override;
 
+    virtual bool check_point_collision(const ::Vector2& point) const override;
+
     virtual const char*
     marshall_to_xml_name() const noexcept override;
     // virtual void

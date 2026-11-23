@@ -87,6 +87,7 @@ struct build<components::Passthrough> {
             } to;
             struct attrs {
                 std::string name;
+                std::optional<components::LineType> ltype;
             };
             game::xml::Attribute<attrs> attrs;
         };
@@ -102,6 +103,8 @@ struct build<components::Passthrough> {
             passth.to.attrs->name);
         p->set_from_attp(passth.from.attrs->at);
         p->set_to_attp(passth.to.attrs->at);
+        p->set_line_type(
+            passth.attrs->ltype.value_or(components::LineType::Straight));
         return Result<err_t, components::Passthrough*>::ok(p);
     }
 };

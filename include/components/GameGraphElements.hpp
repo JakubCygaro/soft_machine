@@ -5,13 +5,15 @@
 #include "game/XmlMarshalling.hpp"
 #include "machine/Component.hpp"
 #include "machine/Connection.hpp"
+#include <array>
 #include <pugixml.hpp>
 #include <raylib.h>
 #include <raymath.h>
+#include <utility>
 
 namespace components {
 
-enum class AttachPt {
+enum class AttachPt : int {
     TL,
     TC,
     TR,
@@ -21,6 +23,22 @@ enum class AttachPt {
     BL,
     BC,
     BR
+};
+
+namespace {
+    enum class AttachPtLimits {
+        Start = std::to_underlying(AttachPt::TL),
+        End = std::to_underlying(AttachPt::BR),
+    };
+}
+
+constexpr auto AttachPtArrSize = std::to_underlying(AttachPtLimits::End) + 1;
+
+const std::array<const char*, AttachPtArrSize>& attach_pt_string_list(void);
+
+enum class LineType {
+    Straight,
+    Bezier,
 };
 
 enum class ValueMsgKind {
@@ -82,6 +100,7 @@ protected:
     ::Vector2 m_start_pos { },
         m_end_pos { };
     AttachPt m_start_ap { }, m_end_ap { };
+    LineType m_line_type { };
 
 public:
     OConnection(
@@ -101,6 +120,8 @@ private:
     static void _set_to_attp(OConnection& self, const AttachPt& ap);
 
 public:
+    virtual void set_line_type(const LineType&);
+    virtual LineType get_line_type() const;
     virtual void set_from_attp(const AttachPt& ap);
     virtual void set_to_attp(const AttachPt& ap);
     virtual AttachPt get_from_attp();

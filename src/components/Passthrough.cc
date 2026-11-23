@@ -36,7 +36,14 @@ Passthrough& Passthrough::operator=(Passthrough&& o)
 Passthrough::~Passthrough() { }
 void Passthrough::draw()
 {
-    ::DrawLineBezier(m_start_pos, m_end_pos, 5.f, m_color);
+    switch (m_line_type) {
+    case components::LineType::Straight:
+        ::DrawLineEx(m_start_pos, m_end_pos, 5.f, m_color);
+        break;
+    case components::LineType::Bezier:
+        ::DrawLineBezier(m_start_pos, m_end_pos, 5.f, m_color);
+        break;
+    }
 }
 machine::actor::Actor<void> Passthrough::poll(machine::Mctx ctx)
 {
@@ -49,6 +56,16 @@ machine::actor::Actor<void> Passthrough::poll(machine::Mctx ctx)
             co_await ctx.send(in, std::move(m));
         co_await ctx.pause();
         m_color = ::BLACK;
+    }
+}
+bool Passthrough::check_point_collision(const ::Vector2& point) const
+{
+    switch (m_line_type) {
+    case components::LineType::Straight:
+        return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 4);
+    case components::LineType::Bezier:
+        //TODO: make this good
+        return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 4);
     }
 }
 const char*

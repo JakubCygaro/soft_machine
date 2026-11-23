@@ -5,10 +5,12 @@
 #include <game/Styling.hpp>
 #include <memory>
 #include <queue>
+// #include <ranges>
 #include <raylib.h>
-#include <set>
+// #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 namespace game {
 class StylingGraph : public machine::MachineGraph<
                          components::OComponent,
@@ -23,15 +25,15 @@ private:
 public:
     struct Deps {
     private:
-        std::vector<elem_id_t> ids { };
-        std::set<elem_id_t> dep_hash { };
+        // std::vector<elem_id_t> ids { };
+        std::unordered_set<elem_id_t> dep_hash { };
 
     public:
         auto check(const elem_id_t&) const -> bool;
         auto insert(const elem_id_t&) -> bool;
         auto remove(const elem_id_t&) -> void;
         auto clear() -> void;
-        auto get_dep_list() -> const std::vector<elem_id_t>&;
+        auto get_dep_list() -> const std::unordered_set<elem_id_t>&;
         Deps() = default;
         Deps(const Deps&) = delete;
         Deps& operator=(const Deps&) = delete;

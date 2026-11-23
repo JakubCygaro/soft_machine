@@ -157,12 +157,12 @@
         </style>
         <value kind="number">8</value>
     </button>
-    <passthrough name="8BUTTON-REP">
+    <passthrough name="8BUTTON-REP" >
         <from name="8BUTTON" at="TC"/>
         <to name="REP" at="BC"/>
     </passthrough>
 
-    <button name="9BUTTON" >
+    <button name="9BUTTON">
         <style>
             <rel-pos
                 rel="8BUTTON"
