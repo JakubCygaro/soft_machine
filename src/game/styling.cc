@@ -138,6 +138,7 @@ Style::from_xml(pugi::xml_node& node)
     }
     if (auto lispch = node.child("lisp"); lispch) {
         style.m_lisp = trim_lisp_text(lispch.text());
+        style.m_override_abs_pos |= true;
         // style.m_lisp = lispch.text().get();
         // style.m_lisp = common::trim(*style.m_lisp);
     }
@@ -244,7 +245,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     }
     if (m_size)
         stylable->set_size(*m_size);
-    if (m_rel_pos) {
+    if (m_rel_pos && m_override_abs_pos) {
         if (auto d = sctx->query_component(m_rel_pos->rel_to, false); d) {
             const auto& dist = m_rel_pos->distance;
             const auto b = stylable->get_bounds();
@@ -290,7 +291,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
                 m_rel_pos->rel_to.c_str());
         }
     } else if (m_position) {
-        if (!m_override_abs_pos && *m_position != stylable->get_pos())
+        if (!m_override_abs_pos && !::Vector2Equals(*m_position, stylable->get_pos()))
             m_position = stylable->get_pos();
         stylable->set_pos(*m_position);
     }
@@ -385,7 +386,8 @@ inline auto with_instance_or_err(Style* inst_ptr, auto func)
 void Style::instance_set_abs_pos(::Vector2 pos)
 {
     with_instance_or_err(s_instance, [=](Style* s) {
-        s->m_position = pos;
+        if (s->m_override_abs_pos)
+            s->m_position = pos;
     });
 }
 ::Vector2 Style::instance_get_abs_pos(std::optional<const std::string&> other)
@@ -405,7 +407,8 @@ void Style::instance_set_abs_pos(::Vector2 pos)
 void Style::instance_set_rel_pos(RelativePos rp)
 {
     return with_instance_or_err(s_instance, [&](auto* s) {
-        s->m_rel_pos = rp;
+        if (s->m_override_abs_pos)
+            s->m_rel_pos = rp;
     });
 }
 std::optional<const RelativePos&> Style::instance_get_rel_pos()
@@ -547,12 +550,15 @@ std::unique_ptr<Editor> Style::get_editor_object()
                 };
             }
             ImGui::SeparatorText("Absolute position");
+            ImGui::PushID("style/Position");
             if ((flag |= ImGui::InputFloat2("Position", _abs_pos.data()))) {
-                this->m_position = ::Vector2 {
-                    _abs_pos[0],
-                    _abs_pos[1],
-                };
+                if (this->m_override_abs_pos)
+                    this->m_position = ::Vector2 {
+                        _abs_pos[0],
+                        _abs_pos[1],
+                    };
             }
+            ImGui::PopID();
             ImGui::SameLine();
             if (ImGui::Checkbox("Style override", &this->m_override_abs_pos)) {
                 flag |= true;
