@@ -94,6 +94,9 @@ public:
     virtual void set_size(const ::Vector2& sz) override;
     virtual void set_styling(game::Style::shared_ptr_t s) override;
 
+    virtual void notify_after_styling() override;
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
+
 private:
     static std::pair<::Vector2, std::vector<Memory::cell_str_dim>>
     setup_mem(Memory& self, const mem_t&);

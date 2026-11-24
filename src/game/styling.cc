@@ -295,6 +295,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
             m_position = stylable->get_pos();
         stylable->set_pos(*m_position);
     }
+    m_styllable->notify_after_styling();
     m_sctx = nullptr;
     m_styllable = nullptr;
 }
@@ -608,7 +609,7 @@ std::unique_ptr<Editor> Style::get_editor_object()
     float _font_size = m_fontd.size;
 
     std::array<char, 256> _new_custom_k = { };
-    std::array<char, 256> _new_custom_v = { };
+    // std::array<char, 256> _new_custom_v = { };
     std::optional<CustomEditor> _custom_editor;
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;

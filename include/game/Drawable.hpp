@@ -6,7 +6,6 @@
 #include <raylib.h>
 #include <raymath.h>
 
-
 namespace game {
 class Object : public Editable, public Stylable {
 private:
@@ -17,6 +16,7 @@ public:
     inline virtual void draw() { };
     inline virtual void update() { };
     inline virtual void on_input() { };
+    virtual void notify_after_styling() override { };
     // inline virtual void on_keyboard_event(){};
     inline virtual bool check_point_collision(const ::Vector2& point) const
     {

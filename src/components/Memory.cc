@@ -1,15 +1,15 @@
 #include "components/Memory.hpp"
-#include "common/reflect/Enum.hpp"
-#include "game/resources/Resources.hpp"
 #include "common/String.hpp"
+#include "common/reflect/Enum.hpp"
+#include "imgui.h"
 #include <algorithm>
 #include <any>
 #include <cmath>
+#include <cstddef>
 #include <ranges>
 #include <raylib.h>
 #include <raymath.h>
 #include <string>
-using namespace game::resources;
 
 namespace components {
 Memory::Memory(
@@ -406,5 +406,72 @@ void Memory::set_styling(game::Style::shared_ptr_t s)
 {
     OComponent::set_styling(s);
     setup(*this);
+}
+void Memory::notify_after_styling()
+{
+    setup(*this);
+}
+std::unique_ptr<game::Editor> Memory::get_editor_object()
+{
+    int _selected_cell = -1;
+    auto comp_editor = OComponent::get_editor_object();
+    return game::LambdaEditor::make([=, this,
+                                        comp_editor = std::move(comp_editor)] mutable
+                                        -> bool {
+        bool flag = false;
+        std::optional<std::size_t> to_remove;
+        if (ImGui::CollapsingHeader("Memory")) {
+            ImGui::SeparatorText("storage");
+            if (ImGui::BeginTable("Memory cells", 4,
+                    ImGuiTableFlags_Resizable
+                        | ImGuiTableFlags_NoSavedSettings
+                        | ImGuiTableFlags_Borders)) {
+                for (auto i = 0UL; i < m_mem.size(); i++) {
+                    ImGui::PushID(&m_mem[i]);
+                    ImGui::TableNextRow();
+                    if (ImGui::Selectable(std::format("Cell {}", i).c_str()),
+                        _selected_cell == (int)i) {
+                        _selected_cell = i;
+                    }
+                    ImGui::TableNextColumn();
+                    flag |= ImGui::InputInt(std::format("value##{}", i).c_str(),
+                        &m_mem[i]);
+                    ImGui::TableNextColumn();
+                    if (i > 0) {
+                        ImGui::SameLine();
+                        if (ImGui::Button("Move Up")) {
+                            flag = true;
+                            std::swap(m_mem[i], m_mem[i - 1]);
+                        }
+                    }
+                    ImGui::TableNextColumn();
+                    if (i < m_mem.size() - 1) {
+                        ImGui::SameLine();
+                        if (ImGui::Button("Move Down")) {
+                            flag = true;
+                            std::swap(m_mem[i], m_mem[i + 1]);
+                        }
+                    }
+                    ImGui::TableNextColumn();
+                    ImGui::SameLine();
+                    if (ImGui::Button("Remove")) {
+                        flag = true;
+                        to_remove = i;
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            if (ImGui::Button("Add cell")) {
+                m_mem.push_back(0);
+                flag = true;
+            }
+            if (to_remove) {
+                m_mem.erase(std::next(m_mem.begin(), *to_remove));
+            }
+        }
+        flag |= comp_editor->draw_update();
+        return flag;
+    });
 }
 }

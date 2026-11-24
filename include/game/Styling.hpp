@@ -15,6 +15,7 @@ namespace game {
 class StylingContext;
 struct Stylable {
     virtual ~Stylable();
+    virtual void notify_after_styling() = 0;
     virtual void set_pos(const ::Vector2&) = 0;
     virtual ::Vector2 get_pos() const = 0;
     virtual void set_size(const ::Vector2&) = 0;
