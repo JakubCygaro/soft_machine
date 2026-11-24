@@ -120,15 +120,16 @@ void element_list_draw()
 void comp_builder_menu_draw()
 {
     if (ImGui::Begin("Component builder")) {
-        ImGui::BeginListBox("Components");
-        for (const auto& [s, b] : fl_state.comp_blds) {
-            ImGui::PushID(s.c_str());
-            if (ImGui::Selectable(s.c_str())) {
-                fl_state.open_comp_bld = s;
+        if(ImGui::BeginListBox("Components")){
+            for (const auto& [s, b] : fl_state.comp_blds) {
+                ImGui::PushID(s.c_str());
+                if (ImGui::Selectable(s.c_str())) {
+                    fl_state.open_comp_bld = s;
+                }
+                ImGui::PopID();
             }
-            ImGui::PopID();
+            ImGui::EndListBox();
         }
-        ImGui::EndListBox();
     }
     ImGui::End();
 }

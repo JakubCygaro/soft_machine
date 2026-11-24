@@ -523,9 +523,10 @@ public:
             overloaded {
                 [=](const int& i) { return std::to_string(i); },
                 [=](const float& f) { return std::to_string(f); },
+                [=](const bool& b) { return std::to_string(b); },
                 [=](const double& d) { return std::to_string(d); },
                 [=](const std::string& s) { return s; },
-                [&](const auto&) {
+                [&](const std::shared_ptr<game::AsStylingParameter>&) {
                     throw std::runtime_error(
                         "Custom editor passed a"
                         " std::shared_ptr<game::AsStylingParameter> value object");
@@ -687,6 +688,7 @@ std::unique_ptr<Editor> Style::get_editor_object()
                             [=](const int& i) { return std::to_string(i); },
                             [=](const float& f) { return std::to_string(f); },
                             [=](const double& d) { return std::to_string(d); },
+                            [=](const bool& b) { return std::to_string(b); },
                             [=](const std::string& s) { return s; },
                             [&](const auto&) {
                                 block_select = true;
