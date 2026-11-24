@@ -1,7 +1,9 @@
 #include "components/Display.hpp"
 #include "common/Ray.hpp"
 #include "components/GameGraphElements.hpp"
+#include "game/Editable.hpp"
 #include "game/resources/Resources.hpp"
+#include "imgui.h"
 #include <string>
 
 namespace components {
@@ -94,6 +96,21 @@ machine::actor::Actor<void> Display::poll(machine::Mctx ctx)
         }
     }
 }
+// void Display::notify_after_styling()
+// {
+// }
+// std::unique_ptr<game::Editor> Display::get_editor_object()
+// {
+//     auto comp_editor = OComponent::get_editor_object();
+//     return game::LambdaEditor::make(
+//         [=, this, comp_editor = std::move(comp_editor)] mutable -> bool {
+//             bool flag = false;
+//             if (ImGui::CollapsingHeader("display")) {
+//                 ImGui::SeparatorText("layout");
+//             }
+//             return flag;
+//         });
+// }
 
 const char*
 Display::marshall_to_xml_name() const noexcept

@@ -64,7 +64,8 @@ bool Passthrough::check_point_collision(const ::Vector2& point) const
     case components::LineType::Straight:
         return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 4);
     case components::LineType::Bezier:
-        //TODO: make this good
+    default:
+        // TODO: make this good
         return ::CheckCollisionPointLine(point, m_start_pos, m_end_pos, 4);
     }
 }

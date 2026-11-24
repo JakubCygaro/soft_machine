@@ -245,6 +245,7 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
     }
     if (m_size)
         stylable->set_size(*m_size);
+    m_styllable->notify_after_styling();
     if (m_rel_pos && m_override_abs_pos) {
         if (auto d = sctx->query_component(m_rel_pos->rel_to, false); d) {
             const auto& dist = m_rel_pos->distance;
@@ -295,7 +296,6 @@ auto Style::style(StylingContext* sctx, Stylable* stylable) -> void
             m_position = stylable->get_pos();
         stylable->set_pos(*m_position);
     }
-    m_styllable->notify_after_styling();
     m_sctx = nullptr;
     m_styllable = nullptr;
 }

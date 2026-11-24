@@ -8,8 +8,13 @@
 #include "machine/Actor.hpp"
 #include "machine/MachineContext.hpp"
 #include <cstring>
+#include <expected>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <variant>
 
 namespace components {
 class CPU : public components::OComponent {
@@ -18,6 +23,7 @@ public:
         int idx { };
         static Result<std::runtime_error, Register> parse_xml(const char* str);
         std::string to_string() const noexcept;
+        constexpr auto operator<=>(const Register&) const = default;
     };
     struct Instruction : game::xml::MarshallToXml {
         virtual std::string to_string() = 0;
@@ -92,4 +98,84 @@ private:
 
 protected:
 };
+namespace cpu {
+    using Iden = std::string;
+    using Reg = CPU::Register;
+    using Eof = struct { };
+    using Token = std::variant<
+        Iden,
+        std::int64_t,
+        Reg,
+        Eof>;
+    std::string stringify(const Token&);
+    class Tokenizer {
+        std::istringstream m_iss;
+
+    public:
+        Tokenizer(std::istringstream&&);
+        Tokenizer(Tokenizer&&) = default;
+        Tokenizer& operator=(Tokenizer&&) = default;
+        Tokenizer(const Tokenizer&) = delete;
+        Tokenizer& operator=(const Tokenizer&) = delete;
+        std::expected<Token, std::string> read_next(void);
+    };
+    class Parser {
+        Tokenizer m_tok;
+
+    public:
+        Parser(std::istringstream&&);
+        Parser(Parser&&) = default;
+        Parser& operator=(Parser&&) = default;
+        Parser(const Parser&) = delete;
+        Parser& operator=(const Parser&) = delete;
+        std::expected<std::unique_ptr<CPU::Instruction>, std::string>
+        read_next(void);
+
+    private:
+        std::expected<std::unique_ptr<CPU::Instruction>, std::string>
+        read_instruction(Iden start);
+
+        template <class T, class Inspect = std::optional<T>>
+        inline std::expected<T, std::string> expect_next(Inspect inspect = std::nullopt)
+        {
+            auto t = m_tok.read_next();
+            if (!t.has_value())
+                return std::unexpected<std::string>(t.error());
+            auto t_val = std::move(t.value());
+            if (!std::holds_alternative<T>(t_val))
+                return std::unexpected<std::string>(
+                    std::format("Unexpected token '{}'", stringify(t_val)));
+            if constexpr (std::is_same_v<std::optional<T>, Inspect>) {
+                if (!inspect)
+                    return std::get<T>(t_val);
+                if (std::get<T>(t_val) != *inspect) {
+                    return std::unexpected<std::string>(
+                        std::format("Token value mismatch '{}' <> '{}'",
+                            stringify(t_val), stringify(*inspect)));
+                } else {
+                    return std::get<T>(t_val);
+                }
+            } else if constexpr (std::is_same_v<T, Inspect>
+                || std::is_same_v<T, std::nullopt_t>) {
+                if (std::get<T>(t_val) != inspect) {
+                    return std::unexpected<std::string>(
+                        std::format("Token value mismatch '{}' <> '{}'",
+                            stringify(t_val), inspect));
+                } else {
+                    return std::get<T>(t_val);
+                }
+            } else if constexpr (std::is_invocable_v<Inspect>) {
+                if (!Inspect(std::get<T>(t_val))) {
+                    return std::unexpected<std::string>(
+                        std::format("Bad token value '{}'",
+                            stringify(t_val)));
+                } else {
+                    return std::get<T>(t_val);
+                }
+            } else
+                static_assert(false, "expect_next bad template Inspect parameter type");
+        }
+    };
+
+}
 }

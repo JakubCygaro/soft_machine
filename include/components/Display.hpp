@@ -33,6 +33,9 @@ public:
     virtual void update() override;
     virtual machine::actor::Actor<void> poll(machine::Mctx) override;
 
+    // virtual void notify_after_styling() override;
+    // virtual std::unique_ptr<game::Editor> get_editor_object() override;
+
     // virtual void set_size(const ::Vector2&);
     virtual const char*
     marshall_to_xml_name() const noexcept override;

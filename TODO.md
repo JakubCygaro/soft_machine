@@ -1,6 +1,4 @@
-- custom parameters editing
-- full editability of LISP styling
-- full editability for all components: MEM - CPU needs an instruction parser for that to work
+- full editability for all components: Display - CPU needs an instruction parser for that to work
 - editor: graph pausing, stepping and cycle rate controls
 - immediate mode drawing of components:
 ```cpp

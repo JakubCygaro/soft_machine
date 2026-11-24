@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #ifndef CLANGD_SKIP
 #include <meta>
 #endif
@@ -18,10 +19,35 @@ enum_to_string(E e)
     constexpr static auto enumerators = std::define_static_array(enumerators_of(^^E));
     template for (constexpr auto enumerator : enumerators)
     {
-        constexpr auto iden = std::meta::identifier_of(enumerator);
+        constexpr static auto iden = std::meta::identifier_of(enumerator);
         constexpr E val = [:enumerator:];
         if (e == val) {
             return std::string(iden);
+        }
+    }
+    return "";
+}
+#else
+{
+    (void)e;
+    return "";
+}
+#endif
+template <typename E>
+#ifndef CLANGD_SKIP
+    requires(std::meta::is_enum_type(^^E))
+#endif
+constexpr const std::string_view
+enum_to_string_view(E e)
+#ifndef CLANGD_SKIP
+{
+    constexpr static auto enumerators = std::define_static_array(enumerators_of(^^E));
+    template for (constexpr auto enumerator : enumerators)
+    {
+        constexpr static auto iden = std::meta::identifier_of(enumerator);
+        constexpr E val = [:enumerator:];
+        if (e == val) {
+            return std::string_view(iden);
         }
     }
     return "";

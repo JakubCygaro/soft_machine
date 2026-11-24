@@ -1,34 +1,16 @@
 #pragma once
-
-#include <algorithm>
 #include <string>
-namespace common {
-inline std::string ltrim(const std::string& s)
-{
-    return std::string(
-        std::find_if(
-            s.begin(),
-            s.end(),
-            [](unsigned char ch) {
-                return !std::isspace(ch);
-            }),
-        s.end());
-}
+#include <string_view>
 
-inline std::string rtrim(const std::string& s)
-{
-    return std::string(
-        s.begin(),
-        std::find_if(
-            s.rbegin(),
-            s.rend(),
-            [](unsigned char ch) {
-                return !std::isspace(ch);
-            })
-            .base());
-}
-inline std::string trim(const std::string& s)
-{
-    return ltrim(rtrim(s));
+namespace common {
+std::string ltrim(const std::string&);
+std::string ltrim(const std::string_view);
+std::string rtrim(const std::string&);
+std::string rtrim(const std::string_view);
+std::string trim(const std::string&);
+std::string trim(const std::string_view);
+namespace str {
+    bool equal(const std::string_view, const std::string_view);
+    bool equal(const std::string&, const std::string&);
 }
 }

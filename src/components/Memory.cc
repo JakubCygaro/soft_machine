@@ -6,6 +6,7 @@
 #include <any>
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <ranges>
 #include <raylib.h>
 #include <raymath.h>
@@ -413,14 +414,33 @@ void Memory::notify_after_styling()
 }
 std::unique_ptr<game::Editor> Memory::get_editor_object()
 {
-    int _selected_cell = -1;
+    static const char* _layouts[] = {
+        "Horizontal",
+        "Vertical",
+        "Square"
+    };
+    int _layout_idx;
+    for (auto i = 0UL; i < std::size(_layouts); i++) {
+        _layout_idx = std::string_view { _layouts[i], std::strlen(_layouts[i]) }.compare(
+                          common::reflect::enum_to_string_view(m_lay))
+                == 0
+            ? i
+            : _layout_idx;
+    }
     auto comp_editor = OComponent::get_editor_object();
     return game::LambdaEditor::make([=, this,
                                         comp_editor = std::move(comp_editor)] mutable
                                         -> bool {
         bool flag = false;
         std::optional<std::size_t> to_remove;
-        if (ImGui::CollapsingHeader("Memory")) {
+        if (ImGui::CollapsingHeader("memory")) {
+            ImGui::SeparatorText("layout");
+            if (ImGui::Combo(
+                    "Pick layout", &_layout_idx, _layouts, std::size(_layouts))) {
+                m_lay = *common::reflect::string_to_enum<Layout>(
+                    _layouts[_layout_idx]);
+                flag = true;
+            }
             ImGui::SeparatorText("storage");
             if (ImGui::BeginTable("Memory cells", 4,
                     ImGuiTableFlags_Resizable
@@ -429,12 +449,8 @@ std::unique_ptr<game::Editor> Memory::get_editor_object()
                 for (auto i = 0UL; i < m_mem.size(); i++) {
                     ImGui::PushID(&m_mem[i]);
                     ImGui::TableNextRow();
-                    if (ImGui::Selectable(std::format("Cell {}", i).c_str()),
-                        _selected_cell == (int)i) {
-                        _selected_cell = i;
-                    }
                     ImGui::TableNextColumn();
-                    flag |= ImGui::InputInt(std::format("value##{}", i).c_str(),
+                    flag |= ImGui::InputInt(std::format("cell {}", i).c_str(),
                         &m_mem[i]);
                     ImGui::TableNextColumn();
                     if (i > 0) {
