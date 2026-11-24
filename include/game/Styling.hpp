@@ -64,11 +64,11 @@ public:
     // static constexpr std::string_view ABS_POS_NODE = "abs-pos";
 public:
     using shared_ptr_t = std::shared_ptr<Style>;
+    using custom_parameters_t = std::unordered_map<std::string, StylingParameter>;
 
 private:
     friend class StyleBuilder;
     friend class StyleSchemeWrap;
-    using custom_parameters_t = std::unordered_map<std::string, StylingParameter>;
     custom_parameters_t custom_parameters { };
     std::string m_font_name;
     ::Font m_font;

@@ -500,6 +500,80 @@ Style::instance_get_param(const std::string& param,
             }
         });
 }
+struct CustomEditor {
+    // std::array<char, 256> m_custom_k = { };
+private:
+    bool m_deleted = false;
+    bool m_as_string = false;
+    std::string m_custom_k = { };
+    std::array<char, 256> m_custom_v = { };
+    Style::custom_parameters_t* m_params;
+    std::optional<std::string> m_error { };
+
+public:
+    CustomEditor(
+        Style::custom_parameters_t* params,
+        const std::string& k,
+        StylingParameter& v)
+        : m_custom_k { k }
+        , m_params { params }
+    {
+        // std::strcpy(m_custom_k.data(), k.c_str());
+        auto disp = std::visit(
+            overloaded {
+                [=](const int& i) { return std::to_string(i); },
+                [=](const float& f) { return std::to_string(f); },
+                [=](const double& d) { return std::to_string(d); },
+                [=](const std::string& s) { return s; },
+                [&](const auto&) {
+                    throw std::runtime_error(
+                        "Custom editor passed a"
+                        " std::shared_ptr<game::AsStylingParameter> value object");
+                    return std::string("<WIP>");
+                } },
+            v);
+        std::strcpy(m_custom_v.data(), disp.c_str());
+    }
+    auto update() -> bool
+    {
+        bool flag = false;
+        ImGui::SeparatorText("custom parameter");
+        ImGui::Text("%s", m_custom_k.data());
+        if (ImGui::InputText("Value", m_custom_v.data(), m_custom_v.size())) {
+        }
+        ImGui::SameLine();
+        ImGui::Checkbox("As string", &m_as_string);
+        if (!m_error && ImGui::Button("Save")) {
+            if (m_as_string) {
+                (*m_params)[m_custom_k] = std::string(
+                    m_custom_v.data(), m_custom_v.size());
+            } else {
+                (*m_params)[m_custom_k] = styling_param_from_str(
+                    std::string(m_custom_v.data(), m_custom_v.size()));
+            }
+            flag = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Delete")) {
+            m_params->erase(m_custom_k);
+            m_deleted = true;
+            flag = true;
+        }
+        if (m_error) {
+            ImGui::TextColored({ 255, 0, 0, 255 }, "%s", m_error->c_str());
+        }
+        return flag;
+    }
+    auto deleted() -> bool
+    {
+        return m_deleted;
+    }
+    auto key() -> const std::string&
+    {
+        return m_custom_k;
+    }
+};
+// what happens here is pure insanity
 std::unique_ptr<Editor> Style::get_editor_object()
 {
     std::array<float, 2> _abs_pos = { };
@@ -531,6 +605,10 @@ std::unique_ptr<Editor> Style::get_editor_object()
     });
     bool lisp_changed = false;
     float _font_size = m_fontd.size;
+
+    std::array<char, 256> _new_custom_k = { };
+    std::array<char, 256> _new_custom_v = { };
+    std::optional<CustomEditor> _custom_editor;
     return LambdaEditor::make([=, this] mutable -> bool {
         bool flag = false;
         if (this->m_override_abs_pos && m_position)
@@ -602,20 +680,41 @@ std::unique_ptr<Editor> Style::get_editor_object()
             if (ImGui::BeginListBox("Parameters")) {
                 for (auto& [k, v] : this->custom_parameters) {
                     ImGui::PushID(k.c_str());
-                    ImGui::Text("%s: ", k.c_str());
-                    ImGui::SameLine();
+                    // ImGui::Text("%s: ", k.c_str());
+                    bool block_select = false;
                     auto disp = std::visit(
                         overloaded {
                             [=](const int& i) { return std::to_string(i); },
                             [=](const float& f) { return std::to_string(f); },
                             [=](const double& d) { return std::to_string(d); },
                             [=](const std::string& s) { return s; },
-                            [=](const auto&) { return std::string("<WIP>"); } },
+                            [&](const auto&) {
+                                block_select = true;
+                                return std::string("<WIP>");
+                            } },
                         v);
-                    ImGui::Text("%s", disp.c_str());
+                    if (!block_select && ImGui::Selectable(k.c_str())) {
+                        _custom_editor = CustomEditor(&this->custom_parameters, k, v);
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text(": %s", disp.c_str());
                     ImGui::PopID();
                 }
                 ImGui::EndListBox();
+                ImGui::InputText("New", _new_custom_k.data(), _new_custom_k.size());
+                ImGui::SameLine();
+                if (!_new_custom_k.empty()
+                    && !custom_parameters.contains(_new_custom_k.data())
+                    && ImGui::Button("Add")) {
+                    custom_parameters[std::string(
+                        _new_custom_k.data(),
+                        _new_custom_k.size())] = 0;
+                }
+                if (_custom_editor) {
+                    flag = _custom_editor->update();
+                    if (_custom_editor->deleted())
+                        _custom_editor = std::nullopt;
+                }
             }
             ImGui::SeparatorText("LISP source");
             if (ImGui::InputTextMultiline("LISP", _lisp.data(), _lisp.size())) {
