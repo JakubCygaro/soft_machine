@@ -20,7 +20,8 @@ private:
     struct data {
         std::any m_msg_value;
         bool set { };
-        std::vector<std::string> recipents { };
+        // ValueMsgKind m_msg_value_kind;
+        // std::vector<std::string> recipents { };
     };
     AutoMoveD<data> m_d { };
 
@@ -28,9 +29,9 @@ public:
     Button(
         std::string name,
         std::any&& msg_value);
-    Button(
-        fl::string_param_t name,
-        fl::string_param_t msg_value);
+    // Button(
+    //     fl::string_param_t name,
+    //     fl::string_param_t msg_value);
     Button(const Button&) = delete;
     Button& operator=(const Button&) = delete;
     Button(Button&& o);
@@ -46,6 +47,9 @@ public:
         const machine::Connection*,
         std::any) override;
     virtual machine::actor::Actor<void> poll(machine::Mctx) override;
+
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
+    // virtual void notify_after_styling() override;
 
     virtual void set_size(const ::Vector2&) override;
 

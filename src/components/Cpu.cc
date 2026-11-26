@@ -48,36 +48,36 @@ CPU::CPU(
 {
     // setup(*this);
 }
-CPU::CPU(CPU&& o)
-    : components::OComponent(std::move(o))
-    , m_code { std::move(o.m_code) }
-    , m_regs { std::move(o.m_regs) }
-    , m_inst_draw { std::move(o.m_inst_draw) }
-    , m_max_inst_dims { std::move(o.m_max_inst_dims) }
-    , m_name_sz { std::move(o.m_name_sz) }
-    , m_pc { std::move(o.m_pc) }
-    , m_max_reg_dims { std::move(o.m_max_reg_dims) }
-    , m_reg_draw_data { std::move(o.m_reg_draw_data) }
-    , m_pc_draw_data { std::move(o.m_pc_draw_data) }
-    , m_inst_dims_y_acc { std::move(o.m_inst_dims_y_acc) }
-{
-}
-CPU& CPU::operator=(CPU&& o)
-{
-    if (&o == this)
-        return *this;
-    components::OComponent::operator=(std::move(o));
-    m_code = std::move(o.m_code);
-    m_regs = std::move(o.m_regs);
-    m_inst_draw = std::move(o.m_inst_draw);
-    m_max_inst_dims = std::move(o.m_max_inst_dims);
-    m_name_sz = std::move(o.m_name_sz);
-    m_pc = std::move(o.m_pc);
-    m_reg_draw_data = std::move(o.m_reg_draw_data);
-    m_pc_draw_data = std::move(o.m_pc_draw_data);
-    m_inst_dims_y_acc = std::move(o.m_inst_dims_y_acc);
-    return *this;
-}
+// CPU::CPU(CPU&& o)
+//     : components::OComponent(std::move(o))
+//     , m_code { std::move(o.m_code) }
+//     , m_regs { std::move(o.m_regs) }
+//     , m_inst_draw { std::move(o.m_inst_draw) }
+//     , m_max_inst_dims { std::move(o.m_max_inst_dims) }
+//     , m_name_sz { std::move(o.m_name_sz) }
+//     , m_pc { std::move(o.m_pc) }
+//     , m_max_reg_dims { std::move(o.m_max_reg_dims) }
+//     , m_reg_draw_data { std::move(o.m_reg_draw_data) }
+//     , m_pc_draw_data { std::move(o.m_pc_draw_data) }
+//     , m_inst_dims_y_acc { std::move(o.m_inst_dims_y_acc) }
+// {
+// }
+// CPU& CPU::operator=(CPU&& o)
+// {
+//     if (&o == this)
+//         return *this;
+//     components::OComponent::operator=(std::move(o));
+//     m_code = std::move(o.m_code);
+//     m_regs = std::move(o.m_regs);
+//     m_inst_draw = std::move(o.m_inst_draw);
+//     m_max_inst_dims = std::move(o.m_max_inst_dims);
+//     m_name_sz = std::move(o.m_name_sz);
+//     m_pc = std::move(o.m_pc);
+//     m_reg_draw_data = std::move(o.m_reg_draw_data);
+//     m_pc_draw_data = std::move(o.m_pc_draw_data);
+//     m_inst_dims_y_acc = std::move(o.m_inst_dims_y_acc);
+//     return *this;
+// }
 CPU::~CPU() { };
 
 CPU::code_t& CPU::code()
@@ -268,7 +268,9 @@ std::unique_ptr<game::Editor> CPU::get_editor_object()
                                         // this,
                                         cpu_editor = std::move(cpu_editor),
                                         comp_editor = std::move(comp_editor)] {
-        return cpu_editor->draw_update() || comp_editor->draw_update();
+        auto flag = cpu_editor->draw_update();
+        flag |= comp_editor->draw_update();
+        return flag;
     });
 }
 void CPU::notify_after_styling()
@@ -374,7 +376,7 @@ void CPU::setup_bounds(CPU& self)
     }
 }
 machine::actor::Actor<void>
-CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
+CPU::exec(machine::Mctx& ctx, const InstWait* i)
 {
     while (1) {
         auto [s, m] = co_await ctx.recv();
@@ -391,7 +393,7 @@ CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
     co_return;
 }
 machine::actor::Actor<void>
-CPU::exec_load(machine::Mctx& ctx, const InstLoad* i)
+CPU::exec(machine::Mctx& ctx, const InstLoad* i)
 {
     while (1) {
         auto s = co_await ctx.send(
@@ -417,7 +419,7 @@ CPU::exec_load(machine::Mctx& ctx, const InstLoad* i)
     }
     co_return;
 }
-void CPU::exec_if(machine::Mctx&, const InstIf* i)
+void CPU::exec(machine::Mctx&, const InstIf* i)
 {
     const auto& a = reg(i->attrs->a);
     const auto& b = reg(i->attrs->b);
@@ -456,13 +458,13 @@ CPU::poll(machine::Mctx ctx)
         }
         const auto inst = m_code[m_pc];
         if (auto i = dynamic_cast<const InstWait*>(inst.get())) {
-            co_await exec_wait(ctx, i);
+            co_await exec(ctx, i);
         }
         if (auto i = dynamic_cast<const InstLoad*>(inst.get())) {
-            co_await exec_load(ctx, i);
+            co_await exec(ctx, i);
         }
         if (auto i = dynamic_cast<const InstIf*>(inst.get())) {
-            exec_if(ctx, i);
+            exec(ctx, i);
             co_await ctx.pause();
         }
         if (auto i = dynamic_cast<const InstMovi*>(inst.get())) {
@@ -486,6 +488,8 @@ CPU::poll(machine::Mctx ctx)
             m_pc = 0;
         setup_pc(*this);
         co_await ctx.pause();
+        while (m_execution_paused)
+            co_await ctx.pause();
         unmark_all();
     }
 }

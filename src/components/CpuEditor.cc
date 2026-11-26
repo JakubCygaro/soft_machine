@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include <concepts>
+#include <format>
 #include <functional>
 #include <map>
 #include <memory>
@@ -68,21 +69,55 @@ CPUEditor::CPUEditor(CPUEditorKey, CPU* cpu)
 bool CPUEditor::draw_update()
 {
     auto& code = m_cpu->m_code;
+    auto& regs = m_cpu->m_regs;
     bool flag = false;
     if (ImGui::CollapsingHeader("cpu")) {
-        ImGui::SeparatorText("code");
-        if (ImGui::BeginTable("Instructions", 2,
-                ImGuiTableFlags_Resizable
-                    | ImGuiTableFlags_NoSavedSettings
-                    | ImGuiTableFlags_Borders)) {
-            for (auto i = 0UL; i < code.size(); i++) {
-                ImGui::PushID(&code[i]);
-                ImGui::TableNextRow();
-                ImGui::TableNextColumn();
-                flag |= instruction_edit(i, code[i]);
+        ImGui::SeparatorText("general");
+        flag |= ImGui::Checkbox("Pause Execution", &m_cpu->m_execution_paused);
+        if (ImGui::InputInt("Program Counter", &m_cpu->m_pc)) {
+            m_cpu->m_pc = std::clamp(m_cpu->m_pc, 0, static_cast<int>(code.size() - 1));
+            flag |= true;
+        }
+        if (ImGui::TreeNode("registers")) {
+            for (auto r = 0UL; r < regs.size(); r++) {
+                ImGui::PushID(r);
+                flag |= ImGui::InputInt(std::format("R{}", r).c_str(), &regs[r]);
                 ImGui::PopID();
             }
-            ImGui::EndTable();
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("code")) {
+            if (ImGui::BeginTable("Instructions", 3,
+                    ImGuiTableFlags_Resizable
+                        | ImGuiTableFlags_NoSavedSettings
+                        | ImGuiTableFlags_Borders)) {
+                for (auto i = 0UL; i < code.size(); i++) {
+                    ImGui::PushID(&code[i]);
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%02zu", i);
+                    // ImGui::TableNextColumn();
+                    if (i > 0) {
+                        ImGui::SameLine();
+                        if (ImGui::ArrowButton("Move Up", ImGuiDir_Up)) {
+                            flag = true;
+                            std::swap(code[i], code[i - 1]);
+                        }
+                    }
+                    if (i < code.size() - 1) {
+                        ImGui::SameLine();
+                        if (ImGui::ArrowButton("Move Down", ImGuiDir_Down)) {
+                            flag = true;
+                            std::swap(code[i], code[i + 1]);
+                        }
+                    }
+                    ImGui::TableNextColumn();
+                    flag |= instruction_edit(i, code[i]);
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            ImGui::TreePop();
         }
     }
     return flag;

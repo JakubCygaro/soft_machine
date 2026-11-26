@@ -1,6 +1,8 @@
 #include "components/Button.hpp"
 #include "common/reflect/Enum.hpp"
-#include "game/Scene.hpp"
+#include "game/Editable.hpp"
+#include "imgui.h"
+#include "imgui_stdlib.h"
 #include <raylib.h>
 #include <string>
 namespace components {
@@ -11,24 +13,24 @@ Button::Button(
     , m_d { { msg_value } }
 {
 }
-Button::Button(
-    fl::string_param_t name,
-    fl::string_param_t msg_value)
-    : components::OComponent(std::string(name.data(), name.size()))
-    , m_d { { nullptr } }
-{
-    int out { };
-    auto res = std::from_chars(
-        msg_value.data(),
-        msg_value.data() + msg_value.size(),
-        out,
-        10);
-    if (res.ec == std::errc::invalid_argument) {
-        m_d->m_msg_value = std::string(name.data(), name.size());
-    } else {
-        m_d->m_msg_value = out;
-    }
-}
+// Button::Button(
+//     fl::string_param_t name,
+//     fl::string_param_t msg_value)
+//     : components::OComponent(std::string(name.data(), name.size()))
+//     , m_d { { nullptr } }
+// {
+//     int out { };
+//     auto res = std::from_chars(
+//         msg_value.data(),
+//         msg_value.data() + msg_value.size(),
+//         out,
+//         10);
+//     if (res.ec == std::errc::invalid_argument) {
+//         m_d->m_msg_value = std::string(name.data(), name.size());
+//     } else {
+//         m_d->m_msg_value = out;
+//     }
+// }
 Button::Button(Button&& o)
     : components::OComponent(std::move(o))
     , m_d { std::move(o.m_d) }
@@ -87,7 +89,8 @@ std::any Button::on_outcoming_connection(
     const machine::Connection*,
     std::any)
 {
-    this->m_d->recipents.push_back(std::string(conn_name));
+    // this->m_d->recipents.push_back(std::string(conn_name));
+    (void)conn_name;
     return nullptr;
 }
 machine::actor::Actor<void> Button::poll(machine::Mctx ctx)
@@ -95,10 +98,12 @@ machine::actor::Actor<void> Button::poll(machine::Mctx ctx)
     while (1) {
         co_await ctx.pause();
         if (this->m_d->set) {
-            for (const auto& rc : this->m_d->recipents) {
-                auto msg = std::any(m_d->m_msg_value);
-                co_await ctx.send(rc, std::move(msg));
-            }
+            auto msg = std::any(m_d->m_msg_value);
+            co_await ctx.broadcast(std::move(msg));
+            // for (const auto& rc : this->m_d->recipents) {
+            //     auto msg = std::any(m_d->m_msg_value);
+            //     co_await ctx.send(rc, std::move(msg));
+            // }
             this->m_d->set = false;
         }
     }
@@ -130,4 +135,68 @@ void Button::marshall_to_xml(pugi::xml_node& self) const noexcept
             .set(std::to_string(*nn));
     }
 }
+std::unique_ptr<game::Editor> Button::get_editor_object()
+{
+    using value_types_t = std::vector<
+        std::pair<std::string, std::function<std::any()>>>;
+    using namespace common::reflect;
+    static value_types_t
+        value_types = [] {
+            value_types_t ret;
+            ret.push_back({ enum_to_string(ValueMsgKind::Number),
+                [] static {
+                    return int(0);
+                } });
+            ret.push_back({ enum_to_string(ValueMsgKind::String),
+                [] static {
+                    return std::string("");
+                } });
+            return ret;
+        }();
+    auto comp_editor = OComponent::get_editor_object();
+    return game::LambdaEditor::make([=,
+                                        this,
+                                        comp_editor = std::move(comp_editor)] {
+        bool flag = false;
+        if (ImGui::CollapsingHeader("button")) {
+            std::string_view prev;
+            if (m_d->m_msg_value.type() == typeid(int)) {
+                prev = enum_to_string_view(ValueMsgKind::Number);
+            }
+            if (m_d->m_msg_value.type() == typeid(std::string)) {
+                prev = enum_to_string_view(ValueMsgKind::String);
+            }
+            if (ImGui::BeginCombo("Value type", prev.data())) {
+                int c = 0;
+                for (const auto& [kind, make_val] : value_types) {
+                    ImGui::PushID(c++);
+                    if (ImGui::Selectable(kind.data())) {
+                        if (kind.compare(prev) != 0) {
+                            m_d->m_msg_value = make_val();
+                            prev = kind;
+                            flag = true;
+                        }
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndCombo();
+            }
+            if (auto i = std::any_cast<int>(&m_d->m_msg_value); i) {
+                flag |= ImGui::InputInt("Integer", i);
+            }
+            if (auto s = std::any_cast<std::string>(&m_d->m_msg_value); s) {
+                flag |= ImGui::InputText("String", (s));
+            }
+            if(ImGui::Button("Click")){
+                m_d->set = true;
+            }
+        }
+        // this->m_d->set
+        flag |= comp_editor->draw_update();
+        return flag;
+    });
+}
+// void Button::notify_after_styling()
+// {
+// }
 }

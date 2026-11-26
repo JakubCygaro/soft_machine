@@ -76,14 +76,15 @@ private:
     std::array<reg_draw_data, REG_COUNT> m_reg_draw_data;
     std::pair<::Vector2, std::string> m_pc_draw_data;
     float m_inst_dims_y_acc;
+    bool m_execution_paused = false;
 
 public:
     CPU(std::string name, code_t&& code);
     CPU(fl::string_param_t name);
     CPU(const CPU&) = delete;
     CPU& operator=(const CPU&) = delete;
-    CPU(CPU&& o);
-    CPU& operator=(CPU&& o);
+    CPU(CPU&& o) = default;
+    CPU& operator=(CPU&& o) = default;
     virtual ~CPU();
 
     code_t& code();
@@ -92,7 +93,8 @@ public:
     virtual void update() override;
     virtual void set_styling(game::Style::shared_ptr_t s) override;
 
-    virtual machine::actor::Actor<void> poll(machine::Mctx) override;
+    virtual machine::actor::Actor<void>
+        poll(machine::Mctx) override;
 
     virtual const char*
     marshall_to_xml_name() const noexcept override;
@@ -109,92 +111,92 @@ private:
     static void setup_bounds(CPU& self);
     void unmark_all(void);
     int& reg(const Register&);
-    machine::actor::Actor<void> exec_wait(machine::Mctx&, const InstWait*);
-    machine::actor::Actor<void> exec_load(machine::Mctx&, const InstLoad*);
-    void exec_if(machine::Mctx&, const InstIf*);
+    machine::actor::Actor<void> exec(machine::Mctx&, const InstWait*);
+    machine::actor::Actor<void> exec(machine::Mctx&, const InstLoad*);
+    void exec(machine::Mctx&, const InstIf*);
 
 protected:
 };
-namespace cpu {
-    using Iden = std::string;
-    using Reg = CPU::Register;
-    using Eof = struct { };
-    using Token = std::variant<
-        Iden,
-        std::int64_t,
-        Reg,
-        Eof>;
-    std::string stringify(const Token&);
-    class Tokenizer {
-        std::istringstream m_iss;
-
-    public:
-        Tokenizer(std::istringstream&&);
-        Tokenizer(Tokenizer&&) = default;
-        Tokenizer& operator=(Tokenizer&&) = default;
-        Tokenizer(const Tokenizer&) = delete;
-        Tokenizer& operator=(const Tokenizer&) = delete;
-        std::expected<Token, std::string> read_next(void);
-    };
-    class Parser {
-        Tokenizer m_tok;
-
-    public:
-        Parser(std::istringstream&&);
-        Parser(Parser&&) = default;
-        Parser& operator=(Parser&&) = default;
-        Parser(const Parser&) = delete;
-        Parser& operator=(const Parser&) = delete;
-        std::expected<std::unique_ptr<CPU::Instruction>, std::string>
-        read_next(void);
-
-    private:
-        std::expected<std::unique_ptr<CPU::Instruction>, std::string>
-        read_instruction(Iden start);
-
-        template <class T, class Inspect = std::optional<T>>
-        inline std::expected<T, std::string> expect_next(Inspect inspect = std::nullopt)
-        {
-            auto t = m_tok.read_next();
-            if (!t.has_value())
-                return std::unexpected<std::string>(t.error());
-            auto t_val = std::move(t.value());
-            if (!std::holds_alternative<T>(t_val))
-                return std::unexpected<std::string>(
-                    std::format("Unexpected token '{}'", stringify(t_val)));
-            if constexpr (std::is_same_v<std::optional<T>, Inspect>) {
-                if (!inspect)
-                    return std::get<T>(t_val);
-                if (std::get<T>(t_val) != *inspect) {
-                    return std::unexpected<std::string>(
-                        std::format("Token value mismatch '{}' <> '{}'",
-                            stringify(t_val), stringify(*inspect)));
-                } else {
-                    return std::get<T>(t_val);
-                }
-            } else if constexpr (std::is_same_v<T, Inspect>
-                || std::is_same_v<T, std::nullopt_t>) {
-                if (std::get<T>(t_val) != inspect) {
-                    return std::unexpected<std::string>(
-                        std::format("Token value mismatch '{}' <> '{}'",
-                            stringify(t_val), inspect));
-                } else {
-                    return std::get<T>(t_val);
-                }
-            } else if constexpr (std::is_invocable_v<Inspect>) {
-                if (!Inspect(std::get<T>(t_val))) {
-                    return std::unexpected<std::string>(
-                        std::format("Bad token value '{}'",
-                            stringify(t_val)));
-                } else {
-                    return std::get<T>(t_val);
-                }
-            } else
-                static_assert(false, "expect_next bad template Inspect parameter type");
-        }
-    };
-
-}
+// namespace cpu {
+//     using Iden = std::string;
+//     using Reg = CPU::Register;
+//     using Eof = struct { };
+//     using Token = std::variant<
+//         Iden,
+//         std::int64_t,
+//         Reg,
+//         Eof>;
+//     std::string stringify(const Token&);
+//     class Tokenizer {
+//         std::istringstream m_iss;
+//
+//     public:
+//         Tokenizer(std::istringstream&&);
+//         Tokenizer(Tokenizer&&) = default;
+//         Tokenizer& operator=(Tokenizer&&) = default;
+//         Tokenizer(const Tokenizer&) = delete;
+//         Tokenizer& operator=(const Tokenizer&) = delete;
+//         std::expected<Token, std::string> read_next(void);
+//     };
+//     class Parser {
+//         Tokenizer m_tok;
+//
+//     public:
+//         Parser(std::istringstream&&);
+//         Parser(Parser&&) = default;
+//         Parser& operator=(Parser&&) = default;
+//         Parser(const Parser&) = delete;
+//         Parser& operator=(const Parser&) = delete;
+//         std::expected<std::unique_ptr<CPU::Instruction>, std::string>
+//         read_next(void);
+//
+//     private:
+//         std::expected<std::unique_ptr<CPU::Instruction>, std::string>
+//         read_instruction(Iden start);
+//
+//         template <class T, class Inspect = std::optional<T>>
+//         inline std::expected<T, std::string> expect_next(Inspect inspect = std::nullopt)
+//         {
+//             auto t = m_tok.read_next();
+//             if (!t.has_value())
+//                 return std::unexpected<std::string>(t.error());
+//             auto t_val = std::move(t.value());
+//             if (!std::holds_alternative<T>(t_val))
+//                 return std::unexpected<std::string>(
+//                     std::format("Unexpected token '{}'", stringify(t_val)));
+//             if constexpr (std::is_same_v<std::optional<T>, Inspect>) {
+//                 if (!inspect)
+//                     return std::get<T>(t_val);
+//                 if (std::get<T>(t_val) != *inspect) {
+//                     return std::unexpected<std::string>(
+//                         std::format("Token value mismatch '{}' <> '{}'",
+//                             stringify(t_val), stringify(*inspect)));
+//                 } else {
+//                     return std::get<T>(t_val);
+//                 }
+//             } else if constexpr (std::is_same_v<T, Inspect>
+//                 || std::is_same_v<T, std::nullopt_t>) {
+//                 if (std::get<T>(t_val) != inspect) {
+//                     return std::unexpected<std::string>(
+//                         std::format("Token value mismatch '{}' <> '{}'",
+//                             stringify(t_val), inspect));
+//                 } else {
+//                     return std::get<T>(t_val);
+//                 }
+//             } else if constexpr (std::is_invocable_v<Inspect>) {
+//                 if (!Inspect(std::get<T>(t_val))) {
+//                     return std::unexpected<std::string>(
+//                         std::format("Bad token value '{}'",
+//                             stringify(t_val)));
+//                 } else {
+//                     return std::get<T>(t_val);
+//                 }
+//             } else
+//                 static_assert(false, "expect_next bad template Inspect parameter type");
+//         }
+//     };
+//
+// }
 struct CPUEditor : public game::Editor {
     using inst_t = CPU::Instruction;
     using inst_ptr_t = std::shared_ptr<CPU::Instruction>;

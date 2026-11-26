@@ -14,7 +14,7 @@ public:
 private:
     struct data {
         std::set<std::string> from { };
-        std::vector<std::string> to { };
+        std::set<std::string> to { };
         std::optional<unsigned int> max_in;
         std::optional<unsigned int> max_out;
     };
@@ -48,6 +48,8 @@ public:
         std::string_view,
         const machine::Connection*,
         std::any conn_msg) override;
+
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
 
     virtual const char*
     marshall_to_xml_name() const noexcept override;

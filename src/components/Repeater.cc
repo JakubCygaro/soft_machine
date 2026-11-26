@@ -1,5 +1,7 @@
 #include "components/Repeater.hpp"
 #include "components/GameGraphElements.hpp"
+#include "imgui.h"
+#include "imgui_stdlib.h"
 #include <format>
 
 namespace components {
@@ -91,7 +93,7 @@ std::any Repeater::on_outcoming_connection(
                 get_name(),
                 n));
     }
-    m_d->to.push_back(std::string(n));
+    m_d->to.insert(std::string(n));
     return nullptr;
 }
 const char*
@@ -109,5 +111,80 @@ void Repeater::marshall_to_xml(pugi::xml_node& self) const noexcept
         self.append_attribute("max_out").set_value(*m_d->max_out);
     }
     append_size_attributes(self, get_size());
+}
+std::unique_ptr<game::Editor> Repeater::get_editor_object()
+{
+    auto comp_editor = OComponent::get_editor_object();
+    int _max_in = m_d->max_in.value_or(m_d->from.size());
+    int _max_out = m_d->max_out.value_or(m_d->to.size());
+    std::string _from { }, _to { };
+    return game::LambdaEditor::make([=,
+                                        this,
+                                        comp_editor = std::move(comp_editor)] mutable {
+        bool flag = false;
+        auto& from = m_d->from;
+        auto& to = m_d->to;
+        if (ImGui::CollapsingHeader("repeater")) {
+            ImGui::SeparatorText("general");
+            if (ImGui::InputInt("Max in", &_max_in)) {
+                // evil fucking multiple assignment
+                m_d->max_in
+                    = _max_in
+                    = std::max(_max_in, static_cast<int>(from.size()));
+                flag = true;
+            }
+            if (ImGui::InputInt("Max out", &_max_out)) {
+                m_d->max_out
+                    = _max_out
+                    = std::max(_max_out, static_cast<int>(to.size()));
+                flag = true;
+            }
+            ImGui::SeparatorText("connections");
+            const auto conns = [&](
+                                   std::string_view tnode,
+                                   std::set<std::string>& set,
+                                   std::optional<unsigned int>& sz,
+                                   std::string& buf) {
+                std::optional<const std::string&> rm;
+                ImGui::PushID(&set);
+                if (ImGui::TreeNode(tnode.data())) {
+                    if (ImGui::BeginTable("Connections", 2,
+                            ImGuiTableFlags_Resizable
+                                | ImGuiTableFlags_NoSavedSettings
+                                | ImGuiTableFlags_Borders)) {
+                        for (const auto& c : set) {
+                            ImGui::PushID(&c);
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::Text("%s", c.c_str());
+                            ImGui::TableNextColumn();
+                            if (ImGui::Button("Remove")) {
+                                rm = c;
+                                flag = true;
+                            }
+                            ImGui::PopID();
+                        }
+                        ImGui::EndTable();
+                    }
+                    ImGui::TreePop();
+                    if ((!sz || (sz && set.size() < *sz))) {
+                        ImGui::InputText("Connection", &buf);
+                        if (!buf.empty() && ImGui::Button("Add")) {
+                            flag = true;
+                            set.insert(buf);
+                        }
+                    }
+                }
+                ImGui::PopID();
+                if (rm) {
+                    set.erase(*rm);
+                }
+            };
+            conns("recieve from", from, m_d->max_in, _from);
+            conns("send to", to, m_d->max_out, _to);
+        }
+        flag |= comp_editor->draw_update();
+        return flag;
+    });
 }
 }
