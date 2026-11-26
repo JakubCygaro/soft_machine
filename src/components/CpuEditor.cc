@@ -197,17 +197,19 @@ bool CPUEditor::edit_concrete_inst(InstIf* f)
         clamp_reg(f->attrs->a);
         flag = true;
     }
-    //TODO: something is no yes here
+    // TODO: something is no yes here
     if (ImGui::BeginCombo("OP",
             enum_to_string_view(f->attrs->op).data())) {
         int counter = 0;
         for (const auto& [op, rep] : operators) {
             ImGui::PushID(counter++);
-            if (ImGui::Selectable(rep.c_str())) {
+            if ((ImGui::Selectable(rep.c_str()))) {
                 f->attrs->op = op;
+                flag = true;
             }
             ImGui::PopID();
         }
+        ImGui::EndCombo();
     }
     if (ImGui::InputInt("B", &f->attrs->b.idx)) {
         clamp_reg(f->attrs->b);
