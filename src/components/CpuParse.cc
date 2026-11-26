@@ -79,7 +79,7 @@ Parser::read_instruction(Iden start)
 {
     using ret_t = std::expected<std::unique_ptr<CPU::Instruction>, std::string>;
     using inst_t = CPU::Instruction;
-    using inst_ptr = std::unique_ptr<CPU::Instruction>;
+    using inst_ptr = std::shared_ptr<CPU::Instruction>;
     using namespace common::str;
     if (equal(start, "wait")) {
         auto* wait = new InstWait { };
@@ -99,6 +99,8 @@ Parser::read_instruction(Iden start)
                 return ret_t(wait);
             });
     }
+    return std::unexpected(
+        std::format("Unknown instruction starting with '{}'", start));
 }
 std::expected<std::unique_ptr<CPU::Instruction>, std::string>
 Parser::read_next(void)

@@ -142,10 +142,7 @@ struct build<components::CPU> {
         }
         components::CPU::code_t inst { };
         std::for_each(cpu.code.insts.begin(), cpu.code.insts.end(), [&](auto i) {
-            // because why the fuck not?
-            using ptr_t = typename components::CPU::code_t::value_type::pointer;
-            inst.push_back(
-                std::unique_ptr<std::remove_pointer_t<ptr_t>>(i));
+            inst.push_back(std::shared_ptr<components::CPU::Instruction>(i));
         });
         auto p = mg.create_component<components::CPU>(
             cpu.attrs->name,

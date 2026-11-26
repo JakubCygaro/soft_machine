@@ -1,12 +1,14 @@
 #include "components/Cpu.hpp"
 #include "components/CpuInst.hpp"
 #include "components/Memory.hpp"
+#include "game/Editable.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "game/resources/Resources.hpp"
 #include <algorithm>
 #include <concepts>
 #include <cstring>
 #include <format>
+#include <memory>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -253,8 +255,24 @@ void CPU::update()
     setup_regs(*this);
     setup_bounds(*this);
 }
-void CPU::set_styling(game::Style::shared_ptr_t s) {
+void CPU::set_styling(game::Style::shared_ptr_t s)
+{
     OComponent::set_styling(s);
+    setup(*this);
+}
+std::unique_ptr<game::Editor> CPU::get_editor_object()
+{
+    auto cpu_editor = std::make_unique<CPUEditor>(CPUEditorKey { }, this);
+    auto comp_editor = OComponent::get_editor_object();
+    return game::LambdaEditor::make([=,
+                                        // this,
+                                        cpu_editor = std::move(cpu_editor),
+                                        comp_editor = std::move(comp_editor)] {
+        return cpu_editor->draw_update() || comp_editor->draw_update();
+    });
+}
+void CPU::notify_after_styling()
+{
     setup(*this);
 }
 void CPU::unmark_all(void)
@@ -354,10 +372,6 @@ void CPU::setup_bounds(CPU& self)
         new_height > self.m_bounds.height) {
         self.m_bounds.height = new_height;
     }
-    // self.m_bounds = ::Rectangle {
-    //     .x = self.m_bounds.x,
-    //     .y = self.m_bounds.y,
-    // };
 }
 machine::actor::Actor<void>
 CPU::exec_wait(machine::Mctx& ctx, const InstWait* i)
@@ -403,8 +417,7 @@ CPU::exec_load(machine::Mctx& ctx, const InstLoad* i)
     }
     co_return;
 }
-void
-CPU::exec_if(machine::Mctx&, const InstIf* i)
+void CPU::exec_if(machine::Mctx&, const InstIf* i)
 {
     const auto& a = reg(i->attrs->a);
     const auto& b = reg(i->attrs->b);
@@ -441,29 +454,29 @@ CPU::poll(machine::Mctx ctx)
             co_await ctx.pause();
             continue;
         }
-        const auto* inst = m_code[m_pc].get();
-        if (auto i = dynamic_cast<const InstWait*>(inst)) {
+        const auto inst = m_code[m_pc];
+        if (auto i = dynamic_cast<const InstWait*>(inst.get())) {
             co_await exec_wait(ctx, i);
         }
-        if (auto i = dynamic_cast<const InstLoad*>(inst)) {
+        if (auto i = dynamic_cast<const InstLoad*>(inst.get())) {
             co_await exec_load(ctx, i);
         }
-        if (auto i = dynamic_cast<const InstIf*>(inst)) {
+        if (auto i = dynamic_cast<const InstIf*>(inst.get())) {
             exec_if(ctx, i);
             co_await ctx.pause();
         }
-        if (auto i = dynamic_cast<const InstMovi*>(inst)) {
+        if (auto i = dynamic_cast<const InstMovi*>(inst.get())) {
             reg(i->attrs->into) = i->attrs->ival;
             co_await ctx.pause();
         }
-        if (auto i = dynamic_cast<const InstSend*>(inst)) {
+        if (auto i = dynamic_cast<const InstSend*>(inst.get())) {
             co_await ctx.send(i->attrs->to, reg(i->attrs->from));
         }
-        if (auto i = dynamic_cast<const InstAdd*>(inst)) {
+        if (auto i = dynamic_cast<const InstAdd*>(inst.get())) {
             reg(i->attrs->dst) += reg(i->attrs->src);
             co_await ctx.pause();
         }
-        if (auto i = dynamic_cast<const InstSub*>(inst)) {
+        if (auto i = dynamic_cast<const InstSub*>(inst.get())) {
             reg(i->attrs->dst) -= reg(i->attrs->src);
             co_await ctx.pause();
         }

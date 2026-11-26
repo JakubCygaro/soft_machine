@@ -4,4 +4,6 @@ struct InstWait;
 struct InstLoad;
 struct InstSend;
 struct InstIf;
+struct InstAdd;
+struct InstSub;
 }

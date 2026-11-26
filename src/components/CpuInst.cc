@@ -1,6 +1,10 @@
 #include "components/CpuInst.hpp"
 namespace components {
 InstWait::~InstWait() { }
+const std::string_view InstWait::get_name() const
+{
+    return "wait";
+}
 std::string InstWait::to_string()
 {
     return std::format("WAIT ON {} INTO R{}", attrs->on, attrs->into.idx);
@@ -12,7 +16,7 @@ std::string InstWait::to_render_string()
 const char* InstWait::marshall_to_xml_name()
     const noexcept
 {
-    return "wait";
+    return get_name().data();
 }
 void InstWait::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -23,6 +27,10 @@ void InstWait::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->into.to_string());
 }
 InstLoad::~InstLoad() { }
+const std::string_view InstLoad::get_name() const
+{
+    return "load";
+}
 std::string InstLoad::to_string()
 {
     return std::format("LOAD FROM {} AT {} INTO R{}",
@@ -36,7 +44,7 @@ std::string InstLoad::to_render_string()
 const char* InstLoad::marshall_to_xml_name()
     const noexcept
 {
-    return "load";
+    return get_name().data();
 }
 void InstLoad::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -49,6 +57,10 @@ void InstLoad::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->into.to_string());
 }
 InstSend::~InstSend() { }
+const std::string_view InstSend::get_name() const
+{
+    return "send";
+}
 std::string InstSend::to_string()
 {
     return std::format("SEND FROM R{} TO {}",
@@ -62,7 +74,7 @@ std::string InstSend::to_render_string()
 const char* InstSend::marshall_to_xml_name()
     const noexcept
 {
-    return "send";
+    return get_name().data();
 }
 void InstSend::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -73,6 +85,10 @@ void InstSend::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->to);
 }
 InstMovi::~InstMovi() { }
+const std::string_view InstMovi::get_name() const
+{
+    return "movi";
+}
 std::string InstMovi::to_string()
 {
     return std::format("MOVI {} INTO R{}",
@@ -85,7 +101,7 @@ std::string InstMovi::to_render_string()
 const char* InstMovi::marshall_to_xml_name()
     const noexcept
 {
-    return "movi";
+    return get_name().data();
 }
 void InstMovi::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -96,6 +112,10 @@ void InstMovi::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->ival);
 }
 InstIf::~InstIf() { }
+const std::string_view InstIf::get_name() const
+{
+    return "if";
+}
 std::string InstIf::to_string()
 {
     return std::format("IF R{} {} R{} JMPTO {}",
@@ -115,7 +135,7 @@ std::string InstIf::to_render_string()
 const char* InstIf::marshall_to_xml_name()
     const noexcept
 {
-    return "if";
+    return get_name().data();
 }
 void InstIf::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -130,6 +150,10 @@ void InstIf::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->jmpto);
 }
 InstAdd::~InstAdd() { }
+const std::string_view InstAdd::get_name() const
+{
+    return "add";
+}
 std::string InstAdd::to_string()
 {
     return std::format("ADD R{} INTO R{}",
@@ -143,7 +167,7 @@ std::string InstAdd::to_render_string()
 const char* InstAdd::marshall_to_xml_name()
     const noexcept
 {
-    return "add";
+    return get_name().data();
 }
 void InstAdd::marshall_to_xml(pugi::xml_node& self)
     const noexcept
@@ -154,6 +178,10 @@ void InstAdd::marshall_to_xml(pugi::xml_node& self)
         .set_value(attrs->dst.to_string());
 }
 InstSub::~InstSub() { }
+const std::string_view InstSub::get_name() const
+{
+    return "sub";
+}
 std::string InstSub::to_string()
 {
     return std::format("SUB R{} INTO R{}",
@@ -167,7 +195,7 @@ std::string InstSub::to_render_string()
 const char* InstSub::marshall_to_xml_name()
     const noexcept
 {
-    return "sub";
+    return get_name().data();
 }
 void InstSub::marshall_to_xml(pugi::xml_node& self)
     const noexcept

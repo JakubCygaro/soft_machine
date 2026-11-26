@@ -68,6 +68,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/components/Cpu.cc
     ${CMAKE_SOURCE_DIR}/src/components/CpuInst.cc
     ${CMAKE_SOURCE_DIR}/src/components/CpuParse.cc
+    ${CMAKE_SOURCE_DIR}/src/components/CpuEditor.cc
     ${CMAKE_SOURCE_DIR}/src/components/Button.cc
     ${CMAKE_SOURCE_DIR}/src/components/Display.cc
     ${CMAKE_SOURCE_DIR}/src/components/Repeater.cc
@@ -78,7 +79,7 @@ add_library(sf_commons STATIC
     ${CMAKE_SOURCE_DIR}/src/common/string.cc
     ${CMAKE_SOURCE_DIR}/src/scheme/scheme.cc
     ${CMAKE_SOURCE_DIR}/src/game/resources/resources.cc
-    ${CMAKE_SOURCE_DIR}/include/misc/cpp/imgui_stdlib.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/imgui/misc/cpp/imgui_stdlib.cpp
 )
 target_link_libraries(sf_commons
     PUBLIC cppfeatures

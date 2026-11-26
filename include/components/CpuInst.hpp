@@ -10,6 +10,7 @@ struct InstWait : public CPU::Instruction {
         CPU::Register into;
     };
     game::xml::Attribute<wait_attr> attrs;
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name() const noexcept override;
@@ -23,6 +24,7 @@ struct InstLoad : public CPU::Instruction {
         CPU::Register into;
     };
     game::xml::Attribute<load_attr> attrs;
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()
@@ -37,6 +39,7 @@ struct InstSend : public CPU::Instruction {
         std::string to;
     };
     game::xml::Attribute<send_attr> attrs;
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()
@@ -52,6 +55,7 @@ struct InstMovi : public CPU::Instruction {
     };
     virtual ~InstMovi();
     game::xml::Attribute<movi_attr> attrs;
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()
@@ -61,7 +65,7 @@ struct InstMovi : public CPU::Instruction {
 };
 struct InstIf : public CPU::Instruction {
     // TODO: enum_to_string<E>
-    enum class Op {
+    enum class Op : int {
         L,
         LE,
         E,
@@ -76,6 +80,7 @@ struct InstIf : public CPU::Instruction {
     };
     game::xml::Attribute<if_attr> attrs;
     virtual ~InstIf();
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()
@@ -89,6 +94,7 @@ struct arth_attr {
 struct InstAdd : public CPU::Instruction {
     game::xml::Attribute<arth_attr> attrs;
     virtual ~InstAdd();
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()
@@ -99,6 +105,7 @@ struct InstAdd : public CPU::Instruction {
 struct InstSub : public CPU::Instruction {
     game::xml::Attribute<arth_attr> attrs;
     virtual ~InstSub();
+    const std::string_view get_name() const override;
     std::string to_string() override;
     std::string to_render_string() override;
     const char* marshall_to_xml_name()

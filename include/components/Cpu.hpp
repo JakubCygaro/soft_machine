@@ -3,6 +3,7 @@
 #include "components/CpuInstPrelude.hpp"
 #include "components/GameGraphElements.hpp"
 #include "facelift/Fl.hpp"
+#include "game/Editable.hpp"
 #include "game/Styling.hpp"
 #include "game/XmlMarshalling.hpp"
 #include "machine/Actor.hpp"
@@ -17,8 +18,19 @@
 #include <variant>
 
 namespace components {
+class CPU;
+struct CPUEditorKey {
+
+private:
+    CPUEditorKey() = default;
+    friend class CPU;
+
+public:
+};
+
 class CPU : public components::OComponent {
 public:
+    friend struct CPUEditor;
     struct Register {
         int idx { };
         static Result<std::runtime_error, Register> parse_xml(const char* str);
@@ -26,6 +38,7 @@ public:
         constexpr auto operator<=>(const Register&) const = default;
     };
     struct Instruction : game::xml::MarshallToXml {
+        virtual const std::string_view get_name() const = 0;
         virtual std::string to_string() = 0;
         virtual std::string to_render_string() = 0;
         virtual ~Instruction() = default;
@@ -39,7 +52,8 @@ public:
     inline static const ::Color MARKED_COLOR = ::BLUE;
     inline static constexpr const size_t REG_COUNT = 10;
     inline static constexpr const int REG_FONT_SIZE = 20;
-    using code_t = std::vector<std::unique_ptr<Instruction>>;
+    // shared pointers because the editor can modify the code mid execution
+    using code_t = std::vector<std::shared_ptr<Instruction>>;
     using regs_t = std::array<int, REG_COUNT>;
 
 private:
@@ -84,6 +98,9 @@ public:
     marshall_to_xml_name() const noexcept override;
     virtual void
     marshall_to_xml(pugi::xml_node& self) const noexcept override;
+
+    virtual std::unique_ptr<game::Editor> get_editor_object() override;
+    virtual void notify_after_styling() override;
 
 private:
     static void setup(CPU& self);
@@ -178,4 +195,38 @@ namespace cpu {
     };
 
 }
+struct CPUEditor : public game::Editor {
+    using inst_t = CPU::Instruction;
+    using inst_ptr_t = std::shared_ptr<CPU::Instruction>;
+
+private:
+    using default_init_fn = std::function<inst_ptr_t()>;
+    using edit_fn = std::function<bool(inst_t*)>;
+    struct InstView {
+        default_init_fn init;
+        edit_fn edit_dispatch;
+    };
+    CPU* m_cpu { nullptr };
+    std::map<std::string, InstView, std::less<>> m_instruction_map;
+
+public:
+    virtual ~CPUEditor() = default;
+    CPUEditor(CPUEditorKey, CPU*);
+    CPUEditor(const CPUEditor&) = delete;
+    CPUEditor& operator=(const CPUEditor&) = delete;
+    CPUEditor(CPUEditor&&) = default;
+    CPUEditor& operator=(CPUEditor&&) = default;
+    virtual bool draw_update() override;
+
+private:
+    bool instruction_edit(
+        std::size_t idx,
+        std::shared_ptr<CPU::Instruction>& inst);
+    bool edit_concrete_inst(InstWait*);
+    bool edit_concrete_inst(InstLoad*);
+    bool edit_concrete_inst(InstSend*);
+    bool edit_concrete_inst(InstIf*);
+    bool edit_concrete_inst(InstAdd*);
+    bool edit_concrete_inst(InstSub*);
+};
 }
