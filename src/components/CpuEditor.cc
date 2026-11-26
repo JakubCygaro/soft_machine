@@ -58,6 +58,12 @@ CPUEditor::CPUEditor(CPUEditorKey, CPU* cpu)
             return this->edit_concrete_inst(dynamic_cast<InstSub*>(i));
         },
     };
+    m_instruction_map["movi"] = InstView {
+        .init = make_default_init<InstMovi>(),
+        .edit_dispatch = [this](inst_t* i) -> bool {
+            return this->edit_concrete_inst(dynamic_cast<InstMovi*>(i));
+        },
+    };
 }
 bool CPUEditor::draw_update()
 {
@@ -219,6 +225,18 @@ bool CPUEditor::edit_concrete_inst(InstIf* f)
         f->attrs->jmpto = std::clamp(f->attrs->jmpto,
             0,
             static_cast<int>(m_cpu->m_code.size() - 1));
+        flag = true;
+    }
+    return flag;
+}
+bool CPUEditor::edit_concrete_inst(InstMovi* m)
+{
+    bool flag = false;
+    if (ImGui::InputInt("INTO", &m->attrs->into.idx)) {
+        clamp_reg(m->attrs->into);
+        flag = true;
+    }
+    if (ImGui::InputInt("IVAL", &m->attrs->ival)) {
         flag = true;
     }
     return flag;

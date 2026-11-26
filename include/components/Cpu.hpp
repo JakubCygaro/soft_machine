@@ -228,5 +228,6 @@ private:
     bool edit_concrete_inst(InstIf*);
     bool edit_concrete_inst(InstAdd*);
     bool edit_concrete_inst(InstSub*);
+    bool edit_concrete_inst(InstMovi*);
 };
 }

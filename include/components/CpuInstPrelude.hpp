@@ -6,4 +6,5 @@ struct InstSend;
 struct InstIf;
 struct InstAdd;
 struct InstSub;
+struct InstMovi;
 }
