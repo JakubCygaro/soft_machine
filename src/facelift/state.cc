@@ -81,18 +81,24 @@ void graph_control_draw()
     static rep_t ms = game::GraphScene::DEFAULT_POLL_RATE.count();
     static const rep_t step { 100 }, step_fast { 1000 };
     bool paused = fl_state.graph_scene->is_paused();
-    ImGui::Begin("Graph control");
-    if (chrono::milliseconds(ms) != fl_state.graph_scene->get_poll_rate()) {
-        ms = fl_state.graph_scene->get_poll_rate().count();
+    if(ImGui::Begin("Graph control", &fl_state.show_graph_control)){
+        ImGui::SeparatorText("poll control");
+        if (chrono::milliseconds(ms) != fl_state.graph_scene->get_poll_rate()) {
+            ms = fl_state.graph_scene->get_poll_rate().count();
+        }
+        if (ImGui::Checkbox("Paused", &paused)) {
+            fl_state.graph_scene->set_pause(paused);
+        }
+        if(paused && ImGui::Button("Step Poll")){
+            fl_state.graph_scene->step_poll();
+        }
+        // ImGui::NewLine();
+        if (ImGui::InputScalar("Poll Rate", ImGuiDataType_S64, &ms, &step, &step_fast)) {
+            ms = std::clamp(ms, 100L, 30L * 1000L);
+            fl_state.graph_scene->set_poll_rate(chrono::milliseconds(ms));
+        }
+        ImGui::End();
     }
-    if (ImGui::Checkbox("Paused", &paused)) {
-        fl_state.graph_scene->set_pause(paused);
-    }
-    if (ImGui::InputScalar("Poll Rate", ImGuiDataType_S64, &ms, &step, &step_fast)) {
-        ms = std::clamp(ms, 100L, 30L * 1000L);
-        fl_state.graph_scene->set_poll_rate(chrono::milliseconds(ms));
-    }
-    ImGui::End();
 }
 void element_list_draw()
 {

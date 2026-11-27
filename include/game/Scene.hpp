@@ -96,6 +96,7 @@ public:
     void set_poll_rate(chrono::milliseconds);
     void set_pause(bool);
     bool is_paused(void) const;
+    void step_poll(void);
     template <typename Ret>
     inline Ret modify_graph(std::function_ref<Ret(graph_t*)> func)
     {

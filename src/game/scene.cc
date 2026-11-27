@@ -130,4 +130,10 @@ bool GraphScene::is_paused(void) const
 {
     return m_paused;
 }
+void GraphScene::step_poll(void)
+{
+    if (!m_paused)
+        return;
+    m_mgraph->poll_all();
+}
 }
