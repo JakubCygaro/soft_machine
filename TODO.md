@@ -1,5 +1,5 @@
-- editor: graph pausing, stepping and cycle rate controls
--highlight element name on hover
+- editor: paused overlay indicator or something that tells the user that the graph is paused
+- highlight element name on hover
 - immediate mode drawing of components:
 ```cpp
 draw::BeginBody(m_bounds);

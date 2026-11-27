@@ -68,7 +68,8 @@ struct FaceliftState {
         auto take_file() -> std::filesystem::path;
     } filed { };
 
-    std::string lisp_error_log {};
+    std::string lisp_error_log { };
+    std::string_view tooltip_text { };
 };
 
 inline FaceliftState fl_state;

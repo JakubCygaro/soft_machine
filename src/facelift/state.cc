@@ -14,6 +14,7 @@
 #include <memory>
 #include <optional>
 #include <raylib.h>
+#include <raymath.h>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -81,7 +82,7 @@ void graph_control_draw()
     static rep_t ms = game::GraphScene::DEFAULT_POLL_RATE.count();
     static const rep_t step { 100 }, step_fast { 1000 };
     bool paused = fl_state.graph_scene->is_paused();
-    if(ImGui::Begin("Graph control", &fl_state.show_graph_control)){
+    if (ImGui::Begin("Graph control", &fl_state.show_graph_control)) {
         ImGui::SeparatorText("poll control");
         if (chrono::milliseconds(ms) != fl_state.graph_scene->get_poll_rate()) {
             ms = fl_state.graph_scene->get_poll_rate().count();
@@ -89,7 +90,7 @@ void graph_control_draw()
         if (ImGui::Checkbox("Paused", &paused)) {
             fl_state.graph_scene->set_pause(paused);
         }
-        if(paused && ImGui::Button("Step Poll")){
+        if (paused && ImGui::Button("Step Poll")) {
             fl_state.graph_scene->step_poll();
         }
         // ImGui::NewLine();
@@ -178,8 +179,9 @@ void conn_builder_menu_draw()
 
 void update_objects()
 {
+    const auto mouse = ::GetMousePosition();
     const auto wmouse = ::GetScreenToWorld2D(
-        ::GetMousePosition(),
+        mouse,
         *fl_state.graph_scene->get_instance_camera());
     const auto released = ::IsMouseButtonReleased(::MOUSE_BUTTON_LEFT)
         && !ImGui::GetIO().WantCaptureMouse;
@@ -187,9 +189,13 @@ void update_objects()
     for (auto obj : fl_state.graph_scene
              ->get_graph()
              ->get_elements_as<game::Object>()) {
+        const auto collision = obj->check_point_collision(wmouse);
+        if (fl_state.is_edit_mode && collision) {
+            fl_state.tooltip_text = obj->get_name().c_str();
+        }
         if (fl_state.is_edit_mode
             && released
-            && obj->check_point_collision(wmouse)) {
+            && collision) {
             if (auto as_comp = dynamic_cast<components::OComponent*>(obj); as_comp) {
                 if (fl_state.selected && ::IsKeyDown(::KEY_C)) {
                     fl_state.connect_to = as_comp;
@@ -418,6 +424,26 @@ void dump_draw()
     }
     ImGui::End();
 }
+void tooltip_draw()
+{
+    const auto mouse = ::GetMousePosition();
+    const auto measure
+        = ::MeasureTextEx(::GetFontDefault(), fl_state.tooltip_text.data(), 20, 1);
+    const auto pos = Rectangle {
+        .x = mouse.x,
+        .y = mouse.y + measure.y,
+        .width = measure.x,
+        .height = measure.y,
+    };
+    ::DrawRectangleRounded(pos, 0.25, 10, ::WHITE);
+    ::DrawTextEx(::GetFontDefault(),
+        fl_state.tooltip_text.data(),
+        { pos.x, pos.y },
+        20,
+        1,
+        ::BLACK);
+    fl_state.tooltip_text = { };
+}
 
 void draw()
 {
@@ -431,7 +457,6 @@ void draw()
 
     ::BeginDrawing();
     ::ClearBackground(::BLACK);
-
     fl_state.graph_scene->draw();
     comp_builder_menu_draw();
     if (fl_state.open_comp_bld) {
@@ -474,7 +499,10 @@ void draw()
         element_list_draw();
     if (fl_state.file_dialog_state != FaceliftState::FileDialogState::NilState)
         fl_state.filed.draw();
-    // ::rlImGuiEnd();
+
+    if (!fl_state.tooltip_text.empty()) {
+        tooltip_draw();
+    }
     ImGui::Render();
     ::ImGui_ImplRaylib_RenderDrawData(ImGui::GetDrawData());
     ::EndDrawing();
