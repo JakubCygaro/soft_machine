@@ -38,6 +38,7 @@ struct FaceliftState {
     bool is_edit_mode = true;
     bool show_dump = false;
     bool show_lisp_errors = false;
+    bool show_graph_control = false;
     std::optional<std::string> graph_dump;
     enum class FileDialogState {
         NilState,

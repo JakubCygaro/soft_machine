@@ -1,5 +1,3 @@
-- CPU editor program counter and current suspended state editing and proper resetting
-- full editability for all components: Display - CPU needs an instruction parser for that to work
 - editor: graph pausing, stepping and cycle rate controls
 - immediate mode drawing of components:
 ```cpp

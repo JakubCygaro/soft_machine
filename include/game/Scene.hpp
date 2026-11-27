@@ -1,28 +1,37 @@
 #pragma once
 #include "game/StylingGraph.hpp"
 #include "machine/MachineGraph.hpp"
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <raylib.h>
 
 namespace game {
+using namespace std::chrono_literals;
+namespace chrono = std::chrono;
 class GraphScene {
 public:
+    static constexpr chrono::milliseconds DEFAULT_POLL_RATE = 1000ms;
+    using clock_t = chrono::steady_clock;
+    using time_point_t = chrono::time_point<clock_t>;
     using graph_t = game::StylingGraph;
     GraphScene() = delete;
     GraphScene(const GraphScene&) = delete;
     GraphScene& operator=(const GraphScene&) = delete;
     explicit GraphScene(std::unique_ptr<graph_t>&&, ::Rectangle);
-    GraphScene(GraphScene&&);
-    GraphScene& operator=(GraphScene&&);
-    ~GraphScene();
+    GraphScene(GraphScene&&) = default;
+    GraphScene& operator=(GraphScene&&) = default;
+    ~GraphScene() = default;
 
 private:
     static void init(GraphScene& self);
+    static void calc_next_poll(GraphScene& self);
     std::unique_ptr<graph_t> m_mgraph;
-    // std::vector<Object*> m_graph_objs { };
     ::Camera2D m_cam;
     uint64_t m_framec { };
+    time_point_t m_next_poll;
+    bool m_paused { true };
+    chrono::milliseconds m_poll_rate = DEFAULT_POLL_RATE;
 
 public:
     ::Rectangle bounds { };
@@ -83,6 +92,10 @@ public:
 
     void set_focus(bool);
     void set_input_to_elements(bool);
+    chrono::milliseconds get_poll_rate(void) const;
+    void set_poll_rate(chrono::milliseconds);
+    void set_pause(bool);
+    bool is_paused(void) const;
     template <typename Ret>
     inline Ret modify_graph(std::function_ref<Ret(graph_t*)> func)
     {

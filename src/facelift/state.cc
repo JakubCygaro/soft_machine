@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+namespace chrono = std::chrono;
 
 namespace facelift {
 namespace fs = std::filesystem;
@@ -74,6 +75,25 @@ namespace {
         });
     }
 }
+void graph_control_draw()
+{
+    using rep_t = chrono::milliseconds::rep;
+    static rep_t ms = game::GraphScene::DEFAULT_POLL_RATE.count();
+    static const rep_t step { 100 }, step_fast { 1000 };
+    bool paused = fl_state.graph_scene->is_paused();
+    ImGui::Begin("Graph control");
+    if (chrono::milliseconds(ms) != fl_state.graph_scene->get_poll_rate()) {
+        ms = fl_state.graph_scene->get_poll_rate().count();
+    }
+    if (ImGui::Checkbox("Paused", &paused)) {
+        fl_state.graph_scene->set_pause(paused);
+    }
+    if (ImGui::InputScalar("Poll Rate", ImGuiDataType_S64, &ms, &step, &step_fast)) {
+        ms = std::clamp(ms, 100L, 30L * 1000L);
+        fl_state.graph_scene->set_poll_rate(chrono::milliseconds(ms));
+    }
+    ImGui::End();
+}
 void element_list_draw()
 {
     ImGui::Begin("Graph elements list");
@@ -120,7 +140,7 @@ void element_list_draw()
 void comp_builder_menu_draw()
 {
     if (ImGui::Begin("Component builder")) {
-        if(ImGui::BeginListBox("Components")){
+        if (ImGui::BeginListBox("Components")) {
             for (const auto& [s, b] : fl_state.comp_blds) {
                 ImGui::PushID(s.c_str());
                 if (ImGui::Selectable(s.c_str())) {
@@ -243,6 +263,9 @@ void update()
     }
     update_objects();
     fl_state.graph_scene->update();
+    if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_G)) {
+        toggle(fl_state.show_graph_control);
+    }
     if (::IsKeyDown(::KEY_LEFT_CONTROL) && ::IsKeyPressed(::KEY_E)) {
         toggle(fl_state.is_element_list_open);
     }
@@ -434,6 +457,9 @@ void draw()
     }
     if (fl_state.show_lisp_errors) {
         lisp_error_draw();
+    }
+    if (fl_state.show_graph_control) {
+        graph_control_draw();
     }
     if (fl_state.selected) {
         selected_draw();
